@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 interface ItemSearchDropdownProps {
@@ -7,10 +7,11 @@ interface ItemSearchDropdownProps {
   onChange: (value: string) => void;
   placeholder?: string;
   onKeyDown?: (e: React.KeyboardEvent) => void;
+  inputRef?: (ref: HTMLInputElement | null) => void;
 }
 
-// Predefined spice items
-const spiceItems = [
+// Default spice items
+const defaultSpiceItems = [
   'Turmeric Powder',
   'Red Chili Powder',
   'Coriander Powder',
@@ -32,18 +33,42 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
   value,
   onChange,
   placeholder = "Search or enter item name",
-  onKeyDown
+  onKeyDown,
+  inputRef
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [spiceItems, setSpiceItems] = useState(defaultSpiceItems);
   const [filteredItems, setFilteredItems] = useState(spiceItems);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const internalInputRef = useRef<HTMLInputElement>(null);
+
+  // Initialize localStorage with default items if not exists
+  useEffect(() => {
+    const existingItems = localStorage.getItem('spiceItems');
+    if (!existingItems) {
+      localStorage.setItem('spiceItems', JSON.stringify(defaultSpiceItems));
+    } else {
+      setSpiceItems(JSON.parse(existingItems));
+    }
+  }, []);
+
+  // Listen for custom events when items are updated
+  useEffect(() => {
+    const handleItemsUpdated = () => {
+      const updatedItems = JSON.parse(localStorage.getItem('spiceItems') || '[]');
+      setSpiceItems(updatedItems);
+    };
+
+    window.addEventListener('spiceItemsUpdated', handleItemsUpdated);
+    return () => window.removeEventListener('spiceItemsUpdated', handleItemsUpdated);
+  }, []);
 
   useEffect(() => {
     const filtered = spiceItems.filter(item =>
       item.toLowerCase().includes(value.toLowerCase())
     );
     setFilteredItems(filtered);
-  }, [value]);
+  }, [value, spiceItems]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -56,6 +81,13 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Set input ref
+  useEffect(() => {
+    if (inputRef && internalInputRef.current) {
+      inputRef(internalInputRef.current);
+    }
+  }, [inputRef]);
+
   const handleItemSelect = (item: string) => {
     onChange(item);
     setIsOpen(false);
@@ -65,6 +97,7 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
     <div className="relative" ref={dropdownRef}>
       <div className="relative">
         <input
+          ref={internalInputRef}
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}

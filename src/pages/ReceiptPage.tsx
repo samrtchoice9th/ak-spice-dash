@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useReceipts, Receipt, ReceiptItem } from '@/contexts/ReceiptsContext';
-import { Edit, Trash2, Eye, Calendar, Clock, DollarSign } from 'lucide-react';
+import { Edit, Trash2, Eye, Calendar, Clock, DollarSign, Printer } from 'lucide-react';
 
 const ReceiptPage = () => {
   const { receipts, updateReceipt, deleteReceipt } = useReceipts();
@@ -43,6 +42,86 @@ const ReceiptPage = () => {
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this receipt?')) {
       deleteReceipt(id);
+    }
+  };
+
+  const handlePrintReceipt = (receipt: Receipt) => {
+    // Add thermal printer styles
+    const printStyles = `
+      <style>
+        @media print {
+          @page { 
+            size: 58mm auto;
+            margin: 2mm;
+          }
+          body { 
+            font-family: monospace;
+            font-size: 8px;
+            line-height: 1.2;
+            margin: 0;
+            padding: 2mm;
+          }
+          .receipt-header {
+            text-align: center;
+            margin-bottom: 3mm;
+            font-weight: bold;
+          }
+          .receipt-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1mm;
+          }
+          .receipt-total {
+            border-top: 1px dashed black;
+            margin-top: 2mm;
+            padding-top: 1mm;
+            font-weight: bold;
+          }
+        }
+      </style>
+    `;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>AK Spice - ${receipt.type}</title>
+          ${printStyles}
+        </head>
+        <body>
+          <div class="receipt-header">
+            <div>AK SPICE</div>
+            <div>${receipt.type.toUpperCase()}</div>
+            <div>${receipt.date} ${receipt.time}</div>
+          </div>
+          ${receipt.items.map(item => `
+            <div class="receipt-item">
+              <span>${item.itemName}</span>
+            </div>
+            <div class="receipt-item">
+              <span>${item.qty}kg x Rs${item.price}</span>
+              <span>Rs${item.total.toFixed(2)}</span>
+            </div>
+          `).join('')}
+          <div class="receipt-total">
+            <div class="receipt-item">
+              <span>TOTAL:</span>
+              <span>Rs${receipt.totalAmount.toFixed(2)}</span>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
     }
   };
 
@@ -144,12 +223,21 @@ const ReceiptPage = () => {
             <h2 className="text-2xl font-semibold capitalize text-blue-800">
               {viewingReceipt.type} Receipt
             </h2>
-            <button
-              onClick={() => setViewingReceipt(null)}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-            >
-              Back to List
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handlePrintReceipt(viewingReceipt)}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                <Printer size={16} />
+                <span>Print</span>
+              </button>
+              <button
+                onClick={() => setViewingReceipt(null)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Back to List
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

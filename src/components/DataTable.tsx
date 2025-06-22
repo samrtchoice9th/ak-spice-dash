@@ -1,7 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Printer, Plus, Save } from 'lucide-react';
 import { ItemSearchDropdown } from './ItemSearchDropdown';
+import { AddItemDialog } from './AddItemDialog';
 import { useReceipts, ReceiptItem } from '@/contexts/ReceiptsContext';
 
 interface TableRow {
@@ -28,7 +29,8 @@ export const DataTable: React.FC<DataTableProps> = ({
   const [rows, setRows] = useState<TableRow[]>([
     { id: '1', itemName: '', qty: 0, price: 0 }
   ]);
-  const [currentRowIndex, setCurrentRowIndex] = useState(0);
+  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const { addReceipt } = useReceipts();
 
@@ -38,45 +40,48 @@ export const DataTable: React.FC<DataTableProps> = ({
     ));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, rowIndex: number) => {
+  const handleKeyDown = (e: React.KeyboardEvent, rowIndex: number, field: 'itemName' | 'qty' | 'price') => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       const currentRow = rows[rowIndex];
-      // Check if current row has all required fields filled
-      if (currentRow.itemName && currentRow.qty > 0 && currentRow.price > 0) {
-        // If this is the last row and it's complete, add a new row
-        if (rowIndex === rows.length - 1) {
-          const newRow: TableRow = {
-            id: Date.now().toString(),
-            itemName: '',
-            qty: 0,
-            price: 0,
-          };
-          setRows(prev => [...prev, newRow]);
-          setCurrentRowIndex(rowIndex + 1);
-        } else {
-          // Move to next existing row
-          setCurrentRowIndex(Math.min(rowIndex + 1, rows.length - 1));
+      
+      // Move to next field in the same row
+      if (field === 'itemName' && currentRow.itemName) {
+        const qtyRef = inputRefs.current[`${currentRow.id}-qty`];
+        qtyRef?.focus();
+      } else if (field === 'qty' && currentRow.qty > 0) {
+        const priceRef = inputRefs.current[`${currentRow.id}-price`];
+        priceRef?.focus();
+      } else if (field === 'price' && currentRow.price > 0) {
+        // Check if current row is complete
+        if (currentRow.itemName && currentRow.qty > 0 && currentRow.price > 0) {
+          // If this is the last row and it's complete, add a new row
+          if (rowIndex === rows.length - 1) {
+            const newRow: TableRow = {
+              id: Date.now().toString(),
+              itemName: '',
+              qty: 0,
+              price: 0,
+            };
+            setRows(prev => [...prev, newRow]);
+            // Focus on the new row's item name field after state update
+            setTimeout(() => {
+              const newRowRef = inputRefs.current[`${newRow.id}-itemName`];
+              newRowRef?.focus();
+            }, 0);
+          } else {
+            // Move to next existing row's item name field
+            const nextRow = rows[rowIndex + 1];
+            const nextRowRef = inputRefs.current[`${nextRow.id}-itemName`];
+            nextRowRef?.focus();
+          }
         }
       }
     }
   };
 
   const addNewItem = () => {
-    // Find first empty item name field and focus on it
-    const emptyRowIndex = rows.findIndex(row => !row.itemName);
-    if (emptyRowIndex !== -1) {
-      setCurrentRowIndex(emptyRowIndex);
-    } else {
-      // All rows have item names, add a new row
-      const newRow: TableRow = {
-        id: Date.now().toString(),
-        itemName: '',
-        qty: 0,
-        price: 0,
-      };
-      setRows(prev => [...prev, newRow]);
-      setCurrentRowIndex(rows.length);
-    }
+    setIsAddItemDialogOpen(true);
   };
 
   const calculateTotal = () => {
@@ -233,29 +238,20 @@ export const DataTable: React.FC<DataTableProps> = ({
               {rows.map((row, index) => (
                 <tr key={row.id} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="px-6 py-4 border-r border-gray-200">
-                    {type === 'purchase' ? (
-                      <ItemSearchDropdown
-                        value={row.itemName}
-                        onChange={(value) => updateRow(row.id, 'itemName', value)}
-                        onKeyDown={(e) => handleKeyDown(e, index)}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={row.itemName}
-                        onChange={(e) => updateRow(row.id, 'itemName', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, index)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter item name"
-                      />
-                    )}
+                    <ItemSearchDropdown
+                      value={row.itemName}
+                      onChange={(value) => updateRow(row.id, 'itemName', value)}
+                      onKeyDown={(e) => handleKeyDown(e, index, 'itemName')}
+                      inputRef={(ref) => inputRefs.current[`${row.id}-itemName`] = ref}
+                    />
                   </td>
                   <td className="px-6 py-4 border-r border-gray-200">
                     <input
+                      ref={(ref) => inputRefs.current[`${row.id}-qty`] = ref}
                       type="number"
                       value={row.qty || ''}
                       onChange={(e) => updateRow(row.id, 'qty', parseFloat(e.target.value) || 0)}
-                      onKeyDown={(e) => handleKeyDown(e, index)}
+                      onKeyDown={(e) => handleKeyDown(e, index, 'qty')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="0"
                       step="0.01"
@@ -263,10 +259,11 @@ export const DataTable: React.FC<DataTableProps> = ({
                   </td>
                   <td className="px-6 py-4 border-r border-gray-200">
                     <input
+                      ref={(ref) => inputRefs.current[`${row.id}-price`] = ref}
                       type="number"
                       value={row.price || ''}
                       onChange={(e) => updateRow(row.id, 'price', parseFloat(e.target.value) || 0)}
-                      onKeyDown={(e) => handleKeyDown(e, index)}
+                      onKeyDown={(e) => handleKeyDown(e, index, 'price')}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="0.00"
                       step="0.01"
@@ -325,6 +322,11 @@ export const DataTable: React.FC<DataTableProps> = ({
           </button>
         )}
       </div>
+
+      <AddItemDialog 
+        isOpen={isAddItemDialogOpen}
+        onClose={() => setIsAddItemDialogOpen(false)}
+      />
     </div>
   );
 };
