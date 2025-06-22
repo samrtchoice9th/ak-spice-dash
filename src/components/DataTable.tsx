@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Print, Plus, Save } from 'lucide-react';
+import { Printer, Plus, Save } from 'lucide-react';
 
 interface TableRow {
   id: string;
@@ -125,7 +124,7 @@ export const DataTable: React.FC<DataTableProps> = ({
           onClick={handlePrint}
           className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white font-medium rounded-lg border-2 border-gray-600 hover:bg-gray-700 transition-colors"
         >
-          <Print size={20} />
+          <Printer size={20} />
           <span>Print</span>
         </button>
         
