@@ -6,6 +6,7 @@ interface ItemSearchDropdownProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
 }
 
 // Predefined spice items
@@ -30,7 +31,8 @@ const spiceItems = [
 export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
   value,
   onChange,
-  placeholder = "Search or enter item name"
+  placeholder = "Search or enter item name",
+  onKeyDown
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [filteredItems, setFilteredItems] = useState(spiceItems);
@@ -67,6 +69,7 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setIsOpen(true)}
+          onKeyDown={onKeyDown}
           className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder={placeholder}
         />

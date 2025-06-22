@@ -99,7 +99,7 @@ const ReceiptPage = () => {
                       />
                     </td>
                     <td className="border border-gray-300 px-4 py-2 font-medium">
-                      ₹{item.total.toFixed(2)}
+                      Rs{item.total.toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -108,7 +108,7 @@ const ReceiptPage = () => {
                     Grand Total:
                   </td>
                   <td className="border border-gray-300 px-4 py-2">
-                    ₹{editingReceipt.items.reduce((sum, item) => sum + item.total, 0).toFixed(2)}
+                    Rs{editingReceipt.items.reduce((sum, item) => sum + item.total, 0).toFixed(2)}
                   </td>
                 </tr>
               </tbody>
@@ -163,7 +163,7 @@ const ReceiptPage = () => {
             </div>
             <div className="flex items-center space-x-2 text-green-600 font-semibold">
               <DollarSign size={20} />
-              <span>₹{viewingReceipt.totalAmount.toFixed(2)}</span>
+              <span>Rs{viewingReceipt.totalAmount.toFixed(2)}</span>
             </div>
           </div>
 
@@ -182,8 +182,8 @@ const ReceiptPage = () => {
                   <tr key={index}>
                     <td className="border border-gray-300 px-4 py-2">{item.itemName}</td>
                     <td className="border border-gray-300 px-4 py-2">{item.qty}</td>
-                    <td className="border border-gray-300 px-4 py-2">₹{item.price.toFixed(2)}</td>
-                    <td className="border border-gray-300 px-4 py-2 font-medium">₹{item.total.toFixed(2)}</td>
+                    <td className="border border-gray-300 px-4 py-2">Rs{item.price.toFixed(2)}</td>
+                    <td className="border border-gray-300 px-4 py-2 font-medium">Rs{item.total.toFixed(2)}</td>
                   </tr>
                 ))}
                 <tr className="bg-blue-50 font-bold">
@@ -191,7 +191,7 @@ const ReceiptPage = () => {
                     Grand Total:
                   </td>
                   <td className="border border-gray-300 px-4 py-2">
-                    ₹{viewingReceipt.totalAmount.toFixed(2)}
+                    Rs{viewingReceipt.totalAmount.toFixed(2)}
                   </td>
                 </tr>
               </tbody>
@@ -241,7 +241,7 @@ const ReceiptPage = () => {
                     <td className="px-6 py-4 text-gray-700">{receipt.time}</td>
                     <td className="px-6 py-4 text-gray-700">{receipt.items.length} items</td>
                     <td className="px-6 py-4 font-semibold text-green-600">
-                      ₹{receipt.totalAmount.toFixed(2)}
+                      Rs{receipt.totalAmount.toFixed(2)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
