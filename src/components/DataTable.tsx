@@ -34,6 +34,15 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   const { addReceipt } = useReceipts();
 
+  const clearAllFields = () => {
+    setRows([{ id: Date.now().toString(), itemName: '', qty: 0, price: 0 }]);
+    // Focus on the first field after clearing
+    setTimeout(() => {
+      const firstRowRef = inputRefs.current[`${Date.now()}-itemName`];
+      firstRowRef?.focus();
+    }, 100);
+  };
+
   const updateRow = (id: string, field: keyof TableRow, value: string | number) => {
     setRows(prev => prev.map(row => 
       row.id === id ? { ...row, [field]: value } : row
@@ -182,6 +191,8 @@ export const DataTable: React.FC<DataTableProps> = ({
       setTimeout(() => {
         printWindow.print();
         printWindow.close();
+        // Clear all fields after printing
+        clearAllFields();
       }, 250);
     }
   };
@@ -204,6 +215,8 @@ export const DataTable: React.FC<DataTableProps> = ({
         totalAmount: calculateTotal()
       });
       alert('Receipt saved successfully!');
+      // Clear all fields after saving
+      clearAllFields();
     } else {
       alert('Please add at least one item with valid data');
     }
