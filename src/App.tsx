@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
+import { ReceiptsProvider } from "./contexts/ReceiptsContext";
 import Dashboard from "./pages/Dashboard";
 import Sales from "./pages/Sales";
 import Purchase from "./pages/Purchase";
@@ -19,19 +20,21 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <div className="flex min-h-screen bg-gray-50">
-          <Sidebar />
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/sales" element={<Sales />} />
-            <Route path="/purchase" element={<Purchase />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/receipt" element={<ReceiptPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </div>
-      </BrowserRouter>
+      <ReceiptsProvider>
+        <BrowserRouter>
+          <div className="flex min-h-screen bg-gray-50">
+            <Sidebar />
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/sales" element={<Sales />} />
+              <Route path="/purchase" element={<Purchase />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/receipt" element={<ReceiptPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </ReceiptsProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
