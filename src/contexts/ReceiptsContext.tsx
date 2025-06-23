@@ -1,5 +1,6 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { receiptService } from '@/services/receiptService';
 
 export interface ReceiptItem {
   id: string;
@@ -20,9 +21,11 @@ export interface Receipt {
 
 interface ReceiptsContextType {
   receipts: Receipt[];
-  addReceipt: (receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => void;
-  updateReceipt: (id: string, receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => void;
-  deleteReceipt: (id: string) => void;
+  loading: boolean;
+  addReceipt: (receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<void>;
+  updateReceipt: (id: string, receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<void>;
+  deleteReceipt: (id: string) => Promise<void>;
+  refreshReceipts: () => Promise<void>;
 }
 
 const ReceiptsContext = createContext<ReceiptsContextType | undefined>(undefined);
@@ -41,33 +44,68 @@ interface ReceiptsProviderProps {
 
 export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) => {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addReceipt = (receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
-    const now = new Date();
-    const newReceipt: Receipt = {
-      ...receiptData,
-      id: Date.now().toString(),
-      date: now.toLocaleDateString(),
-      time: now.toLocaleTimeString(),
-    };
-    setReceipts(prev => [...prev, newReceipt]);
-    console.log('Receipt saved:', newReceipt);
+  const refreshReceipts = async () => {
+    try {
+      setLoading(true);
+      const fetchedReceipts = await receiptService.getAllReceipts();
+      setReceipts(fetchedReceipts);
+    } catch (error) {
+      console.error('Failed to fetch receipts:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const updateReceipt = (id: string, receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
-    setReceipts(prev => prev.map(receipt => 
-      receipt.id === id 
-        ? { ...receipt, ...receiptData }
-        : receipt
-    ));
+  useEffect(() => {
+    refreshReceipts();
+  }, []);
+
+  const addReceipt = async (receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
+    try {
+      const newReceipt = await receiptService.createReceipt(receiptData);
+      setReceipts(prev => [newReceipt, ...prev]);
+      console.log('Receipt saved to database:', newReceipt);
+    } catch (error) {
+      console.error('Failed to save receipt:', error);
+      throw error;
+    }
   };
 
-  const deleteReceipt = (id: string) => {
-    setReceipts(prev => prev.filter(receipt => receipt.id !== id));
+  const updateReceipt = async (id: string, receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
+    try {
+      await receiptService.updateReceipt(id, receiptData);
+      setReceipts(prev => prev.map(receipt => 
+        receipt.id === id 
+          ? { ...receipt, ...receiptData }
+          : receipt
+      ));
+    } catch (error) {
+      console.error('Failed to update receipt:', error);
+      throw error;
+    }
+  };
+
+  const deleteReceipt = async (id: string) => {
+    try {
+      await receiptService.deleteReceipt(id);
+      setReceipts(prev => prev.filter(receipt => receipt.id !== id));
+    } catch (error) {
+      console.error('Failed to delete receipt:', error);
+      throw error;
+    }
   };
 
   return (
-    <ReceiptsContext.Provider value={{ receipts, addReceipt, updateReceipt, deleteReceipt }}>
+    <ReceiptsContext.Provider value={{ 
+      receipts, 
+      loading, 
+      addReceipt, 
+      updateReceipt, 
+      deleteReceipt,
+      refreshReceipts 
+    }}>
       {children}
     </ReceiptsContext.Provider>
   );

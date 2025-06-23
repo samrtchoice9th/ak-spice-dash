@@ -27,6 +27,7 @@ export const DataTable: React.FC<DataTableProps> = ({
     { id: '1', itemName: '', qty: 0, price: 0 }
   ]);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const { addReceipt } = useReceipts();
@@ -90,7 +91,7 @@ export const DataTable: React.FC<DataTableProps> = ({
     printReceipt(rows, title, calculateTotal, addReceipt, type, clearAllFields);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const receiptItems: ReceiptItem[] = rows
       .filter(row => row.itemName && row.qty > 0 && row.price > 0)
       .map(row => ({
@@ -102,13 +103,21 @@ export const DataTable: React.FC<DataTableProps> = ({
       }));
 
     if (receiptItems.length > 0) {
-      addReceipt({
-        type: 'purchase',
-        items: receiptItems,
-        totalAmount: calculateTotal()
-      });
-      alert('Receipt saved successfully!');
-      clearAllFields();
+      try {
+        setIsSaving(true);
+        await addReceipt({
+          type: 'purchase',
+          items: receiptItems,
+          totalAmount: calculateTotal()
+        });
+        alert('Receipt saved successfully to database!');
+        clearAllFields();
+      } catch (error) {
+        alert('Failed to save receipt. Please try again.');
+        console.error('Save error:', error);
+      } finally {
+        setIsSaving(false);
+      }
     } else {
       alert('Please add at least one item with valid data');
     }
@@ -147,6 +156,7 @@ export const DataTable: React.FC<DataTableProps> = ({
         onSave={handleSave}
         showAddItem={showAddItem}
         showSave={showSave}
+        disabled={isSaving}
       />
 
       <AddItemDialog 

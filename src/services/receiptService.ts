@@ -1,0 +1,149 @@
+
+import { supabase } from '@/integrations/supabase/client';
+import { Receipt, ReceiptItem } from '@/contexts/ReceiptsContext';
+
+export const receiptService = {
+  async getAllReceipts(): Promise<Receipt[]> {
+    const { data: receiptsData, error: receiptsError } = await supabase
+      .from('receipts')
+      .select(`
+        *,
+        receipt_items (*)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (receiptsError) {
+      console.error('Error fetching receipts:', receiptsError);
+      throw receiptsError;
+    }
+
+    // Transform the data to match our Receipt interface
+    const receipts: Receipt[] = receiptsData.map(receipt => ({
+      id: receipt.id,
+      type: receipt.type as 'purchase' | 'sales',
+      totalAmount: Number(receipt.total_amount),
+      date: receipt.date,
+      time: receipt.time,
+      items: receipt.receipt_items.map((item: any) => ({
+        id: item.id,
+        itemName: item.item_name,
+        qty: Number(item.qty),
+        price: Number(item.price),
+        total: Number(item.total)
+      }))
+    }));
+
+    return receipts;
+  },
+
+  async createReceipt(receiptData: Omit<Receipt, 'id' | 'date' | 'time'>): Promise<Receipt> {
+    const now = new Date();
+    const date = now.toLocaleDateString();
+    const time = now.toLocaleTimeString();
+
+    // Insert receipt
+    const { data: receiptResult, error: receiptError } = await supabase
+      .from('receipts')
+      .insert({
+        type: receiptData.type,
+        total_amount: receiptData.totalAmount,
+        date,
+        time
+      })
+      .select()
+      .single();
+
+    if (receiptError) {
+      console.error('Error creating receipt:', receiptError);
+      throw receiptError;
+    }
+
+    // Insert receipt items
+    const itemsToInsert = receiptData.items.map(item => ({
+      receipt_id: receiptResult.id,
+      item_name: item.itemName,
+      qty: item.qty,
+      price: item.price,
+      total: item.total
+    }));
+
+    const { data: itemsResult, error: itemsError } = await supabase
+      .from('receipt_items')
+      .insert(itemsToInsert)
+      .select();
+
+    if (itemsError) {
+      console.error('Error creating receipt items:', itemsError);
+      throw itemsError;
+    }
+
+    const newReceipt: Receipt = {
+      id: receiptResult.id,
+      type: receiptData.type,
+      totalAmount: receiptData.totalAmount,
+      date,
+      time,
+      items: receiptData.items
+    };
+
+    return newReceipt;
+  },
+
+  async updateReceipt(id: string, receiptData: Omit<Receipt, 'id' | 'date' | 'time'>): Promise<void> {
+    // Update receipt
+    const { error: receiptError } = await supabase
+      .from('receipts')
+      .update({
+        type: receiptData.type,
+        total_amount: receiptData.totalAmount,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+
+    if (receiptError) {
+      console.error('Error updating receipt:', receiptError);
+      throw receiptError;
+    }
+
+    // Delete existing items
+    const { error: deleteError } = await supabase
+      .from('receipt_items')
+      .delete()
+      .eq('receipt_id', id);
+
+    if (deleteError) {
+      console.error('Error deleting receipt items:', deleteError);
+      throw deleteError;
+    }
+
+    // Insert updated items
+    const itemsToInsert = receiptData.items.map(item => ({
+      receipt_id: id,
+      item_name: item.itemName,
+      qty: item.qty,
+      price: item.price,
+      total: item.total
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('receipt_items')
+      .insert(itemsToInsert);
+
+    if (itemsError) {
+      console.error('Error updating receipt items:', itemsError);
+      throw itemsError;
+    }
+  },
+
+  async deleteReceipt(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('receipts')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting receipt:', error);
+      throw error;
+    }
+  }
+};

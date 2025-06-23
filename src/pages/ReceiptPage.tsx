@@ -1,25 +1,33 @@
 import React, { useState } from 'react';
 import { useReceipts, Receipt, ReceiptItem } from '@/contexts/ReceiptsContext';
-import { Edit, Trash2, Eye, Calendar, Clock, DollarSign, Printer } from 'lucide-react';
+import { Edit, Trash2, Eye, Calendar, Clock, DollarSign, Printer, Loader2 } from 'lucide-react';
 
 const ReceiptPage = () => {
-  const { receipts, updateReceipt, deleteReceipt } = useReceipts();
+  const { receipts, updateReceipt, deleteReceipt, loading } = useReceipts();
   const [editingReceipt, setEditingReceipt] = useState<Receipt | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const handleEdit = (receipt: Receipt) => {
     setEditingReceipt({ ...receipt });
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editingReceipt) {
-      // Recalculate total amount
-      const totalAmount = editingReceipt.items.reduce((sum, item) => sum + item.total, 0);
-      updateReceipt(editingReceipt.id, {
-        ...editingReceipt,
-        totalAmount
-      });
-      setEditingReceipt(null);
+      try {
+        setIsUpdating(true);
+        const totalAmount = editingReceipt.items.reduce((sum, item) => sum + item.total, 0);
+        await updateReceipt(editingReceipt.id, {
+          ...editingReceipt,
+          totalAmount
+        });
+        setEditingReceipt(null);
+      } catch (error) {
+        alert('Failed to update receipt. Please try again.');
+      } finally {
+        setIsUpdating(false);
+      }
     }
   };
 
@@ -39,9 +47,16 @@ const ReceiptPage = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this receipt?')) {
-      deleteReceipt(id);
+      try {
+        setIsDeleting(id);
+        await deleteReceipt(id);
+      } catch (error) {
+        alert('Failed to delete receipt. Please try again.');
+      } finally {
+        setIsDeleting(null);
+      }
     }
   };
 
@@ -125,6 +140,17 @@ const ReceiptPage = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex-1 p-8 flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="animate-spin" size={24} />
+          <span>Loading receipts...</span>
+        </div>
+      </div>
+    );
+  }
+
   if (editingReceipt) {
     return (
       <div className="flex-1 p-8">
@@ -197,13 +223,16 @@ const ReceiptPage = () => {
           <div className="flex gap-4 mt-6">
             <button
               onClick={handleSaveEdit}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              disabled={isUpdating}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
-              Save Changes
+              {isUpdating && <Loader2 className="animate-spin" size={16} />}
+              <span>Save Changes</span>
             </button>
             <button
               onClick={() => setEditingReceipt(null)}
-              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              disabled={isUpdating}
+              className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
@@ -349,10 +378,15 @@ const ReceiptPage = () => {
                         </button>
                         <button
                           onClick={() => handleDelete(receipt.id)}
-                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                          disabled={isDeleting === receipt.id}
+                          className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
                           title="Delete"
                         >
-                          <Trash2 size={16} />
+                          {isDeleting === receipt.id ? (
+                            <Loader2 className="animate-spin" size={16} />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
                         </button>
                       </div>
                     </td>
