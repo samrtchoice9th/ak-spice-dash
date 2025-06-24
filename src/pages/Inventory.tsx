@@ -18,7 +18,7 @@ const Inventory = () => {
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm font-medium text-gray-600">Total Items</p>
@@ -28,7 +28,7 @@ const Inventory = () => {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm font-medium text-gray-600">Low Stock Items</p>
@@ -38,17 +38,17 @@ const Inventory = () => {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm font-medium text-gray-600">Total Stock Value</p>
-              <p className="text-lg sm:text-2xl font-bold text-green-600">Rs{totalInventoryValue.toFixed(2)}</p>
+              <p className="text-lg sm:text-2xl font-bold text-green-600">₹{totalInventoryValue.toFixed(2)}</p>
             </div>
             <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm font-medium text-gray-600">In Stock Items</p>
@@ -63,7 +63,7 @@ const Inventory = () => {
 
       {/* Low Stock Alert */}
       {lowStockItems.length > 0 && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-r-lg">
           <div className="flex">
             <div className="flex-shrink-0">
               <Package className="h-5 w-5 text-red-400" />
@@ -78,7 +78,7 @@ const Inventory = () => {
       )}
 
       {/* Inventory Table */}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
         <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
           <h2 className="text-base sm:text-lg font-semibold text-gray-900">Current Stock Levels</h2>
         </div>
@@ -136,12 +136,12 @@ const Inventory = () => {
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                       <div className="text-sm text-gray-900">
-                        Rs{item.averagePurchasePrice.toFixed(2)}
+                        ₹{item.averagePurchasePrice.toFixed(2)}
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-green-600">
-                        Rs{(item.currentStock * item.averagePurchasePrice).toFixed(2)}
+                        ₹{(item.currentStock * item.averagePurchasePrice).toFixed(2)}
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
