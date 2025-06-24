@@ -8,6 +8,7 @@ interface ActionButtonsProps {
   onSave?: () => void;
   showAddItem?: boolean;
   showSave?: boolean;
+  disabled?: boolean;
 }
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -15,13 +16,15 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onAddItem,
   onSave,
   showAddItem = false,
-  showSave = false
+  showSave = false,
+  disabled = false
 }) => {
   return (
     <div className="mt-8 flex flex-wrap gap-4 justify-center">
       <button
         onClick={onPrint}
-        className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white font-medium rounded-lg border-2 border-gray-600 hover:bg-gray-700 transition-colors"
+        disabled={disabled}
+        className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white font-medium rounded-lg border-2 border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Printer size={20} />
         <span>Print</span>
@@ -30,7 +33,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       {showAddItem && onAddItem && (
         <button
           onClick={onAddItem}
-          className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg border-2 border-blue-600 hover:bg-blue-700 transition-colors"
+          disabled={disabled}
+          className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg border-2 border-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus size={20} />
           <span>Add Item</span>
@@ -40,7 +44,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       {showSave && onSave && (
         <button
           onClick={onSave}
-          className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg border-2 border-green-600 hover:bg-green-700 transition-colors"
+          disabled={disabled}
+          className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg border-2 border-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Save size={20} />
           <span>Save</span>
