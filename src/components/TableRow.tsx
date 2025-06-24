@@ -26,15 +26,26 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
           value={row.itemName}
           onChange={(value) => onUpdateRow(row.id, 'itemName', value)}
           onKeyDown={(e) => onKeyDown(e, index, 'itemName')}
-          inputRef={(ref) => inputRefs.current[`${row.id}-itemName`] = ref}
+          inputRef={(ref) => {
+            if (inputRefs.current) {
+              inputRefs.current[`${row.id}-itemName`] = ref;
+            }
+          }}
         />
       </td>
       <td className="px-6 py-4 border-r border-gray-200">
         <input
-          ref={(ref) => inputRefs.current[`${row.id}-qty`] = ref}
+          ref={(ref) => {
+            if (inputRefs.current) {
+              inputRefs.current[`${row.id}-qty`] = ref;
+            }
+          }}
           type="number"
-          value={row.qty || ''}
-          onChange={(e) => onUpdateRow(row.id, 'qty', parseFloat(e.target.value) || 0)}
+          value={row.qty === 0 ? '' : row.qty}
+          onChange={(e) => {
+            const value = e.target.value;
+            onUpdateRow(row.id, 'qty', value === '' ? 0 : parseFloat(value) || 0);
+          }}
           onKeyDown={(e) => onKeyDown(e, index, 'qty')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="0"
@@ -43,10 +54,17 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
       </td>
       <td className="px-6 py-4 border-r border-gray-200">
         <input
-          ref={(ref) => inputRefs.current[`${row.id}-price`] = ref}
+          ref={(ref) => {
+            if (inputRefs.current) {
+              inputRefs.current[`${row.id}-price`] = ref;
+            }
+          }}
           type="number"
-          value={row.price || ''}
-          onChange={(e) => onUpdateRow(row.id, 'price', parseFloat(e.target.value) || 0)}
+          value={row.price === 0 ? '' : row.price}
+          onChange={(e) => {
+            const value = e.target.value;
+            onUpdateRow(row.id, 'price', value === '' ? 0 : parseFloat(value) || 0);
+          }}
           onKeyDown={(e) => onKeyDown(e, index, 'price')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="0.00"

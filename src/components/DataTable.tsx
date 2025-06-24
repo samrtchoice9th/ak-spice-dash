@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { TableRow } from '@/types/table';
 import { TableHeader } from './TableHeader';
@@ -7,6 +6,7 @@ import { TableFooter } from './TableFooter';
 import { ActionButtons } from './ActionButtons';
 import { AddItemDialog } from './AddItemDialog';
 import { useReceipts, ReceiptItem } from '@/contexts/ReceiptsContext';
+import { useProducts } from '@/contexts/ProductsContext';
 import { calculateGrandTotal } from '@/utils/calculations';
 import { printReceipt } from '@/utils/printReceipt';
 
@@ -31,6 +31,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const { addReceipt } = useReceipts();
+  const { updateStock } = useProducts();
 
   const clearAllFields = () => {
     setRows([{ id: Date.now().toString(), itemName: '', qty: 0, price: 0 }]);
@@ -105,12 +106,20 @@ export const DataTable: React.FC<DataTableProps> = ({
     if (receiptItems.length > 0) {
       try {
         setIsSaving(true);
+        
+        // Save receipt
         await addReceipt({
-          type: 'purchase',
+          type,
           items: receiptItems,
           totalAmount: calculateTotal()
         });
-        alert('Receipt saved successfully to database!');
+
+        // Update stock for each item
+        for (const item of receiptItems) {
+          await updateStock(item.itemName, item.qty, type);
+        }
+
+        alert('Receipt saved successfully and inventory updated!');
         clearAllFields();
       } catch (error) {
         alert('Failed to save receipt. Please try again.');

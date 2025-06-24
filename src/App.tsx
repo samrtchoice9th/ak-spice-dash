@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { ReceiptsProvider } from "./contexts/ReceiptsContext";
 import { InventoryProvider } from "./contexts/InventoryContext";
+import { ProductsProvider } from "./contexts/ProductsContext";
 import Dashboard from "./pages/Dashboard";
 import Sales from "./pages/Sales";
 import Purchase from "./pages/Purchase";
@@ -22,21 +22,23 @@ const App = () => (
       <Toaster />
       <Sonner />
       <ReceiptsProvider>
-        <InventoryProvider>
-          <BrowserRouter>
-            <div className="flex min-h-screen bg-gray-50">
-              <Sidebar />
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/sales" element={<Sales />} />
-                <Route path="/purchase" element={<Purchase />} />
-                <Route path="/inventory" element={<Inventory />} />
-                <Route path="/receipt" element={<ReceiptPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </div>
-          </BrowserRouter>
-        </InventoryProvider>
+        <ProductsProvider>
+          <InventoryProvider>
+            <BrowserRouter>
+              <div className="flex min-h-screen bg-gray-50">
+                <Sidebar />
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/sales" element={<Sales />} />
+                  <Route path="/purchase" element={<Purchase />} />
+                  <Route path="/inventory" element={<Inventory />} />
+                  <Route path="/receipt" element={<ReceiptPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </BrowserRouter>
+          </InventoryProvider>
+        </ProductsProvider>
       </ReceiptsProvider>
     </TooltipProvider>
   </QueryClientProvider>
