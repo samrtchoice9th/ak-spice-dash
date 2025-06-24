@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { ReceiptsProvider } from "./contexts/ReceiptsContext";
 import { InventoryProvider } from "./contexts/InventoryContext";
-import { ProductsProvider } from "./contexts/ProductsProvider";
+import { ProductsProvider } from "./contexts/ProductsContext";
 import Dashboard from "./pages/Dashboard";
 import Sales from "./pages/Sales";
 import Purchase from "./pages/Purchase";
