@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect, useRef, forwardRef } from 'react';
-import { ChevronDown, Edit2, Trash2, Plus } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDown, Plus } from 'lucide-react';
+import { useProducts } from '@/contexts/ProductsContext';
 
 interface ItemSearchDropdownProps {
   value: string;
@@ -10,25 +11,6 @@ interface ItemSearchDropdownProps {
   inputRef?: (ref: HTMLInputElement | null) => void;
 }
 
-// Default spice items
-const defaultSpiceItems = [
-  'Turmeric Powder',
-  'Red Chili Powder',
-  'Coriander Powder',
-  'Cumin Powder',
-  'Garam Masala',
-  'Black Pepper',
-  'Cardamom',
-  'Cinnamon',
-  'Bay Leaves',
-  'Mustard Seeds',
-  'Fenugreek Seeds',
-  'Cloves',
-  'Star Anise',
-  'Nutmeg',
-  'Saffron'
-];
-
 export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
   value,
   onChange,
@@ -37,50 +19,29 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
   inputRef
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [spiceItems, setSpiceItems] = useState(defaultSpiceItems);
-  const [filteredItems, setFilteredItems] = useState(spiceItems);
+  const [filteredItems, setFilteredItems] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [editingItem, setEditingItem] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
   const [showAddNew, setShowAddNew] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const internalInputRef = useRef<HTMLInputElement>(null);
+  const { products } = useProducts();
 
-  // Initialize localStorage with default items if not exists
-  useEffect(() => {
-    const existingItems = localStorage.getItem('spiceItems');
-    if (!existingItems) {
-      localStorage.setItem('spiceItems', JSON.stringify(defaultSpiceItems));
-    } else {
-      setSpiceItems(JSON.parse(existingItems));
-    }
-  }, []);
-
-  // Listen for custom events when items are updated
-  useEffect(() => {
-    const handleItemsUpdated = () => {
-      const updatedItems = JSON.parse(localStorage.getItem('spiceItems') || '[]');
-      setSpiceItems(updatedItems);
-    };
-
-    window.addEventListener('spiceItemsUpdated', handleItemsUpdated);
-    return () => window.removeEventListener('spiceItemsUpdated', handleItemsUpdated);
-  }, []);
+  // Get item names from products
+  const itemNames = products.map(product => product.name);
 
   useEffect(() => {
-    const filtered = spiceItems.filter(item =>
+    const filtered = itemNames.filter(item =>
       item.toLowerCase().includes(value.toLowerCase())
     );
     setFilteredItems(filtered);
-    setSelectedIndex(-1); // Reset selection when filtering
-  }, [value, spiceItems]);
+    setSelectedIndex(-1);
+  }, [value, itemNames]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
-        setEditingItem(null);
         setShowAddNew(false);
       }
     };
@@ -89,7 +50,6 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Set input ref
   useEffect(() => {
     if (inputRef && internalInputRef.current) {
       inputRef(internalInputRef.current);
@@ -102,42 +62,20 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
     setSelectedIndex(-1);
   };
 
-  const handleEditItem = (oldItem: string, newItem: string) => {
-    if (newItem.trim() && newItem !== oldItem) {
-      const updatedItems = spiceItems.map(item => 
-        item === oldItem ? newItem.trim() : item
-      );
-      setSpiceItems(updatedItems);
-      localStorage.setItem('spiceItems', JSON.stringify(updatedItems));
-      window.dispatchEvent(new CustomEvent('spiceItemsUpdated'));
-    }
-    setEditingItem(null);
-    setEditValue('');
-  };
-
-  const handleDeleteItem = (itemToDelete: string) => {
-    if (confirm(`Are you sure you want to delete "${itemToDelete}"?`)) {
-      const updatedItems = spiceItems.filter(item => item !== itemToDelete);
-      setSpiceItems(updatedItems);
-      localStorage.setItem('spiceItems', JSON.stringify(updatedItems));
-      window.dispatchEvent(new CustomEvent('spiceItemsUpdated'));
-    }
-  };
-
   const handleAddNewItem = () => {
-    if (newItemName.trim() && !spiceItems.includes(newItemName.trim())) {
-      const updatedItems = [...spiceItems, newItemName.trim()];
-      setSpiceItems(updatedItems);
+    if (newItemName.trim() && !itemNames.includes(newItemName.trim())) {
+      // Add to localStorage for backward compatibility
+      const existingItems = JSON.parse(localStorage.getItem('spiceItems') || '[]');
+      const updatedItems = [...existingItems, newItemName.trim()];
       localStorage.setItem('spiceItems', JSON.stringify(updatedItems));
       window.dispatchEvent(new CustomEvent('spiceItemsUpdated'));
+      
+      // Select the new item
+      onChange(newItemName.trim());
       setNewItemName('');
       setShowAddNew(false);
+      setIsOpen(false);
     }
-  };
-
-  const startEditing = (item: string) => {
-    setEditingItem(item);
-    setEditValue(item);
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
@@ -159,7 +97,6 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
       setIsOpen(false);
       setSelectedIndex(-1);
     } else {
-      // Call the original onKeyDown for other keys (like Enter for navigation)
       onKeyDown?.(e);
     }
   };
@@ -243,80 +180,12 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
             filteredItems.map((item, index) => (
               <div
                 key={index}
-                className={`flex items-center justify-between px-3 py-2 hover:bg-gray-100 ${
+                className={`px-3 py-2 hover:bg-gray-100 cursor-pointer ${
                   selectedIndex === index ? 'bg-blue-100' : ''
                 }`}
+                onClick={() => handleItemSelect(item)}
               >
-                {editingItem === item ? (
-                  <div className="flex-1 flex space-x-2">
-                    <input
-                      type="text"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleEditItem(item, editValue);
-                        } else if (e.key === 'Escape') {
-                          setEditingItem(null);
-                          setEditValue('');
-                        }
-                      }}
-                      className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded"
-                      autoFocus
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleEditItem(item, editValue)}
-                      className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingItem(null);
-                        setEditValue('');
-                      }}
-                      className="px-2 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleItemSelect(item)}
-                      className="flex-1 text-left"
-                    >
-                      {item}
-                    </button>
-                    <div className="flex space-x-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startEditing(item);
-                        }}
-                        className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                        title="Edit item"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteItem(item);
-                        }}
-                        className="p-1 text-red-600 hover:bg-red-100 rounded"
-                        title="Delete item"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </>
-                )}
+                {item}
               </div>
             ))
           ) : (
