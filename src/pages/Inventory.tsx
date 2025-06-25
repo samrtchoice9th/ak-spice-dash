@@ -42,7 +42,7 @@ const Inventory = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm font-medium text-gray-600">Total Stock Value</p>
-              <p className="text-lg sm:text-2xl font-bold text-green-600">₹{totalInventoryValue.toFixed(2)}</p>
+              <p className="text-lg sm:text-2xl font-bold text-green-600">Rs.{totalInventoryValue.toFixed(2)}</p>
             </div>
             <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
           </div>
@@ -136,12 +136,12 @@ const Inventory = () => {
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                       <div className="text-sm text-gray-900">
-                        ₹{item.averagePurchasePrice.toFixed(2)}
+                        Rs.{item.averagePurchasePrice.toFixed(2)}
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-green-600">
-                        ₹{(item.currentStock * item.averagePurchasePrice).toFixed(2)}
+                        Rs.{(item.currentStock * item.averagePurchasePrice).toFixed(2)}
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">

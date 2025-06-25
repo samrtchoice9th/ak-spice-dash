@@ -20,13 +20,13 @@ const Dashboard = () => {
   const stats = [
     { 
       title: 'Total Sales', 
-      value: receiptsLoading ? 'Loading...' : `₹${totalSales.toLocaleString()}`, 
+      value: receiptsLoading ? 'Loading...' : `Rs.${totalSales.toLocaleString()}`, 
       icon: ShoppingCart, 
       color: 'bg-green-100 text-green-700' 
     },
     { 
       title: 'Purchases', 
-      value: receiptsLoading ? 'Loading...' : `₹${totalPurchases.toLocaleString()}`, 
+      value: receiptsLoading ? 'Loading...' : `Rs.${totalPurchases.toLocaleString()}`, 
       icon: Package, 
       color: 'bg-blue-100 text-blue-700' 
     },
