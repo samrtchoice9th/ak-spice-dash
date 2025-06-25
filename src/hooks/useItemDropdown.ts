@@ -6,7 +6,6 @@ export const useItemDropdown = (value: string) => {
   const [isOpen, setIsOpen] = useState(false);
   const [filteredItems, setFilteredItems] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [showAddNew, setShowAddNew] = useState(false);
   const { products } = useProducts();
 
   // Get item names from products
@@ -24,21 +23,6 @@ export const useItemDropdown = (value: string) => {
     setIsOpen(false);
     setSelectedIndex(-1);
     return item;
-  };
-
-  const handleAddNewItem = async (newItemName: string) => {
-    if (newItemName && !itemNames.includes(newItemName)) {
-      // Add to localStorage for backward compatibility
-      const existingItems = JSON.parse(localStorage.getItem('spiceItems') || '[]');
-      const updatedItems = [...existingItems, newItemName];
-      localStorage.setItem('spiceItems', JSON.stringify(updatedItems));
-      window.dispatchEvent(new CustomEvent('spiceItemsUpdated'));
-      
-      setShowAddNew(false);
-      setIsOpen(false);
-      return newItemName;
-    }
-    return null;
   };
 
   const handleKeyNavigation = (e: React.KeyboardEvent) => {
@@ -68,10 +52,7 @@ export const useItemDropdown = (value: string) => {
     setIsOpen,
     filteredItems,
     selectedIndex,
-    showAddNew,
-    setShowAddNew,
     handleItemSelect,
-    handleAddNewItem,
     handleKeyNavigation
   };
 };

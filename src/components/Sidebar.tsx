@@ -7,6 +7,7 @@ import {
   Package, 
   Warehouse, 
   Receipt,
+  Settings,
   Menu,
   X
 } from 'lucide-react';
@@ -18,6 +19,7 @@ const menuItems = [
   { name: 'Purchase', path: '/purchase', icon: Package },
   { name: 'Inventory', path: '/inventory', icon: Warehouse },
   { name: 'Receipt', path: '/receipt', icon: Receipt },
+  { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
 export const Sidebar = () => {
@@ -46,7 +48,7 @@ export const Sidebar = () => {
         )}
 
         {/* Mobile sidebar */}
-        <div className={`fixed left-0 top-0 h-full w-64 bg-gray-100 transform transition-transform duration-300 ease-in-out z-40 lg:hidden ${
+        <div className={`fixed left-0 top-0 h-full w-64 bg-gray-100 transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
           <div className="p-4 pt-16">

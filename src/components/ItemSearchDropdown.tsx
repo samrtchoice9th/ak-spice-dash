@@ -1,7 +1,6 @@
 
 import React, { useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { AddNewItemForm } from './AddNewItemForm';
 import { DropdownItemsList } from './DropdownItemsList';
 import { useItemDropdown } from '@/hooks/useItemDropdown';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -17,7 +16,7 @@ interface ItemSearchDropdownProps {
 export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
   value,
   onChange,
-  placeholder = "Search or enter item name",
+  placeholder = "Search item name",
   onKeyDown,
   inputRef
 }) => {
@@ -29,16 +28,12 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
     setIsOpen,
     filteredItems,
     selectedIndex,
-    showAddNew,
-    setShowAddNew,
     handleItemSelect,
-    handleAddNewItem,
     handleKeyNavigation
   } = useItemDropdown(value);
 
   useClickOutside(dropdownRef, () => {
     setIsOpen(false);
-    setShowAddNew(false);
   });
 
   useEffect(() => {
@@ -58,13 +53,6 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
 
   const onItemSelect = (item: string) => {
     onChange(handleItemSelect(item));
-  };
-
-  const onAddNewItem = async (itemName: string) => {
-    const newItem = await handleAddNewItem(itemName);
-    if (newItem) {
-      onChange(newItem);
-    }
   };
 
   return (
@@ -91,16 +79,6 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
       
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {/* Add New Item Section */}
-          <div className="border-b border-gray-200 p-2">
-            <AddNewItemForm
-              showAddNew={showAddNew}
-              onShowAddNew={setShowAddNew}
-              onAddItem={onAddNewItem}
-            />
-          </div>
-
-          {/* Items List */}
           <DropdownItemsList
             filteredItems={filteredItems}
             selectedIndex={selectedIndex}
