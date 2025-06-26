@@ -48,38 +48,35 @@ export const Sidebar = () => {
         )}
 
         {/* Mobile sidebar */}
-        <div className={`fixed left-0 top-0 h-full w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}>
-          <div className="flex flex-col h-full">
-            <div className="p-4 pt-16 border-b border-gray-200">
-              <h1 className="text-2xl font-bold text-gray-800">Ak Spice</h1>
-            </div>
-            
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-              {menuItems.map((item) => (
-                <NavLink
-                  key={item.name}
-                  to={item.path}
-                  onClick={toggleSidebar}
-                  className={({ isActive }) =>
-                    `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors w-full ${
-                      isActive
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`
-                  }
-                >
-                  <item.icon size={20} />
-                  <span className="font-medium">{item.name}</span>
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-        </div>
-      </>
-    );
-  }
+<div className={`fixed left-0 top-0 h-screen w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-[1000] lg:hidden ${
+  isOpen ? 'translate-x-0' : '-translate-x-full'
+}`}>
+  <div className="flex flex-col h-full">
+    <div className="p-4 pt-16 border-b border-gray-200">
+      <h1 className="text-2xl font-bold text-gray-800">Ak Spice</h1>
+    </div>
+    
+    <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      {menuItems.map((item) => (
+        <NavLink
+          key={item.name}
+          to={item.path}
+          onClick={toggleSidebar}
+          className={({ isActive }) =>
+            `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors w-full ${
+              isActive
+                ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`
+          }
+        >
+          <item.icon size={20} />
+          <span className="font-medium">{item.name}</span>
+        </NavLink>
+      ))}
+    </nav>
+  </div>
+</div>
 
   // Desktop sidebar
   return (
