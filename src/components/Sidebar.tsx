@@ -34,7 +34,7 @@ export const Sidebar = () => {
         {/* Mobile menu button */}
         <button
           onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-[60] p-2 bg-white rounded-lg shadow-lg border border-gray-200 lg:hidden"
+          className="fixed top-4 left-4 z-[100] p-2 bg-white rounded-lg shadow-lg border border-gray-200 lg:hidden"
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -42,13 +42,13 @@ export const Sidebar = () => {
         {/* Mobile overlay */}
         {isOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-[55] lg:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-[90] lg:hidden"
             onClick={toggleSidebar}
           />
         )}
 
         {/* Mobile sidebar */}
-        <div className={`fixed left-0 top-0 h-full w-64 bg-gray-100 transform transition-transform duration-300 ease-in-out z-[58] lg:hidden ${
+        <div className={`fixed left-0 top-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-[95] lg:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
           <div className="p-4 pt-16 h-full overflow-y-auto">
@@ -66,7 +66,7 @@ export const Sidebar = () => {
                     `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive
                         ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                        : 'text-gray-700 hover:bg-gray-200'
+                        : 'text-gray-700 hover:bg-gray-100'
                     }`
                   }
                 >
