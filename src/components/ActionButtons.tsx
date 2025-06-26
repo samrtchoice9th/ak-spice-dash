@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Printer, Plus, Save } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface ActionButtonsProps {
   onPrint: () => void;
@@ -19,10 +20,36 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   showSave = false,
   disabled = false
 }) => {
+  const { toast } = useToast();
+
+  const handlePrint = () => {
+    onPrint();
+    toast({
+      title: "Printing started",
+      description: "Your receipt is being prepared for printing",
+    });
+  };
+
+  const handleAddItem = () => {
+    if (onAddItem) {
+      onAddItem();
+      toast({
+        title: "Add item dialog opened",
+        description: "You can now add a new item to your inventory",
+      });
+    }
+  };
+
+  const handleSave = () => {
+    if (onSave) {
+      onSave();
+    }
+  };
+
   return (
     <div className="mt-8 flex flex-wrap gap-4 justify-center">
       <button
-        onClick={onPrint}
+        onClick={handlePrint}
         disabled={disabled}
         className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white font-medium rounded-lg border-2 border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
@@ -32,7 +59,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       
       {showAddItem && onAddItem && (
         <button
-          onClick={onAddItem}
+          onClick={handleAddItem}
           disabled={disabled}
           className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg border-2 border-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -43,7 +70,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       
       {showSave && onSave && (
         <button
-          onClick={onSave}
+          onClick={handleSave}
           disabled={disabled}
           className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg border-2 border-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >

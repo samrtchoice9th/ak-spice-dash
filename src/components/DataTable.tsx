@@ -9,6 +9,7 @@ import { useReceipts, ReceiptItem } from '@/contexts/ReceiptsContext';
 import { useProducts } from '@/contexts/ProductsContext';
 import { calculateGrandTotal } from '@/utils/calculations';
 import { printReceipt } from '@/utils/printReceipt';
+import { useToast } from '@/hooks/use-toast';
 
 interface DataTableProps {
   title: string;
@@ -32,6 +33,7 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   const { addReceipt } = useReceipts();
   const { updateStock } = useProducts();
+  const { toast } = useToast();
 
   const clearAllFields = () => {
     setRows([{ id: Date.now().toString(), itemName: '', qty: 0, price: 0 }]);
@@ -119,16 +121,28 @@ export const DataTable: React.FC<DataTableProps> = ({
           await updateStock(item.itemName, item.qty, type);
         }
 
-        alert('Receipt saved successfully and inventory updated!');
+        toast({
+          title: "Saved successfully",
+          description: "Receipt saved and inventory updated successfully",
+        });
+        
         clearAllFields();
       } catch (error) {
-        alert('Failed to save receipt. Please try again.');
+        toast({
+          title: "Save failed",
+          description: "Failed to save receipt. Please try again.",
+          variant: "destructive",
+        });
         console.error('Save error:', error);
       } finally {
         setIsSaving(false);
       }
     } else {
-      alert('Please add at least one item with valid data');
+      toast({
+        title: "No items to save",
+        description: "Please add at least one item with valid data",
+        variant: "destructive",
+      });
     }
   };
 
