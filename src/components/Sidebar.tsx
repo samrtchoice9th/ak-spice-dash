@@ -34,7 +34,7 @@ export const Sidebar = () => {
         {/* Mobile menu button */}
         <button
           onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 lg:hidden"
+          className="fixed top-4 left-4 z-[60] p-2 bg-white rounded-lg shadow-lg border border-gray-200 lg:hidden"
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -42,16 +42,16 @@ export const Sidebar = () => {
         {/* Mobile overlay */}
         {isOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-[55] lg:hidden"
             onClick={toggleSidebar}
           />
         )}
 
         {/* Mobile sidebar */}
-        <div className={`fixed left-0 top-0 h-full w-64 bg-gray-100 transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${
+        <div className={`fixed left-0 top-0 h-full w-64 bg-gray-100 transform transition-transform duration-300 ease-in-out z-[58] lg:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
-          <div className="p-4 pt-16">
+          <div className="p-4 pt-16 h-full overflow-y-auto">
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-gray-800">Ak Spice</h1>
             </div>
