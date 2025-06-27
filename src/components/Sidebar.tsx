@@ -49,7 +49,7 @@ export const Sidebar = () => {
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex flex-col h-full">
-          {/* Header with close button space */}
+          {/* Header */}
           <div className="p-4 pt-16 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-800">Ak Spice</h1>
           </div>
