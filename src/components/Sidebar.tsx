@@ -45,14 +45,16 @@ export const Sidebar = () => {
       )}
 
       {/* Mobile sidebar */}
-      <div className={`fixed left-0 top-0 h-screen w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-45 lg:hidden ${
+      <div className={`fixed left-0 top-0 h-full w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50 lg:hidden ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex flex-col h-full">
+          {/* Header with close button space */}
           <div className="p-4 pt-16 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-800">Ak Spice</h1>
           </div>
           
+          {/* Navigation menu */}
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             {menuItems.map((item) => (
               <NavLink
