@@ -32,7 +32,8 @@ export const Sidebar = () => {
       {/* Mobile menu button - visible on screens smaller than 1280px */}
       <button
         onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 xl:hidden"
+        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 xl:hidden touch-manipulation"
+        style={{ minHeight: '44px', minWidth: '44px' }}
       >
         <Menu size={20} className="text-gray-700" />
       </button>
@@ -54,7 +55,8 @@ export const Sidebar = () => {
           <h1 className="text-xl font-bold text-gray-800">Ak Spice</h1>
           <button
             onClick={closeSidebar}
-            className="p-1 rounded-lg hover:bg-gray-100"
+            className="p-1 rounded-lg hover:bg-gray-100 touch-manipulation"
+            style={{ minHeight: '44px', minWidth: '44px' }}
           >
             <X size={20} className="text-gray-700" />
           </button>
@@ -68,12 +70,13 @@ export const Sidebar = () => {
               to={item.path}
               onClick={closeSidebar}
               className={({ isActive }) =>
-                `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors w-full ${
+                `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors w-full touch-manipulation ${
                   isActive
                     ? 'bg-blue-100 text-blue-700 border border-blue-200'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`
               }
+              style={{ minHeight: '44px' }}
             >
               <item.icon size={20} />
               <span className="font-medium">{item.name}</span>
