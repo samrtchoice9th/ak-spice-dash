@@ -45,7 +45,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8">
+    <div className="flex-1 p-4 sm:p-6 lg:p-8 xl:pt-6 pt-16">
       <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-gray-800">Dashboard</h1>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
