@@ -29,24 +29,24 @@ export const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile menu button - always visible on mobile */}
+      {/* Mobile menu button - visible on screens smaller than 1280px */}
       <button
         onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 lg:hidden"
+        className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 xl:hidden"
       >
         <Menu size={20} className="text-gray-700" />
       </button>
 
       {/* Mobile backdrop overlay */}
       <div
-        className={`fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black bg-opacity-50 z-40 xl:hidden transition-opacity duration-300 ${
           isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
         }`}
         onClick={closeSidebar}
       />
 
-      {/* Mobile sidebar */}
-      <div className={`fixed left-0 top-0 h-full w-64 bg-white shadow-xl z-50 lg:hidden transform transition-transform duration-300 ease-in-out ${
+      {/* Mobile sidebar - visible on screens smaller than 1280px */}
+      <div className={`fixed left-0 top-0 h-full w-64 bg-white shadow-xl z-50 xl:hidden transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Mobile sidebar header with close button */}
@@ -82,8 +82,8 @@ export const Sidebar = () => {
         </nav>
       </div>
 
-      {/* Desktop sidebar - always visible on desktop */}
-      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:bg-gray-100 lg:h-screen lg:border-r lg:border-gray-300 lg:p-4">
+      {/* Desktop sidebar - visible on screens 1280px and above */}
+      <div className="hidden xl:flex xl:flex-col xl:w-64 xl:bg-gray-100 xl:h-screen xl:border-r xl:border-gray-300 xl:p-4">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800">Ak Spice</h1>
         </div>
