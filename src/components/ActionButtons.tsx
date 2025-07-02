@@ -47,37 +47,39 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   };
 
   return (
-    <div className="mt-8 flex flex-wrap gap-4 justify-center">
-      <button
-        onClick={handlePrint}
-        disabled={disabled}
-        className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white font-medium rounded-lg border-2 border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Printer size={20} />
-        <span>Print</span>
-      </button>
-      
-      {showAddItem && onAddItem && (
+    <div className="mt-6 sm:mt-8 px-4 sm:px-0">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-center">
         <button
-          onClick={handleAddItem}
+          onClick={handlePrint}
           disabled={disabled}
-          className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg border-2 border-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center justify-center space-x-2 px-6 py-4 sm:py-3 bg-gray-600 text-white font-medium rounded-lg border-2 border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base sm:text-sm"
         >
-          <Plus size={20} />
-          <span>Add Item</span>
+          <Printer size={20} />
+          <span>Print</span>
         </button>
-      )}
-      
-      {showSave && onSave && (
-        <button
-          onClick={handleSave}
-          disabled={disabled}
-          className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg border-2 border-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Save size={20} />
-          <span>Save</span>
-        </button>
-      )}
+        
+        {showAddItem && onAddItem && (
+          <button
+            onClick={handleAddItem}
+            disabled={disabled}
+            className="flex items-center justify-center space-x-2 px-6 py-4 sm:py-3 bg-blue-600 text-white font-medium rounded-lg border-2 border-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base sm:text-sm"
+          >
+            <Plus size={20} />
+            <span>Add Item</span>
+          </button>
+        )}
+        
+        {showSave && onSave && (
+          <button
+            onClick={handleSave}
+            disabled={disabled}
+            className="flex items-center justify-center space-x-2 px-6 py-4 sm:py-3 bg-green-600 text-white font-medium rounded-lg border-2 border-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base sm:text-sm"
+          >
+            <Save size={20} />
+            <span>Save</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 };
