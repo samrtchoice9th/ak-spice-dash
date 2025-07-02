@@ -5,7 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { TopNavigation } from "./components/TopNavigation";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { ReceiptsProvider } from "./contexts/ReceiptsContext";
 import { InventoryProvider } from "./contexts/InventoryContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
@@ -30,23 +31,22 @@ const App = () => (
             <BrowserRouter>
               <SidebarProvider>
                 <div className="flex min-h-screen bg-gray-50 w-full">
-                  {/* Mobile toggle button */}
-                  <div className="absolute top-4 left-4 z-50 xl:hidden">
-                    <SidebarTrigger />
-                  </div>
-
                   <Sidebar />
-
-                  <div className="flex-1 xl:ml-0">
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/sales" element={<Sales />} />
-                      <Route path="/purchase" element={<Purchase />} />
-                      <Route path="/inventory" element={<Inventory />} />
-                      <Route path="/receipt" element={<ReceiptPage />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
+                  
+                  <div className="flex-1 flex flex-col xl:ml-0">
+                    <TopNavigation />
+                    
+                    <main className="flex-1">
+                      <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/sales" element={<Sales />} />
+                        <Route path="/purchase" element={<Purchase />} />
+                        <Route path="/inventory" element={<Inventory />} />
+                        <Route path="/receipt" element={<ReceiptPage />} />
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </main>
                   </div>
                 </div>
               </SidebarProvider>
