@@ -2,11 +2,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
 interface MenuItem {
   name: string;
   path: string;
-  icon: React.ComponentType<{ size?: number }>;
+  icon: LucideIcon;
 }
 
 interface MobileSidebarProps {

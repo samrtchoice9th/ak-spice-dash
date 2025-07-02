@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { LucideIcon } from 'lucide-react';
 
 interface MenuItem {
   name: string;
   path: string;
-  icon: React.ComponentType<{ size?: number }>;
+  icon: LucideIcon;
 }
 
 interface DesktopSidebarProps {
