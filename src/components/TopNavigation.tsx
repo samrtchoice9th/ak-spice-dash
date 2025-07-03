@@ -7,8 +7,11 @@ import {
   Package, 
   Warehouse, 
   Receipt,
-  Settings
+  Settings,
+  LogOut
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const menuItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -20,10 +23,30 @@ const menuItems = [
 ];
 
 export const TopNavigation = () => {
+  const { signOut, user } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    await signOut();
+    toast({
+      title: "Logged out",
+      description: "You have been logged out successfully."
+    });
+  };
+
   return (
     <div className="xl:hidden bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-bold text-gray-800">Ak Spice</h1>
+        {user && (
+          <button
+            onClick={handleLogout}
+            className="flex items-center space-x-1 text-gray-600 hover:text-red-600 transition-colors p-2"
+          >
+            <LogOut size={18} />
+            <span className="text-sm">Logout</span>
+          </button>
+        )}
       </div>
       
       <div className="flex overflow-x-auto space-x-2 pb-2">
