@@ -52,11 +52,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password,
     });
+
+    // Handle email not confirmed error
+    if (error && error.message.includes('Email not confirmed')) {
+      return { 
+        error: { 
+          message: 'Please check your email and click the confirmation link before signing in.' 
+        } 
+      };
+    }
+
     return { error };
   };
 
   const signUp = async (email: string, password: string) => {
-    // Simple signup without user count check
+    // Simple signup without email confirmation
     // The limitation will be enforced at the Supabase project level
     const { error } = await supabase.auth.signUp({
       email,
