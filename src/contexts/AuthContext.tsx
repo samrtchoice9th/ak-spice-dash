@@ -56,40 +56,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string) => {
-    try {
-      // Check current user count using Supabase admin API
-      const { count, error: countError } = await supabase
-        .from('auth.users')
-        .select('*', { count: 'exact', head: true });
-
-      if (countError) {
-        // If we can't access auth.users directly, try alternative approach
-        // We'll use a more permissive approach and let the RLS handle it
-        console.log('Could not check user count directly, proceeding with signup');
-      } else if (count !== null && count >= 3) {
-        return { 
-          error: { 
-            message: 'Registration is closed. Maximum number of users (3) has been reached.' 
-          } 
-        };
+    // Simple signup without user count check
+    // The limitation will be enforced at the Supabase project level
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/`
       }
+    });
 
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
-
-      return { error };
-    } catch (err) {
+    if (error && error.message.includes('Signups not allowed')) {
       return { 
         error: { 
-          message: 'Registration failed. Please try again.' 
+          message: 'Registration is closed. Maximum number of users has been reached.' 
         } 
       };
     }
+
+    return { error };
   };
 
   const signOut = async () => {
