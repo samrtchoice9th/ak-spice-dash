@@ -1,13 +1,24 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useReceipts } from '@/contexts/ReceiptsContext';
-import { Receipt, Calendar, DollarSign, Package, Printer } from 'lucide-react';
+import { Receipt, Calendar, DollarSign, Package, Printer, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { EditReceiptDialog } from '@/components/EditReceiptDialog';
 
 const ReceiptPage = () => {
-  const { receipts, loading } = useReceipts();
+  const { receipts, loading, updateReceipt } = useReceipts();
   const { toast } = useToast();
+  const [editingReceipt, setEditingReceipt] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const handleEditReceipt = (receipt: any) => {
+    setEditingReceipt(receipt);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveReceipt = async (id: string, receiptData: any) => {
+    await updateReceipt(id, receiptData);
+  };
 
   const checkPrinterAndPrint = async (receipt: any) => {
     console.log('Checking printer connectivity...');
@@ -355,7 +366,7 @@ const ReceiptPage = () => {
                     Total Amount
                   </th>
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Action
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -388,15 +399,26 @@ const ReceiptPage = () => {
                       </div>
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                      <Button
-                        onClick={() => checkPrinterAndPrint(receipt)}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center space-x-1"
-                      >
-                        <Printer size={16} />
-                        <span>Print</span>
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Button
+                          onClick={() => handleEditReceipt(receipt)}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center space-x-1"
+                        >
+                          <Edit size={16} />
+                          <span className="hidden sm:inline">Edit</span>
+                        </Button>
+                        <Button
+                          onClick={() => checkPrinterAndPrint(receipt)}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center space-x-1"
+                        >
+                          <Printer size={16} />
+                          <span className="hidden sm:inline">Print</span>
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -405,6 +427,16 @@ const ReceiptPage = () => {
           </div>
         )}
       </div>
+
+      <EditReceiptDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setEditingReceipt(null);
+        }}
+        receipt={editingReceipt}
+        onSave={handleSaveReceipt}
+      />
     </div>
   );
 };
