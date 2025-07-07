@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Receipt, ReceiptItem } from '@/contexts/ReceiptsContext';
 import { useToast } from '@/hooks/use-toast';
+import { EditReceiptItemRow } from './EditReceiptItemRow';
 
 interface EditReceiptDialogProps {
   isOpen: boolean;
@@ -49,7 +49,6 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
     const updatedItems = [...items];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
     
-    // Recalculate total for this item
     if (field === 'qty' || field === 'price') {
       const qty = field === 'qty' ? Number(value) : updatedItems[index].qty;
       const price = field === 'price' ? Number(value) : updatedItems[index].price;
@@ -71,7 +70,6 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
   const handleSave = async () => {
     if (!receipt) return;
 
-    // Validate items
     const validItems = items.filter(item => 
       item.itemName.trim() && item.qty > 0 && item.price > 0
     );
@@ -156,60 +154,13 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
 
             <div className="space-y-3">
               {items.map((item, index) => (
-                <div key={item.id} className="grid grid-cols-12 gap-2 items-center p-3 border rounded-lg">
-                  <div className="col-span-4">
-                    <Label htmlFor={`item-name-${index}`} className="text-xs">Item Name</Label>
-                    <Input
-                      id={`item-name-${index}`}
-                      value={item.itemName}
-                      onChange={(e) => updateItem(index, 'itemName', e.target.value)}
-                      placeholder="Enter item name"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor={`qty-${index}`} className="text-xs">Quantity</Label>
-                    <Input
-                      id={`qty-${index}`}
-                      type="number"
-                      value={item.qty}
-                      onChange={(e) => updateItem(index, 'qty', Number(e.target.value))}
-                      placeholder="0"
-                      min="0"
-                      step="0.01"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor={`price-${index}`} className="text-xs">Price</Label>
-                    <Input
-                      id={`price-${index}`}
-                      type="number"
-                      value={item.price}
-                      onChange={(e) => updateItem(index, 'price', Number(e.target.value))}
-                      placeholder="0.00"
-                      min="0"
-                      step="0.01"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label className="text-xs">Total</Label>
-                    <div className="text-sm font-medium mt-2">
-                      Rs.{item.total.toFixed(2)}
-                    </div>
-                  </div>
-                  <div className="col-span-2 flex justify-center">
-                    <Button
-                      onClick={() => removeItem(index)}
-                      variant="destructive"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
-                </div>
+                <EditReceiptItemRow
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  onUpdate={updateItem}
+                  onRemove={removeItem}
+                />
               ))}
             </div>
 

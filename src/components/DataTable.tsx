@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { DataTableContainer } from './DataTableContainer';
 import { TableHeader } from './TableHeader';
 import { TableRowComponent } from './TableRow';
 import { TableFooter } from './TableFooter';
@@ -47,29 +48,23 @@ export const DataTable: React.FC<DataTableProps> = ({
   const totalAmount = calculateTotal();
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8">
-      <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-gray-800">{title}</h1>
-      
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <TableHeader />
-            <tbody>
-              {rows.map((row, index) => (
-                <TableRowComponent
-                  key={row.id}
-                  row={row}
-                  index={index}
-                  onUpdateRow={updateRow}
-                  onKeyDown={handleKeyDown}
-                  inputRefs={inputRefs}
-                />
-              ))}
-            </tbody>
-            <TableFooter totalAmount={totalAmount} />
-          </table>
-        </div>
-      </div>
+    <>
+      <DataTableContainer title={title}>
+        <TableHeader />
+        <tbody>
+          {rows.map((row, index) => (
+            <TableRowComponent
+              key={row.id}
+              row={row}
+              index={index}
+              onUpdateRow={updateRow}
+              onKeyDown={handleKeyDown}
+              inputRefs={inputRefs}
+            />
+          ))}
+        </tbody>
+        <TableFooter totalAmount={totalAmount} />
+      </DataTableContainer>
 
       <ActionButtons
         onPrint={handlePrint}
@@ -84,6 +79,6 @@ export const DataTable: React.FC<DataTableProps> = ({
         isOpen={isAddItemDialogOpen}
         onClose={() => setIsAddItemDialogOpen(false)}
       />
-    </div>
+    </>
   );
 };
