@@ -211,8 +211,8 @@ export const useReceiptPrintHandler = () => {
             <div class="receipt-header">
               <div class="company-name">AK SPICE TRADING</div>
               <div class="company-details">
-                Mo: +974773962001<br>
-                36, In Front of Ajile Factory<br>
+                Mob: +974773962001<br>
+                36, In Front of Tile Factory<br>
                 Mahiyangana
               </div>
             </div>
