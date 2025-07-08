@@ -45,12 +45,29 @@ export default defineConfig(({ mode }) => ({
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ],
+        screenshots: [
+          {
+            src: 'pwa-screenshot-mobile.png',
+            sizes: '512x896',
+            type: 'image/png',
+            label: 'AK Spice Trading Mobile View'
+          },
+          {
+            src: 'pwa-screenshot-desktop.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'AK Spice Trading Desktop View'
           }
         ]
       }
