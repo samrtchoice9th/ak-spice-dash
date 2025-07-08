@@ -42,7 +42,7 @@ const Inventory = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs sm:text-sm font-medium text-gray-600">Total Stock Value</p>
-              <p className="text-lg sm:text-2xl font-bold text-green-600">Rs.{totalInventoryValue.toFixed(2)}</p>
+              <p className="text-lg sm:text-2xl font-bold text-green-600">Rs. {totalInventoryValue.toLocalString("en-IN", {minimumFractionDigits: 2, maximumFractionDigits: 2,})}</p>
             </div>
             <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
           </div>
