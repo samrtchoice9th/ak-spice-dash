@@ -1,12 +1,13 @@
 
 import React from 'react';
-import { Printer, Plus, Save } from 'lucide-react';
+import { Printer, Plus, Save, RowsIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ActionButtonsProps {
   onPrint: () => void;
   onAddItem?: () => void;
   onSave?: () => void;
+  onAddRow?: () => void;
   showAddItem?: boolean;
   showSave?: boolean;
   disabled?: boolean;
@@ -16,6 +17,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onPrint,
   onAddItem,
   onSave,
+  onAddRow,
   showAddItem = false,
   showSave = false,
   disabled = false
@@ -46,9 +48,30 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     }
   };
 
+  const handleAddRow = () => {
+    if (onAddRow) {
+      onAddRow();
+      toast({
+        title: "Row added",
+        description: "New item row added to the bill",
+      });
+    }
+  };
+
   return (
     <div className="mt-6 sm:mt-8 px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-center">
+        {onAddRow && (
+          <button
+            onClick={handleAddRow}
+            disabled={disabled}
+            className="flex items-center justify-center space-x-2 px-6 py-4 sm:py-3 bg-purple-600 text-white font-medium rounded-lg border-2 border-purple-600 hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base sm:text-sm"
+          >
+            <Plus size={20} />
+            <span>Add Row</span>
+          </button>
+        )}
+        
         <button
           onClick={handlePrint}
           disabled={disabled}

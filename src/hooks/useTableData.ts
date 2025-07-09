@@ -17,6 +17,20 @@ export const useTableData = (type: 'purchase' | 'sales' = 'sales') => {
   const { updateStock } = useProducts();
   const { toast } = useToast();
 
+  const addRow = () => {
+    const newRow: TableRow = {
+      id: Date.now().toString(),
+      itemName: '',
+      qty: 0,
+      price: 0,
+    };
+    setRows(prev => [...prev, newRow]);
+    setTimeout(() => {
+      const newRowRef = inputRefs.current[`${newRow.id}-itemName`];
+      newRowRef?.focus();
+    }, 100);
+  };
+
   const clearAllFields = () => {
     const newId = Date.now().toString();
     setRows([{ id: newId, itemName: '', qty: 0, price: 0 }]);
@@ -127,6 +141,7 @@ export const useTableData = (type: 'purchase' | 'sales' = 'sales') => {
     handleKeyDown,
     handleSave,
     calculateTotal,
-    clearAllFields
+    clearAllFields,
+    addRow
   };
 };

@@ -34,7 +34,8 @@ export const DataTable: React.FC<DataTableProps> = ({
     handleKeyDown,
     handleSave,
     calculateTotal,
-    clearAllFields
+    clearAllFields,
+    addRow
   } = useTableData(type);
 
   const addNewItem = () => {
@@ -70,6 +71,7 @@ export const DataTable: React.FC<DataTableProps> = ({
         onPrint={handlePrint}
         onAddItem={addNewItem}
         onSave={handleSave}
+        onAddRow={addRow}
         showAddItem={showAddItem}
         showSave={showSave}
         disabled={isSaving}

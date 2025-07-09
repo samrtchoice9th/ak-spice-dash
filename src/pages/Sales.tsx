@@ -4,7 +4,7 @@ import { DataTable } from '@/components/DataTable';
 
 const Sales = () => {
   return (
-    <DataTable title="Sales Management" type="sales" />
+    <DataTable title="Sales Management" showSave={true} type="sales" />
   );
 };
 
