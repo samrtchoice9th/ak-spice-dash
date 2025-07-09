@@ -17,6 +17,7 @@ import Sales from "./pages/Sales";
 import Purchase from "./pages/Purchase";
 import Inventory from "./pages/Inventory";
 import ReceiptPage from "./pages/ReceiptPage";
+import Report from "./pages/Report";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -51,6 +52,7 @@ const App = () => (
                                 <Route path="/purchase" element={<Purchase />} />
                                 <Route path="/inventory" element={<Inventory />} />
                                 <Route path="/receipt" element={<ReceiptPage />} />
+                                <Route path="/report" element={<Report />} />
                                 <Route path="/settings" element={<Settings />} />
                                 <Route path="*" element={<NotFound />} />
                               </Routes>
