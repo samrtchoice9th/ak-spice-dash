@@ -133,7 +133,7 @@ const Report = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              ${totals.totalSales.toFixed(2)}
+              Rs {totals.totalSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -145,7 +145,7 @@ const Report = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              ${totals.totalPurchases.toFixed(2)}
+              Rs {totals.totalPurchases.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -159,7 +159,7 @@ const Report = () => {
             <div className={`text-2xl font-bold ${
               totals.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
-              ${totals.totalProfit.toFixed(2)}
+              Rs {totals.totalProfit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </CardContent>
         </Card>
@@ -192,15 +192,15 @@ const Report = () => {
                       {format(parseISO(report.date), 'MMM dd, yyyy')}
                     </TableCell>
                     <TableCell className="text-right text-green-600">
-                      ${report.totalSales.toFixed(2)}
+                      Rs {report.totalSales.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right text-red-600">
-                      ${report.totalPurchases.toFixed(2)}
+                      Rs {report.totalPurchases.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className={`text-right font-medium ${
                       report.profit >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {report.profit >= 0 ? '+' : ''}${report.profit.toFixed(2)}
+                      {report.profit >= 0 ? '+' : ''}Rs {Math.abs(report.profit).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                   </TableRow>
                 ))}
