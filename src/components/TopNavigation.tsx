@@ -7,6 +7,7 @@ import {
   Package, 
   Warehouse, 
   Receipt,
+  BarChart3,
   Settings,
   LogOut
 } from 'lucide-react';
@@ -19,6 +20,7 @@ const menuItems = [
   { name: 'Purchase', path: '/purchase', icon: Package },
   { name: 'Inventory', path: '/inventory', icon: Warehouse },
   { name: 'Receipt', path: '/receipt', icon: Receipt },
+  { name: 'Report', path: '/report', icon: BarChart3 },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
