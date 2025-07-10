@@ -26,7 +26,6 @@ interface DayReport {
   date: string;
   totalSales: number;
   totalPurchases: number;
-  profit: number;
 }
 
 const Report = () => {
@@ -64,16 +63,13 @@ const Report = () => {
             date: dateKey,
             totalSales: 0,
             totalPurchases: 0,
-            profit: 0,
           };
         }
 
         if (receipt.type === 'sales') {
           acc[dateKey].totalSales += receipt.totalAmount;
-          acc[dateKey].profit += receipt.totalAmount;
         } else if (receipt.type === 'purchase') {
           acc[dateKey].totalPurchases += receipt.totalAmount;
-          acc[dateKey].profit -= receipt.totalAmount;
         }
       }
       return acc;
@@ -90,9 +86,8 @@ const Report = () => {
       (acc, report) => ({
         totalSales: acc.totalSales + report.totalSales,
         totalPurchases: acc.totalPurchases + report.totalPurchases,
-        totalProfit: acc.totalProfit + report.profit,
       }),
-      { totalSales: 0, totalPurchases: 0, totalProfit: 0 }
+      { totalSales: 0, totalPurchases: 0 }
     );
   }, [filteredReports]);
 
@@ -125,7 +120,7 @@ const Report = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
@@ -149,20 +144,6 @@ const Report = () => {
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-            <DollarSign className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${
-              totals.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              Rs {totals.totalProfit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Reports Table */}
@@ -182,7 +163,6 @@ const Report = () => {
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Sales</TableHead>
                   <TableHead className="text-right">Purchases</TableHead>
-                  <TableHead className="text-right">Profit/Loss</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -196,11 +176,6 @@ const Report = () => {
                     </TableCell>
                     <TableCell className="text-right text-red-600">
                       Rs {report.totalPurchases.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className={`text-right font-medium ${
-                      report.profit >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {report.profit >= 0 ? '+' : ''}Rs {Math.abs(report.profit).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                   </TableRow>
                 ))}

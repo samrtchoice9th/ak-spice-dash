@@ -38,7 +38,7 @@ export const receiptService = {
 
   async createReceipt(receiptData: Omit<Receipt, 'id' | 'date' | 'time'>): Promise<Receipt> {
     const now = new Date();
-    const date = now.toLocaleDateString();
+    const date = now.toISOString().split('T')[0]; // YYYY-MM-DD format
     const time = now.toLocaleTimeString();
 
     // Insert receipt
