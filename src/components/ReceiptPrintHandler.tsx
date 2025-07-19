@@ -333,75 +333,64 @@ export const useReceiptPrintHandler = () => {
     console.log('Checking printer connectivity...');
     
     try {
-      if (!window.print) {
-        toast({
-          title: "Printing not supported",
-          description: "Your browser doesn't support printing functionality.",
-          variant: "destructive"
-        });
-        return;
-      }
-
       const isMobile = isMobileDevice();
       const printContent = generatePrintContent(receipt, isMobile);
       
       if (isMobile) {
-        // Mobile: Use data URL approach for better compatibility
-        const blob = new Blob([printContent], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
+        // Mobile: Create hidden iframe for better print compatibility
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
         
-        const printWindow = window.open(url, '_blank');
+        document.body.appendChild(iframe);
         
-        if (!printWindow) {
-          URL.revokeObjectURL(url);
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) {
+          document.body.removeChild(iframe);
           toast({
-            title: "Print blocked",
-            description: "Pop-up blocked. Please allow pop-ups and try again.",
+            title: "Print failed",
+            description: "Unable to access print functionality.",
             variant: "destructive"
           });
           return;
         }
-
-        printWindow.onload = () => {
+        
+        iframeDoc.open();
+        iframeDoc.write(printContent);
+        iframeDoc.close();
+        
+        iframe.onload = () => {
           setTimeout(() => {
             try {
-              printWindow.print();
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+              
               setTimeout(() => {
-                URL.revokeObjectURL(url);
-                if (!printWindow.closed) {
-                  printWindow.close();
-                }
+                document.body.removeChild(iframe);
                 toast({
                   title: "Print job sent",
-                  description: "Receipt has been sent to your printer.",
+                  description: "Receipt has been sent to your printer or save as PDF.",
                 });
-              }, 1500);
+              }, 2000);
             } catch (error) {
               console.error('Mobile print error:', error);
-              URL.revokeObjectURL(url);
-              printWindow.close();
+              document.body.removeChild(iframe);
               toast({
                 title: "Print failed",
-                description: "Unable to print. Try using your browser's share or print option.",
+                description: "Unable to print. Please try saving as PDF from your browser menu.",
                 variant: "destructive"
               });
             }
           }, 500);
         };
 
-        printWindow.onerror = () => {
-          URL.revokeObjectURL(url);
-          printWindow.close();
-          toast({
-            title: "Print failed",
-            description: "Unable to print. Try using your browser's share or print option.",
-            variant: "destructive"
-          });
-        };
-
       } else {
-        // Desktop: Use traditional approach
-        const printWindow = window.open('', '_blank');
+        // Desktop: Use traditional window approach
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
         
         if (!printWindow) {
           toast({
@@ -414,40 +403,30 @@ export const useReceiptPrintHandler = () => {
 
         printWindow.document.write(printContent);
         printWindow.document.close();
+        printWindow.focus();
         
-        printWindow.onload = () => {
-          setTimeout(() => {
-            try {
-              printWindow.print();
-              setTimeout(() => {
-                if (!printWindow.closed) {
-                  printWindow.close();
-                }
-                toast({
-                  title: "Print job sent",
-                  description: "Receipt has been sent to your printer.",
-                });
-              }, 1000);
-            } catch (error) {
-              console.error('Desktop print error:', error);
-              printWindow.close();
+        setTimeout(() => {
+          try {
+            printWindow.print();
+            setTimeout(() => {
+              if (!printWindow.closed) {
+                printWindow.close();
+              }
               toast({
-                title: "No printer detected",
-                description: "Please check your printer connection and try again.",
-                variant: "destructive"
+                title: "Print job sent",
+                description: "Receipt has been sent to your printer.",
               });
-            }
-          }, 250);
-        };
-
-        printWindow.onerror = () => {
-          printWindow.close();
-          toast({
-            title: "No printer detected",
-            description: "Please check your printer connection and try again.",
-            variant: "destructive"
-          });
-        };
+            }, 1000);
+          } catch (error) {
+            console.error('Desktop print error:', error);
+            printWindow.close();
+            toast({
+              title: "Print failed",
+              description: "Please check your printer connection and try again.",
+              variant: "destructive"
+            });
+          }
+        }, 250);
       }
 
     } catch (error) {
