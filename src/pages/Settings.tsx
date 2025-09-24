@@ -11,8 +11,20 @@ import { useToast } from '@/hooks/use-toast';
 declare global {
   interface Navigator {
     bluetooth?: {
-      requestDevice(options: any): Promise<any>;
+      requestDevice(options: any): Promise<BluetoothDevice>;
     };
+  }
+  
+  interface BluetoothDevice {
+    id: string;
+    name?: string;
+    gatt?: BluetoothRemoteGATTServer;
+  }
+  
+  interface BluetoothRemoteGATTServer {
+    connected: boolean;
+    connect(): Promise<BluetoothRemoteGATTServer>;
+    disconnect(): void;
   }
 }
 
