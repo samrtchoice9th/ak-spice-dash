@@ -332,12 +332,13 @@ export const useReceiptPrintHandler = () => {
   };
 
   const checkPrinterAndPrint = async (receipt: any) => {
-    console.log('Sending to RawBT printer...');
+    console.log('Print button clicked with receipt:', receipt);
     
     // Try to print directly via RawBT app
     const rawBTPrintSuccess = await printToRawBT(receipt);
     
     if (rawBTPrintSuccess) {
+      console.log('RawBT print successful');
       return;
     }
     

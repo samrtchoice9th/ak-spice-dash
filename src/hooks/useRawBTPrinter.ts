@@ -17,11 +17,16 @@ export const useRawBTPrinter = () => {
 
   const printToRawBT = async (receipt: any): Promise<boolean> => {
     try {
-      // Check if running on Android
-      if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
+      console.log('RawBT: Starting print process for receipt:', receipt);
+      
+      // Check if we're on Android (works for both native and web on Android)
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      
+      if (!isAndroid) {
+        console.log('RawBT: Not on Android device, user agent:', navigator.userAgent);
         toast({
-          title: "Not Available",
-          description: "RawBT printing is only available on Android devices.",
+          title: "Android Required",
+          description: "RawBT printing requires an Android device with RawBT app installed.",
           variant: "destructive"
         });
         return false;
@@ -29,12 +34,29 @@ export const useRawBTPrinter = () => {
 
       // Generate ESC/POS content
       const escPosData = generateESCPOSContent(receipt);
+      console.log('RawBT: Generated ESC/POS data length:', escPosData.length);
       
       // Convert to Base64
       const base64Data = btoa(unescape(encodeURIComponent(escPosData)));
+      console.log('RawBT: Base64 data length:', base64Data.length);
 
-      // Send intent to RawBT app using Android intent URL scheme
-      window.open(`intent://print?#Intent;action=ru.a402d.rawbtprinter.action.PRINT_RAW;S.ru.a402d.rawbtprinter.extra.DATA=${base64Data};end`, '_system');
+      // Send intent to RawBT app
+      const intentUrl = `intent://print?#Intent;action=ru.a402d.rawbtprinter.action.PRINT_RAW;S.ru.a402d.rawbtprinter.extra.DATA=${base64Data};end`;
+      console.log('RawBT: Opening intent URL:', intentUrl);
+      
+      // Try multiple methods to open the intent
+      try {
+        window.location.href = intentUrl;
+      } catch (err) {
+        try {
+          window.open(intentUrl, '_system');
+        } catch (err2) {
+          // Fallback for web browsers
+          const link = document.createElement('a');
+          link.href = intentUrl;
+          link.click();
+        }
+      }
 
       toast({
         title: "Sent to RawBT",
