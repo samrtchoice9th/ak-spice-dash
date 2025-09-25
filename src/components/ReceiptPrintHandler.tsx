@@ -1,10 +1,10 @@
 
 import { useToast } from '@/hooks/use-toast';
-import { useThermalPrinter } from '@/hooks/useThermalPrinter';
+import { useRawBTPrinter } from '@/hooks/useRawBTPrinter';
 
 export const useReceiptPrintHandler = () => {
   const { toast } = useToast();
-  const { printToThermal } = useThermalPrinter();
+  const { printToRawBT } = useRawBTPrinter();
 
   const generatePrintContent = (receipt: any, useMobileFormat = false) => {
     const printStyles = useMobileFormat ? `
@@ -332,16 +332,16 @@ export const useReceiptPrintHandler = () => {
   };
 
   const checkPrinterAndPrint = async (receipt: any) => {
-    console.log('Checking thermal printer connectivity...');
+    console.log('Sending to RawBT printer...');
     
-    // First try to print directly to thermal printer via Bluetooth
-    const thermalPrintSuccess = await printToThermal(receipt);
+    // Try to print directly via RawBT app
+    const rawBTPrintSuccess = await printToRawBT(receipt);
     
-    if (thermalPrintSuccess) {
+    if (rawBTPrintSuccess) {
       return;
     }
     
-    console.log('Thermal printer not available, falling back to standard printing...');
+    console.log('RawBT not available, falling back to standard printing...');
     
     try {
       const isMobile = isMobileDevice();
