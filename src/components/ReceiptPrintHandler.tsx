@@ -5,12 +5,12 @@ export const useReceiptPrintHandler = () => {
   const { toast } = useToast();
 
   const generatePrintContent = (receipt: any, useMobileFormat = false) => {
-    const printStyles = useMobileFormat ? `
+    const printStyles = `
       <style>
         @media print {
           @page { 
-            size: A4;
-            margin: 5mm;
+            size: 80mm auto;
+            margin: 2mm;
           }
           * {
             margin: 0;
@@ -18,112 +18,20 @@ export const useReceiptPrintHandler = () => {
             box-sizing: border-box;
           }
           body { 
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
-            color: black;
-            background: white;
-          }
-          .receipt-container {
-            max-width: 300px;
-            margin: 0 auto;
-            padding: 10px;
-            border: 1px solid black;
-          }
-          .receipt-header {
-            text-align: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px dashed black;
-          }
-          .company-name {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 5px;
-          }
-          .company-details {
-            font-size: 10px;
-            margin-bottom: 5px;
-          }
-          .invoice-info {
-            margin: 10px 0;
-            font-size: 10px;
-            border-bottom: 1px solid black;
-            padding-bottom: 10px;
-          }
-          .invoice-left {
-            float: left;
-            width: 60%;
-          }
-          .invoice-right {
-            float: right;
-            width: 40%;
-            text-align: right;
-          }
-          .clear {
-            clear: both;
-          }
-          .receipt-table {
-            width: 100%;
-            margin: 10px 0;
-          }
-          .table-header {
-            border-bottom: 2px solid black;
-            padding: 5px 0;
-            font-weight: bold;
-            font-size: 10px;
-            text-align: center;
-          }
-          .receipt-item {
-            margin: 8px 0;
-            padding: 5px 0;
-            border-bottom: 1px dotted black;
-          }
-          .item-name {
-            font-weight: bold;
-            margin-bottom: 3px;
-            font-size: 11px;
-          }
-          .item-details {
-            font-size: 10px;
-            text-align: center;
-          }
-          .receipt-total {
-            border-top: 2px solid black;
-            margin-top: 15px;
-            padding-top: 10px;
-            text-align: center;
-          }
-          .total-line {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 10px 0;
-            border: 2px solid black;
-            padding: 5px;
-          }
-          .thank-you {
-            text-align: center;
-            font-size: 10px;
-            margin-top: 15px;
-            border-top: 1px dashed black;
-            padding-top: 10px;
-          }
-        }
-      </style>
-    ` : `
-      <style>
-        @media print {
-          @page { 
-            size: 76mm auto;
-            margin: 2mm;
-          }
-          body { 
             font-family: 'Courier New', monospace;
             font-size: 10px;
             line-height: 1.3;
             margin: 0;
             padding: 2mm;
-            width: 72mm;
+            width: 76mm;
+            color: black;
+            background: white;
+          }
+          .receipt-container {
+            width: 100%;
+            max-width: 76mm;
+            margin: 0;
+            padding: 0;
           }
           .receipt-header {
             text-align: center;
@@ -145,6 +53,17 @@ export const useReceiptPrintHandler = () => {
             justify-content: space-between;
             margin: 2mm 0;
             font-size: 8px;
+            border-bottom: 1px solid black;
+            padding-bottom: 2mm;
+          }
+          .invoice-left {
+            flex: 1;
+          }
+          .invoice-right {
+            text-align: right;
+          }
+          .clear {
+            clear: both;
           }
           .receipt-table {
             width: 100%;
@@ -154,23 +73,23 @@ export const useReceiptPrintHandler = () => {
             border-bottom: 1px dashed black;
             padding-bottom: 1mm;
             margin-bottom: 2mm;
-            display: flex;
-            justify-content: space-between;
             font-weight: bold;
             font-size: 9px;
+            text-align: center;
           }
           .receipt-item {
-            margin-bottom: 1mm;
+            margin-bottom: 2mm;
             font-size: 9px;
+            border-bottom: 1px dotted black;
+            padding-bottom: 1mm;
           }
           .item-name {
             font-weight: bold;
             margin-bottom: 0.5mm;
           }
           .item-details {
-            display: flex;
-            justify-content: space-between;
             font-size: 8px;
+            text-align: center;
           }
           .receipt-total {
             border-top: 1px dashed black;
@@ -182,6 +101,8 @@ export const useReceiptPrintHandler = () => {
             font-size: 12px;
             font-weight: bold;
             margin: 2mm 0;
+            border: 2px solid black;
+            padding: 2mm;
           }
           .thank-you {
             text-align: center;
@@ -190,6 +111,9 @@ export const useReceiptPrintHandler = () => {
             border-top: 1px dashed black;
             padding-top: 2mm;
           }
+        }
+        @media screen {
+          body { display: none; }
         }
       </style>
     `;
@@ -329,106 +253,81 @@ export const useReceiptPrintHandler = () => {
            window.innerWidth <= 768;
   };
 
+  const printReceipt = (receipt: any) => {
+    const printContent = generatePrintContent(receipt, true);
+    
+    // Create a hidden iframe specifically for printing
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    iframe.style.opacity = '0';
+    iframe.style.border = 'none';
+    iframe.style.visibility = 'hidden';
+    
+    document.body.appendChild(iframe);
+    
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      document.body.removeChild(iframe);
+      toast({
+        title: "Print failed",
+        description: "Unable to access print functionality.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Write content to iframe
+    iframeDoc.open();
+    iframeDoc.write(printContent);
+    iframeDoc.close();
+    
+    // Wait for content to load, then print
+    const handlePrint = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        
+        // Clean up after printing
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+          toast({
+            title: "Print job sent",
+            description: "Receipt has been sent to your printer or save as PDF.",
+          });
+        }, 1000);
+      } catch (error) {
+        console.error('Print error:', error);
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+        toast({
+          title: "Print failed",
+          description: "Unable to print. Please check your printer settings.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    // Handle iframe load
+    iframe.onload = () => {
+      setTimeout(handlePrint, 100);
+    };
+    
+    // Fallback in case onload doesn't fire
+    setTimeout(handlePrint, 500);
+  };
+
   const checkPrinterAndPrint = async (receipt: any) => {
     console.log('Print button clicked with receipt:', receipt);
     
     try {
-      const isMobile = isMobileDevice();
-      const printContent = generatePrintContent(receipt, isMobile);
-      
-      if (isMobile) {
-        // Mobile: Create hidden iframe for better print compatibility
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
-        
-        document.body.appendChild(iframe);
-        
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!iframeDoc) {
-          document.body.removeChild(iframe);
-          toast({
-            title: "Print failed",
-            description: "Unable to access print functionality.",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        iframeDoc.open();
-        iframeDoc.write(printContent);
-        iframeDoc.close();
-        
-        iframe.onload = () => {
-          setTimeout(() => {
-            try {
-              iframe.contentWindow?.focus();
-              iframe.contentWindow?.print();
-              
-              setTimeout(() => {
-                document.body.removeChild(iframe);
-                toast({
-                  title: "Print job sent",
-                  description: "Receipt has been sent to your printer or save as PDF.",
-                });
-              }, 2000);
-            } catch (error) {
-              console.error('Mobile print error:', error);
-              document.body.removeChild(iframe);
-              toast({
-                title: "Print failed",
-                description: "Unable to print. Please try saving as PDF from your browser menu.",
-                variant: "destructive"
-              });
-            }
-          }, 500);
-        };
-
-      } else {
-        // Desktop: Use traditional window approach
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        
-        if (!printWindow) {
-          toast({
-            title: "Print blocked",
-            description: "Pop-up blocked. Please allow pop-ups and try again.",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        printWindow.focus();
-        
-        setTimeout(() => {
-          try {
-            printWindow.print();
-            setTimeout(() => {
-              if (!printWindow.closed) {
-                printWindow.close();
-              }
-              toast({
-                title: "Print job sent",
-                description: "Receipt has been sent to your printer.",
-              });
-            }, 1000);
-          } catch (error) {
-            console.error('Desktop print error:', error);
-            printWindow.close();
-            toast({
-              title: "Print failed",
-              description: "Please check your printer connection and try again.",
-              variant: "destructive"
-            });
-          }
-        }, 250);
-      }
-
+      printReceipt(receipt);
     } catch (error) {
       console.error('Printing failed:', error);
       toast({
