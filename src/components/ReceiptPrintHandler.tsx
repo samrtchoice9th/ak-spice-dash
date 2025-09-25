@@ -1,10 +1,8 @@
 
 import { useToast } from '@/hooks/use-toast';
-import { useRawBTPrinter } from '@/hooks/useRawBTPrinter';
 
 export const useReceiptPrintHandler = () => {
   const { toast } = useToast();
-  const { printToRawBT } = useRawBTPrinter();
 
   const generatePrintContent = (receipt: any, useMobileFormat = false) => {
     const printStyles = useMobileFormat ? `
@@ -333,16 +331,6 @@ export const useReceiptPrintHandler = () => {
 
   const checkPrinterAndPrint = async (receipt: any) => {
     console.log('Print button clicked with receipt:', receipt);
-    
-    // Try to print directly via RawBT app
-    const rawBTPrintSuccess = await printToRawBT(receipt);
-    
-    if (rawBTPrintSuccess) {
-      console.log('RawBT print successful');
-      return;
-    }
-    
-    console.log('RawBT not available, falling back to standard printing...');
     
     try {
       const isMobile = isMobileDevice();
