@@ -8,7 +8,9 @@ export const printReceipt = (
   calculateTotal: () => number,
   addReceipt: (receipt: { type: 'purchase' | 'sales'; items: ReceiptItem[]; totalAmount: number }) => void,
   type: 'purchase' | 'sales',
-  clearAllFields: () => void
+  clearAllFields: () => void,
+  showPreviewFirst: boolean = false,
+  onShowPreview?: (receipt: any) => void
 ) => {
   const receiptItems: ReceiptItem[] = rows
     .filter(row => row.itemName && row.qty > 0 && row.price > 0)
@@ -36,6 +38,20 @@ export const printReceipt = (
     items: receiptItems,
     totalAmount: total
   });
+
+  // If preview first is enabled, show preview dialog instead of direct print
+  if (showPreviewFirst && onShowPreview) {
+    const receiptData = {
+      items: receiptItems,
+      totalAmount: total,
+      type: type,
+      date: formattedDate,
+      time: formattedTime
+    };
+    onShowPreview(receiptData);
+    clearAllFields();
+    return;
+  }
 
   // Generate invoice number
   const invoiceNumber = `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;

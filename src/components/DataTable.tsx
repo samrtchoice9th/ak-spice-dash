@@ -9,6 +9,7 @@ import { AddItemDialog } from './AddItemDialog';
 import { printReceipt } from '@/utils/printReceipt';
 import { useTableData } from '@/hooks/useTableData';
 import { useReceipts } from '@/contexts/ReceiptsContext';
+import { useReceiptPrintHandler } from '@/components/ReceiptPrintHandler';
 
 interface DataTableProps {
   title: string;
@@ -25,6 +26,7 @@ export const DataTable: React.FC<DataTableProps> = ({
 }) => {
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const { addReceipt } = useReceipts();
+  const { checkPrinterAndPrint, PrintPreviewComponent } = useReceiptPrintHandler();
   
   const {
     rows,
@@ -43,7 +45,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   };
 
   const handlePrint = () => {
-    printReceipt(rows, title, calculateTotal, addReceipt, type, clearAllFields);
+    printReceipt(rows, title, calculateTotal, addReceipt, type, clearAllFields, true, checkPrinterAndPrint);
   };
 
   const totalAmount = calculateTotal();
@@ -81,6 +83,8 @@ export const DataTable: React.FC<DataTableProps> = ({
         isOpen={isAddItemDialogOpen}
         onClose={() => setIsAddItemDialogOpen(false)}
       />
+      
+      <PrintPreviewComponent />
     </>
   );
 };

@@ -11,7 +11,7 @@ const ReceiptPage = () => {
   const { receipts, loading, updateReceipt } = useReceipts();
   const [editingReceipt, setEditingReceipt] = useState<ReceiptType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const { checkPrinterAndPrint } = useReceiptPrintHandler();
+  const { checkPrinterAndPrint, PrintPreviewComponent } = useReceiptPrintHandler();
 
   const handleEditReceipt = (receipt: ReceiptType) => {
     setEditingReceipt(receipt);
@@ -54,6 +54,8 @@ const ReceiptPage = () => {
         receipt={editingReceipt}
         onSave={handleSaveReceipt}
       />
+      
+      <PrintPreviewComponent />
     </div>
   );
 };
