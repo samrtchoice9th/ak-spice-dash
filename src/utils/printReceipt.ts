@@ -212,58 +212,42 @@ export const printReceipt = (
     </html>
   `;
 
-  // Create hidden iframe for printing
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.top = '-9999px';
-  iframe.style.left = '-9999px';
-  iframe.style.width = '1px';
-  iframe.style.height = '1px';
-  iframe.style.opacity = '0';
-  iframe.style.border = 'none';
-  iframe.style.visibility = 'hidden';
+  // Create a completely new window for printing (better mobile isolation)
+  const printWindow = window.open('', '_blank', 'width=300,height=600,scrollbars=yes');
   
-  document.body.appendChild(iframe);
-  
-  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-  if (!iframeDoc) {
-    document.body.removeChild(iframe);
-    alert('Print failed. Unable to access print functionality.');
+  if (!printWindow) {
+    alert('Popup blocked. Please allow popups for printing.');
     return;
   }
   
-  // Write content to iframe
-  iframeDoc.open();
-  iframeDoc.write(printContent);
-  iframeDoc.close();
+  // Write content to the new window
+  printWindow.document.open();
+  printWindow.document.write(printContent);
+  printWindow.document.close();
   
-  // Handle printing
+  // Handle printing and cleanup
   const handlePrint = () => {
     try {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
+      printWindow.focus();
+      printWindow.print();
       
-      // Clean up and clear fields
+      // Close the print window and clear fields after printing
       setTimeout(() => {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
+        printWindow.close();
         clearAllFields();
       }, 1000);
     } catch (error) {
       console.error('Print error:', error);
-      if (document.body.contains(iframe)) {
-        document.body.removeChild(iframe);
-      }
+      printWindow.close();
       alert('Print failed. Please check your printer settings.');
     }
   };
 
-  // Handle iframe load
-  iframe.onload = () => {
-    setTimeout(handlePrint, 100);
+  // Handle window load for better compatibility
+  printWindow.onload = () => {
+    setTimeout(handlePrint, 500);
   };
   
   // Fallback in case onload doesn't fire
-  setTimeout(handlePrint, 500);
+  setTimeout(handlePrint, 1000);
 };

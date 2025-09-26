@@ -256,46 +256,32 @@ export const useReceiptPrintHandler = () => {
   const printReceipt = (receipt: any) => {
     const printContent = generatePrintContent(receipt, true);
     
-    // Create a hidden iframe specifically for printing
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.top = '-9999px';
-    iframe.style.left = '-9999px';
-    iframe.style.width = '1px';
-    iframe.style.height = '1px';
-    iframe.style.opacity = '0';
-    iframe.style.border = 'none';
-    iframe.style.visibility = 'hidden';
+    // Create a completely new window for printing (better mobile isolation)
+    const printWindow = window.open('', '_blank', 'width=300,height=600,scrollbars=yes');
     
-    document.body.appendChild(iframe);
-    
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) {
-      document.body.removeChild(iframe);
+    if (!printWindow) {
       toast({
         title: "Print failed",
-        description: "Unable to access print functionality.",
+        description: "Popup blocked. Please allow popups for printing.",
         variant: "destructive"
       });
       return;
     }
     
-    // Write content to iframe
-    iframeDoc.open();
-    iframeDoc.write(printContent);
-    iframeDoc.close();
+    // Write content to the new window
+    printWindow.document.open();
+    printWindow.document.write(printContent);
+    printWindow.document.close();
     
-    // Wait for content to load, then print
+    // Wait for content to load, then print and close
     const handlePrint = () => {
       try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
+        printWindow.focus();
+        printWindow.print();
         
-        // Clean up after printing
+        // Close the print window after printing
         setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
+          printWindow.close();
           toast({
             title: "Print job sent",
             description: "Receipt has been sent to your printer or save as PDF.",
@@ -303,9 +289,7 @@ export const useReceiptPrintHandler = () => {
         }, 1000);
       } catch (error) {
         console.error('Print error:', error);
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
+        printWindow.close();
         toast({
           title: "Print failed",
           description: "Unable to print. Please check your printer settings.",
@@ -314,13 +298,13 @@ export const useReceiptPrintHandler = () => {
       }
     };
 
-    // Handle iframe load
-    iframe.onload = () => {
-      setTimeout(handlePrint, 100);
+    // Handle window load for better compatibility
+    printWindow.onload = () => {
+      setTimeout(handlePrint, 500);
     };
     
     // Fallback in case onload doesn't fire
-    setTimeout(handlePrint, 500);
+    setTimeout(handlePrint, 1000);
   };
 
   const checkPrinterAndPrint = async (receipt: any) => {
