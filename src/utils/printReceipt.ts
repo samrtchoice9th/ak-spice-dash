@@ -228,42 +228,59 @@ export const printReceipt = (
     </html>
   `;
 
-  // Create a completely new window for printing (better mobile isolation)
-  const printWindow = window.open('', '_blank', 'width=300,height=600,scrollbars=yes');
+  // Mobile-friendly printing approach
+  // Create a hidden iframe for better mobile compatibility
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'absolute';
+  iframe.style.left = '-9999px';
+  iframe.style.top = '-9999px';
+  iframe.style.width = '1px';
+  iframe.style.height = '1px';
+  iframe.style.opacity = '0';
+  iframe.style.border = 'none';
   
-  if (!printWindow) {
-    alert('Popup blocked. Please allow popups for printing.');
+  document.body.appendChild(iframe);
+  
+  // Write content to iframe
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!iframeDoc) {
+    document.body.removeChild(iframe);
+    alert('Print failed. Please try again.');
     return;
   }
   
-  // Write content to the new window
-  printWindow.document.open();
-  printWindow.document.write(printContent);
-  printWindow.document.close();
+  iframeDoc.open();
+  iframeDoc.write(printContent);
+  iframeDoc.close();
   
-  // Handle printing and cleanup
+  // Handle printing
   const handlePrint = () => {
     try {
-      printWindow.focus();
-      printWindow.print();
+      // Focus the iframe window for printing
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
       
-      // Close the print window and clear fields after printing
+      // Clean up after printing
       setTimeout(() => {
-        printWindow.close();
+        if (iframe.parentNode) {
+          document.body.removeChild(iframe);
+        }
         clearAllFields();
       }, 1000);
     } catch (error) {
       console.error('Print error:', error);
-      printWindow.close();
+      if (iframe.parentNode) {
+        document.body.removeChild(iframe);
+      }
       alert('Print failed. Please check your printer settings.');
     }
   };
 
-  // Handle window load for better compatibility
-  printWindow.onload = () => {
-    setTimeout(handlePrint, 500);
+  // Wait for content to load then print
+  iframe.onload = () => {
+    setTimeout(handlePrint, 300);
   };
   
-  // Fallback in case onload doesn't fire
-  setTimeout(handlePrint, 1000);
+  // Fallback for mobile browsers
+  setTimeout(handlePrint, 800);
 };
