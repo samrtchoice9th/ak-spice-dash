@@ -5,6 +5,9 @@ import { receiptSchema } from '@/lib/validations';
 
 export const receiptService = {
   async getAllReceipts(): Promise<Receipt[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data: receiptsData, error: receiptsError } = await supabase
       .from('receipts')
       .select(`
@@ -153,6 +156,9 @@ export const receiptService = {
   },
 
   async deleteReceipt(id: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { error } = await supabase
       .from('receipts')
       .delete()

@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useProducts } from '@/contexts/ProductsContext';
+import { productSchema } from '@/lib/validations';
 
 interface AddItemDialogProps {
   isOpen: boolean;
@@ -18,38 +19,45 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
   const { addProduct } = useProducts();
 
   const handleAddItem = async () => {
-    if (newItemName.trim()) {
-      try {
-        setIsLoading(true);
-        
-        // Add to database
-        await addProduct({
-          name: newItemName.trim(),
-          current_stock: parseFloat(initialStock) || 0,
-          price: parseFloat(price) || 0
-        });
+    try {
+      setIsLoading(true);
+      
+      // Validate input
+      const productData = {
+        name: newItemName.trim(),
+        current_stock: parseFloat(initialStock) || 0,
+        price: parseFloat(price) || 0
+      };
+      
+      const validatedData = productSchema.parse(productData);
+      
+      // Add to database
+      await addProduct(validatedData);
 
-        // Add to localStorage for dropdown
-        const existingItems = JSON.parse(localStorage.getItem('spiceItems') || '[]');
-        if (!existingItems.includes(newItemName.trim())) {
-          const updatedItems = [...existingItems, newItemName.trim()];
-          localStorage.setItem('spiceItems', JSON.stringify(updatedItems));
-          window.dispatchEvent(new CustomEvent('spiceItemsUpdated'));
-        }
-        
-        // Reset form
-        setNewItemName('');
-        setPrice('');
-        setInitialStock('');
-        onClose();
-        
-        alert('Item added successfully!');
-      } catch (error) {
-        console.error('Error adding item:', error);
-        alert('Failed to add item. Please try again.');
-      } finally {
-        setIsLoading(false);
+      // Add to localStorage for dropdown
+      const existingItems = JSON.parse(localStorage.getItem('spiceItems') || '[]');
+      if (!existingItems.includes(newItemName.trim())) {
+        const updatedItems = [...existingItems, newItemName.trim()];
+        localStorage.setItem('spiceItems', JSON.stringify(updatedItems));
+        window.dispatchEvent(new CustomEvent('spiceItemsUpdated'));
       }
+      
+      // Reset form
+      setNewItemName('');
+      setPrice('');
+      setInitialStock('');
+      onClose();
+      
+      alert('Item added successfully!');
+    } catch (error) {
+      console.error('Error adding item:', error);
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert('Failed to add item. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 

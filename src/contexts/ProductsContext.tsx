@@ -5,8 +5,8 @@ import { productService, Product } from '@/services/productService';
 interface ProductsContextType {
   products: Product[];
   loading: boolean;
-  addProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
-  updateProduct: (id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at'>>) => Promise<void>;
+  addProduct: (product: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => Promise<void>;
+  updateProduct: (id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   refreshProducts: () => Promise<void>;
   updateStock: (productName: string, quantityChange: number, type: 'purchase' | 'sales') => Promise<void>;
@@ -46,7 +46,7 @@ export const ProductsProvider: React.FC<ProductsProviderProps> = ({ children }) 
     refreshProducts();
   }, []);
 
-  const addProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
+  const addProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
     try {
       const newProduct = await productService.createProduct(productData);
       setProducts(prev => [newProduct, ...prev]);
@@ -56,7 +56,7 @@ export const ProductsProvider: React.FC<ProductsProviderProps> = ({ children }) 
     }
   };
 
-  const updateProduct = async (id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at'>>) => {
+  const updateProduct = async (id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>>) => {
     try {
       await productService.updateProduct(id, updates);
       setProducts(prev => prev.map(product => 

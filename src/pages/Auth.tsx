@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { authSchema } from '@/lib/validations';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -27,11 +28,14 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate input
+      const validatedData = authSchema.parse({ email: email.trim(), password });
+      
       let result;
       if (isLogin) {
-        result = await signIn(email, password);
+        result = await signIn(validatedData.email, validatedData.password);
       } else {
-        result = await signUp(email, password);
+        result = await signUp(validatedData.email, validatedData.password);
       }
 
       if (result.error) {

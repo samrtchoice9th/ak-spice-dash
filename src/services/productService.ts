@@ -9,10 +9,14 @@ export interface Product {
   price: number;
   created_at: string;
   updated_at: string;
+  user_id: string;
 }
 
 export const productService = {
   async getAllProducts(): Promise<Product[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -26,7 +30,7 @@ export const productService = {
     return data || [];
   },
 
-  async createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {
+  async createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>): Promise<Product> {
     // Validate input
     const validatedData = productSchema.parse(product);
     
@@ -55,7 +59,7 @@ export const productService = {
     return data;
   },
 
-  async updateProduct(id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
+  async updateProduct(id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>>): Promise<void> {
     // Validate input
     const validatedData = productUpdateSchema.parse(updates);
     
@@ -74,6 +78,9 @@ export const productService = {
   },
 
   async deleteProduct(id: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { error } = await supabase
       .from('products')
       .delete()
