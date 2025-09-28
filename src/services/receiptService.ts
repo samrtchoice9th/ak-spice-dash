@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Receipt, ReceiptItem } from '@/contexts/ReceiptsContext';
+import { receiptSchema } from '@/lib/validations';
 
 export const receiptService = {
   async getAllReceipts(): Promise<Receipt[]> {
@@ -37,6 +38,15 @@ export const receiptService = {
   },
 
   async createReceipt(receiptData: Omit<Receipt, 'id' | 'date' | 'time'>): Promise<Receipt> {
+    // Validate input
+    const validatedData = receiptSchema.parse(receiptData);
+    
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User must be authenticated to create receipts');
+    }
+
     const now = new Date();
     const date = now.toISOString().split('T')[0]; // YYYY-MM-DD format
     const time = now.toLocaleTimeString();
@@ -45,10 +55,11 @@ export const receiptService = {
     const { data: receiptResult, error: receiptError } = await supabase
       .from('receipts')
       .insert({
-        type: receiptData.type,
-        total_amount: receiptData.totalAmount,
+        type: validatedData.type,
+        total_amount: validatedData.totalAmount,
         date,
-        time
+        time,
+        user_id: user.id
       })
       .select()
       .single();
@@ -59,7 +70,7 @@ export const receiptService = {
     }
 
     // Insert receipt items
-    const itemsToInsert = receiptData.items.map(item => ({
+    const itemsToInsert = validatedData.items.map(item => ({
       receipt_id: receiptResult.id,
       item_name: item.itemName,
       qty: item.qty,
@@ -79,23 +90,29 @@ export const receiptService = {
 
     const newReceipt: Receipt = {
       id: receiptResult.id,
-      type: receiptData.type,
-      totalAmount: receiptData.totalAmount,
+      type: validatedData.type,
+      totalAmount: validatedData.totalAmount,
       date,
       time,
-      items: receiptData.items
+      items: validatedData.items.map((item, index) => ({
+        ...item,
+        id: itemsResult[index].id
+      }))
     };
 
     return newReceipt;
   },
 
   async updateReceipt(id: string, receiptData: Omit<Receipt, 'id' | 'date' | 'time'>): Promise<void> {
+    // Validate input
+    const validatedData = receiptSchema.parse(receiptData);
+    
     // Update receipt
     const { error: receiptError } = await supabase
       .from('receipts')
       .update({
-        type: receiptData.type,
-        total_amount: receiptData.totalAmount,
+        type: validatedData.type,
+        total_amount: validatedData.totalAmount,
         updated_at: new Date().toISOString()
       })
       .eq('id', id);
@@ -117,7 +134,7 @@ export const receiptService = {
     }
 
     // Insert updated items
-    const itemsToInsert = receiptData.items.map(item => ({
+    const itemsToInsert = validatedData.items.map(item => ({
       receipt_id: id,
       item_name: item.itemName,
       qty: item.qty,

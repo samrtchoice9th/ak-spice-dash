@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { authSchema } from '@/lib/validations';
 
 interface AuthContextType {
   user: User | null;
@@ -48,6 +49,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    try {
+      // Validate input
+      authSchema.parse({ email, password });
+    } catch (validationError: any) {
+      return { error: { message: validationError.issues?.[0]?.message || 'Invalid input' } };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -66,6 +74,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string) => {
+    try {
+      // Validate input
+      authSchema.parse({ email, password });
+    } catch (validationError: any) {
+      return { error: { message: validationError.issues?.[0]?.message || 'Invalid input' } };
+    }
+
     // Simple signup without email confirmation
     // The limitation will be enforced at the Supabase project level
     const { error } = await supabase.auth.signUp({

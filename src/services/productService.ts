@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { productSchema, productUpdateSchema, stockUpdateSchema } from '@/lib/validations';
 
 export interface Product {
   id: string;
@@ -26,12 +27,22 @@ export const productService = {
   },
 
   async createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {
+    // Validate input
+    const validatedData = productSchema.parse(product);
+    
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User must be authenticated to create products');
+    }
+
     const { data, error } = await supabase
       .from('products')
       .insert({
-        name: product.name,
-        current_stock: product.current_stock,
-        price: product.price
+        name: validatedData.name,
+        current_stock: validatedData.current_stock,
+        price: validatedData.price,
+        user_id: user.id
       })
       .select()
       .single();
@@ -45,10 +56,13 @@ export const productService = {
   },
 
   async updateProduct(id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
+    // Validate input
+    const validatedData = productUpdateSchema.parse(updates);
+    
     const { error } = await supabase
       .from('products')
       .update({
-        ...updates,
+        ...validatedData,
         updated_at: new Date().toISOString()
       })
       .eq('id', id);
@@ -72,11 +86,14 @@ export const productService = {
   },
 
   async updateStock(productName: string, quantityChange: number, type: 'purchase' | 'sales'): Promise<void> {
+    // Validate input
+    const validatedData = stockUpdateSchema.parse({ productName, quantityChange, type });
+    
     // Get current product
     const { data: product, error: fetchError } = await supabase
       .from('products')
       .select('*')
-      .eq('name', productName)
+      .eq('name', validatedData.productName)
       .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -87,15 +104,15 @@ export const productService = {
     if (!product) {
       // Create new product if it doesn't exist
       await this.createProduct({
-        name: productName,
-        current_stock: type === 'purchase' ? quantityChange : -quantityChange,
+        name: validatedData.productName,
+        current_stock: validatedData.type === 'purchase' ? validatedData.quantityChange : -validatedData.quantityChange,
         price: 0 // Will be updated when price information is available
       });
     } else {
       // Update existing product stock
-      const newStock = type === 'purchase' 
-        ? product.current_stock + quantityChange
-        : product.current_stock - quantityChange;
+      const newStock = validatedData.type === 'purchase' 
+        ? product.current_stock + validatedData.quantityChange
+        : product.current_stock - validatedData.quantityChange;
 
       await this.updateProduct(product.id, {
         current_stock: Math.max(0, newStock) // Prevent negative stock
