@@ -228,85 +228,15 @@ export const printReceipt = (
     </html>
   `;
 
-  // Mobile-friendly printing using blob URL approach
+  // Simplified mobile printing - use iframe for all mobile devices
   const executePrint = (htmlContent: string) => {
     return new Promise<void>((resolve, reject) => {
-      const isMobile = window.navigator.userAgent.includes('Mobile') || 
-                       window.navigator.userAgent.includes('Android') || 
-                       window.navigator.userAgent.includes('iPhone');
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
+      // For mobile, always use iframe method (more reliable)
       if (isMobile) {
-        try {
-          // Create a blob from the HTML content
-          const blob = new Blob([htmlContent], { type: 'text/html' });
-          const blobUrl = URL.createObjectURL(blob);
-          
-          // Open the blob URL in a new window
-          const printWindow = window.open(blobUrl, '_blank');
-          
-          if (!printWindow) {
-            // Cleanup blob URL and fallback to iframe
-            URL.revokeObjectURL(blobUrl);
-            handleIframePrint(htmlContent, resolve, reject);
-            return;
-          }
-          
-          // Wait for the content to load
-          const checkLoaded = setInterval(() => {
-            try {
-              if (printWindow.document && printWindow.document.readyState === 'complete') {
-                clearInterval(checkLoaded);
-                
-                setTimeout(() => {
-                  try {
-                    printWindow.focus();
-                    printWindow.print();
-                    
-                    // Cleanup after print
-                    setTimeout(() => {
-                      printWindow.close();
-                      URL.revokeObjectURL(blobUrl);
-                      clearAllFields();
-                      resolve();
-                    }, 1000);
-                  } catch (error) {
-                    console.error('Mobile print error:', error);
-                    printWindow.close();
-                    URL.revokeObjectURL(blobUrl);
-                    reject(error);
-                  }
-                }, 500);
-              }
-            } catch (error) {
-              // Can't access window (closed or blocked)
-              clearInterval(checkLoaded);
-              URL.revokeObjectURL(blobUrl);
-              reject(error);
-            }
-          }, 100);
-          
-          // Timeout fallback
-          setTimeout(() => {
-            clearInterval(checkLoaded);
-            if (printWindow && !printWindow.closed) {
-              try {
-                printWindow.print();
-                setTimeout(() => {
-                  printWindow.close();
-                  URL.revokeObjectURL(blobUrl);
-                }, 1000);
-              } catch (error) {
-                console.error('Timeout print error:', error);
-                URL.revokeObjectURL(blobUrl);
-              }
-            }
-            resolve();
-          }, 3000);
-          
-        } catch (error) {
-          console.error('Mobile printing failed, trying iframe:', error);
-          handleIframePrint(htmlContent, resolve, reject);
-        }
+        console.log('Mobile device detected - using iframe method');
+        handleIframePrint(htmlContent, resolve, reject);
       } else {
         // Desktop browsers - use iframe method
         handleIframePrint(htmlContent, resolve, reject);
@@ -314,16 +244,17 @@ export const printReceipt = (
     });
   };
 
-  // Iframe printing method for better compatibility
+  // Enhanced iframe printing for mobile compatibility
   const handleIframePrint = (content: string, resolve: Function, reject: Function) => {
     const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
+    iframe.style.position = 'fixed';
     iframe.style.left = '-9999px';
-    iframe.style.top = '-9999px';
-    iframe.style.width = '1px';
-    iframe.style.height = '1px';
-    iframe.style.opacity = '0';
+    iframe.style.top = '0';
+    iframe.style.width = '80mm';
+    iframe.style.height = '100vh';
     iframe.style.border = 'none';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
     
     document.body.appendChild(iframe);
     
@@ -339,36 +270,51 @@ export const printReceipt = (
       iframeDoc.write(content);
       iframeDoc.close();
       
-      // Enhanced loading detection
-      const waitForLoad = () => {
+      // Wait for content to be ready
+      const printWhenReady = () => {
         if (iframeDoc.readyState === 'complete') {
           setTimeout(() => {
             try {
-              iframe.contentWindow?.focus();
-              iframe.contentWindow?.print();
-              
-              setTimeout(() => {
-                if (iframe.parentNode) {
-                  document.body.removeChild(iframe);
+              const iframeWindow = iframe.contentWindow;
+              if (iframeWindow) {
+                iframeWindow.focus();
+                iframeWindow.print();
+                
+                // Cleanup after print
+                const cleanup = () => {
+                  setTimeout(() => {
+                    if (iframe.parentNode) {
+                      document.body.removeChild(iframe);
+                    }
+                    clearAllFields();
+                    resolve();
+                  }, 500);
+                };
+                
+                // Try to listen for afterprint event
+                if ('onafterprint' in iframeWindow) {
+                  iframeWindow.onafterprint = cleanup;
+                  // Fallback timeout
+                  setTimeout(cleanup, 3000);
+                } else {
+                  // No afterprint support, just use timeout
+                  cleanup();
                 }
-                clearAllFields();
-                resolve();
-              }, 1500);
+              }
             } catch (error) {
-              console.error('Iframe print error:', error);
+              console.error('Print error:', error);
               if (iframe.parentNode) {
                 document.body.removeChild(iframe);
               }
               reject(error);
             }
-          }, 200);
+          }, 300);
         } else {
-          setTimeout(waitForLoad, 100);
+          setTimeout(printWhenReady, 50);
         }
       };
       
-      // Start checking for load completion
-      setTimeout(waitForLoad, 100);
+      printWhenReady();
       
     } catch (error) {
       console.error('Iframe setup error:', error);
