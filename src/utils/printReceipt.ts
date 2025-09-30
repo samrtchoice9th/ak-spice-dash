@@ -228,62 +228,80 @@ export const printReceipt = (
     </html>
   `;
 
-  // Enhanced mobile-friendly printing approach
+  // Mobile-friendly printing using blob URL approach
   const executePrint = (htmlContent: string) => {
     return new Promise<void>((resolve, reject) => {
-      // Try direct window.print first for mobile browsers
-      if (window.navigator.userAgent.includes('Mobile') || window.navigator.userAgent.includes('Android') || window.navigator.userAgent.includes('iPhone')) {
+      const isMobile = window.navigator.userAgent.includes('Mobile') || 
+                       window.navigator.userAgent.includes('Android') || 
+                       window.navigator.userAgent.includes('iPhone');
+      
+      if (isMobile) {
         try {
-          // Create a new window for mobile printing
-          const printWindow = window.open('', '_blank', 'width=300,height=600,toolbar=0,scrollbars=1,status=0');
+          // Create a blob from the HTML content
+          const blob = new Blob([htmlContent], { type: 'text/html' });
+          const blobUrl = URL.createObjectURL(blob);
+          
+          // Open the blob URL in a new window
+          const printWindow = window.open(blobUrl, '_blank');
           
           if (!printWindow) {
-            // Fallback to iframe if popup is blocked
+            // Cleanup blob URL and fallback to iframe
+            URL.revokeObjectURL(blobUrl);
             handleIframePrint(htmlContent, resolve, reject);
             return;
           }
           
-          printWindow.document.write(htmlContent);
-          printWindow.document.close();
-          
-          // Wait for content to load
-          printWindow.onload = () => {
-            setTimeout(() => {
-              try {
-                printWindow.focus();
-                printWindow.print();
+          // Wait for the content to load
+          const checkLoaded = setInterval(() => {
+            try {
+              if (printWindow.document && printWindow.document.readyState === 'complete') {
+                clearInterval(checkLoaded);
                 
-                // Handle print completion
-                const handleAfterPrint = () => {
-                  printWindow.close();
-                  clearAllFields();
-                  resolve();
-                };
-                
-                // Listen for print events
-                printWindow.onafterprint = handleAfterPrint;
-                
-                // Fallback timeout for mobile browsers that don't fire afterprint
-                setTimeout(handleAfterPrint, 2000);
-              } catch (error) {
-                console.error('Mobile print error:', error);
-                printWindow.close();
-                reject(error);
+                setTimeout(() => {
+                  try {
+                    printWindow.focus();
+                    printWindow.print();
+                    
+                    // Cleanup after print
+                    setTimeout(() => {
+                      printWindow.close();
+                      URL.revokeObjectURL(blobUrl);
+                      clearAllFields();
+                      resolve();
+                    }, 1000);
+                  } catch (error) {
+                    console.error('Mobile print error:', error);
+                    printWindow.close();
+                    URL.revokeObjectURL(blobUrl);
+                    reject(error);
+                  }
+                }, 500);
               }
-            }, 500);
-          };
+            } catch (error) {
+              // Can't access window (closed or blocked)
+              clearInterval(checkLoaded);
+              URL.revokeObjectURL(blobUrl);
+              reject(error);
+            }
+          }, 100);
           
-          // Fallback if onload doesn't fire
+          // Timeout fallback
           setTimeout(() => {
+            clearInterval(checkLoaded);
             if (printWindow && !printWindow.closed) {
               try {
-                printWindow.focus();
                 printWindow.print();
+                setTimeout(() => {
+                  printWindow.close();
+                  URL.revokeObjectURL(blobUrl);
+                }, 1000);
               } catch (error) {
-                console.error('Fallback print error:', error);
+                console.error('Timeout print error:', error);
+                URL.revokeObjectURL(blobUrl);
               }
             }
-          }, 1500);
+            resolve();
+          }, 3000);
           
         } catch (error) {
           console.error('Mobile printing failed, trying iframe:', error);
