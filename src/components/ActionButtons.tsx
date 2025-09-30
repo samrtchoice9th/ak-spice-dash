@@ -1,25 +1,29 @@
 
 import React from 'react';
-import { Printer, Plus, Save, RowsIcon } from 'lucide-react';
+import { Printer, Plus, Save, RowsIcon, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ActionButtonsProps {
   onPrint: () => void;
+  onThermalPrint?: () => void;
   onAddItem?: () => void;
   onSave?: () => void;
   onAddRow?: () => void;
   showAddItem?: boolean;
   showSave?: boolean;
+  showThermalPrint?: boolean;
   disabled?: boolean;
 }
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onPrint,
+  onThermalPrint,
   onAddItem,
   onSave,
   onAddRow,
   showAddItem = false,
   showSave = false,
+  showThermalPrint = false,
   disabled = false
 }) => {
   const { toast } = useToast();
@@ -30,6 +34,16 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       title: "Printing started",
       description: "Your receipt is being prepared for printing",
     });
+  };
+
+  const handleThermalPrint = () => {
+    if (onThermalPrint) {
+      onThermalPrint();
+      toast({
+        title: "Thermal printing",
+        description: "Sending to RawBT printer app",
+      });
+    }
   };
 
   const handleAddItem = () => {
@@ -80,6 +94,17 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           <Printer size={20} />
           <span>Print</span>
         </button>
+
+        {showThermalPrint && (
+          <button
+            onClick={handleThermalPrint}
+            disabled={disabled}
+            className="flex items-center justify-center space-x-2 px-6 py-4 sm:py-3 bg-blue-600 text-white font-medium rounded-lg border-2 border-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base sm:text-sm"
+          >
+            <Smartphone size={20} />
+            <span>Thermal Print</span>
+          </button>
+        )}
         
         {showAddItem && onAddItem && (
           <button
