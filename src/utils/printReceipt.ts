@@ -228,59 +228,146 @@ export const printReceipt = (
     </html>
   `;
 
-  // Mobile-friendly printing approach
-  // Create a hidden iframe for better mobile compatibility
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'absolute';
-  iframe.style.left = '-9999px';
-  iframe.style.top = '-9999px';
-  iframe.style.width = '1px';
-  iframe.style.height = '1px';
-  iframe.style.opacity = '0';
-  iframe.style.border = 'none';
-  
-  document.body.appendChild(iframe);
-  
-  // Write content to iframe
-  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-  if (!iframeDoc) {
-    document.body.removeChild(iframe);
-    alert('Print failed. Please try again.');
-    return;
-  }
-  
-  iframeDoc.open();
-  iframeDoc.write(printContent);
-  iframeDoc.close();
-  
-  // Handle printing
-  const handlePrint = () => {
-    try {
-      // Focus the iframe window for printing
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      
-      // Clean up after printing
-      setTimeout(() => {
-        if (iframe.parentNode) {
-          document.body.removeChild(iframe);
+  // Enhanced mobile-friendly printing approach
+  const executePrint = (htmlContent: string) => {
+    return new Promise<void>((resolve, reject) => {
+      // Try direct window.print first for mobile browsers
+      if (window.navigator.userAgent.includes('Mobile') || window.navigator.userAgent.includes('Android') || window.navigator.userAgent.includes('iPhone')) {
+        try {
+          // Create a new window for mobile printing
+          const printWindow = window.open('', '_blank', 'width=300,height=600,toolbar=0,scrollbars=1,status=0');
+          
+          if (!printWindow) {
+            // Fallback to iframe if popup is blocked
+            handleIframePrint(htmlContent, resolve, reject);
+            return;
+          }
+          
+          printWindow.document.write(htmlContent);
+          printWindow.document.close();
+          
+          // Wait for content to load
+          printWindow.onload = () => {
+            setTimeout(() => {
+              try {
+                printWindow.focus();
+                printWindow.print();
+                
+                // Handle print completion
+                const handleAfterPrint = () => {
+                  printWindow.close();
+                  clearAllFields();
+                  resolve();
+                };
+                
+                // Listen for print events
+                printWindow.onafterprint = handleAfterPrint;
+                
+                // Fallback timeout for mobile browsers that don't fire afterprint
+                setTimeout(handleAfterPrint, 2000);
+              } catch (error) {
+                console.error('Mobile print error:', error);
+                printWindow.close();
+                reject(error);
+              }
+            }, 500);
+          };
+          
+          // Fallback if onload doesn't fire
+          setTimeout(() => {
+            if (printWindow && !printWindow.closed) {
+              try {
+                printWindow.focus();
+                printWindow.print();
+              } catch (error) {
+                console.error('Fallback print error:', error);
+              }
+            }
+          }, 1500);
+          
+        } catch (error) {
+          console.error('Mobile printing failed, trying iframe:', error);
+          handleIframePrint(htmlContent, resolve, reject);
         }
-        clearAllFields();
-      }, 1000);
+      } else {
+        // Desktop browsers - use iframe method
+        handleIframePrint(htmlContent, resolve, reject);
+      }
+    });
+  };
+
+  // Iframe printing method for better compatibility
+  const handleIframePrint = (content: string, resolve: Function, reject: Function) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.left = '-9999px';
+    iframe.style.top = '-9999px';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    iframe.style.opacity = '0';
+    iframe.style.border = 'none';
+    
+    document.body.appendChild(iframe);
+    
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      document.body.removeChild(iframe);
+      reject(new Error('Failed to access iframe document'));
+      return;
+    }
+    
+    try {
+      iframeDoc.open();
+      iframeDoc.write(content);
+      iframeDoc.close();
+      
+      // Enhanced loading detection
+      const waitForLoad = () => {
+        if (iframeDoc.readyState === 'complete') {
+          setTimeout(() => {
+            try {
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+              
+              setTimeout(() => {
+                if (iframe.parentNode) {
+                  document.body.removeChild(iframe);
+                }
+                clearAllFields();
+                resolve();
+              }, 1500);
+            } catch (error) {
+              console.error('Iframe print error:', error);
+              if (iframe.parentNode) {
+                document.body.removeChild(iframe);
+              }
+              reject(error);
+            }
+          }, 200);
+        } else {
+          setTimeout(waitForLoad, 100);
+        }
+      };
+      
+      // Start checking for load completion
+      setTimeout(waitForLoad, 100);
+      
     } catch (error) {
-      console.error('Print error:', error);
+      console.error('Iframe setup error:', error);
       if (iframe.parentNode) {
         document.body.removeChild(iframe);
       }
-      alert('Print failed. Please check your printer settings.');
+      reject(error);
     }
   };
 
-  // Wait for content to load then print
-  iframe.onload = () => {
-    setTimeout(handlePrint, 300);
-  };
-  
-  // Fallback for mobile browsers
-  setTimeout(handlePrint, 800);
+  // Execute printing with error handling
+  executePrint(printContent)
+    .then(() => {
+      console.log('Print completed successfully');
+    })
+    .catch((error) => {
+      console.error('Print failed:', error);
+      alert('Print failed. Please check your printer settings and try again.');
+    });
 };
