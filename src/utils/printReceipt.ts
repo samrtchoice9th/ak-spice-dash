@@ -2,7 +2,7 @@
 import { TableRow } from '@/types/table';
 import { ReceiptItem } from '@/contexts/ReceiptsContext';
 
-// Simple direct print using window.print() with hidden content
+// Normal browser print using window.print() with hidden DOM container
 export const printReceipt = (
   rows: TableRow[], 
   title: string, 
@@ -57,7 +57,13 @@ export const printReceipt = (
   // Generate invoice number
   const invoiceNumber = `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
 
-  // Create a temporary container for printing
+  // Remove any existing print container
+  const existingContainer = document.getElementById('print-receipt-container');
+  if (existingContainer) {
+    document.body.removeChild(existingContainer);
+  }
+
+  // Create a hidden container for printing
   const printContainer = document.createElement('div');
   printContainer.id = 'print-receipt-container';
   printContainer.innerHTML = `
@@ -109,19 +115,28 @@ export const printReceipt = (
     </div>
   `;
 
-  // Add to DOM temporarily
+  // Append to body
   document.body.appendChild(printContainer);
 
-  // Trigger print
-  setTimeout(() => {
+  // Wait for DOM to be ready, then print
+  requestAnimationFrame(() => {
     window.print();
     
-    // Cleanup after print
-    setTimeout(() => {
-      document.body.removeChild(printContainer);
+    // Cleanup after print dialog closes (use both beforeprint/afterprint events and timeout as fallback)
+    const cleanup = () => {
+      const container = document.getElementById('print-receipt-container');
+      if (container) {
+        document.body.removeChild(container);
+      }
       clearAllFields();
-    }, 500);
-  }, 100);
+    };
+
+    // Listen for print events
+    window.addEventListener('afterprint', cleanup, { once: true });
+    
+    // Fallback cleanup if events don't fire (mobile browsers)
+    setTimeout(cleanup, 1000);
+  });
 };
 
 // RawBT Thermal Printer Support for Android
