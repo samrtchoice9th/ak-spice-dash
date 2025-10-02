@@ -186,8 +186,8 @@ export const printToRawBT = (
   // Generate ESC/POS formatted text
   const escPos = generateESCPOSText(invoiceNumber, formattedDate, formattedTime, receiptItems, total);
   
-  // Create RawBT URL with URL-encoded text
-  const rawbtUrl = `rawbt:${encodeURIComponent(escPos)}`;
+  // Proper RawBT Intent URL
+  const rawbtUrl = `intent://print?text=${encodeURIComponent(escPos)}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end`;
   
   try {
     // Try to open the RawBT URL
