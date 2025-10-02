@@ -186,15 +186,12 @@ export const printToRawBT = (
   // Generate ESC/POS formatted text
   const escPos = generateESCPOSText(invoiceNumber, formattedDate, formattedTime, receiptItems, total);
   
-  // Encode to Base64
-  const base64Text = btoa(unescape(encodeURIComponent(escPos)));
-  
-  // Create RawBT intent URL
-  const intentUrl = `intent://print?text=${base64Text}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
+  // Create RawBT URL with URL-encoded text
+  const rawbtUrl = `rawbt:${encodeURIComponent(escPos)}`;
   
   try {
-    // Try to open the intent
-    window.location.href = intentUrl;
+    // Try to open the RawBT URL
+    window.location.href = rawbtUrl;
     clearAllFields();
     return true;
   } catch (error) {
