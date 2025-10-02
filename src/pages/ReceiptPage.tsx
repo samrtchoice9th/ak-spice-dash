@@ -11,7 +11,7 @@ const ReceiptPage = () => {
   const { receipts, loading, updateReceipt } = useReceipts();
   const [editingReceipt, setEditingReceipt] = useState<ReceiptType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const { checkPrinterAndPrint, PrintPreviewComponent } = useReceiptPrintHandler();
+  const { checkPrinterAndPrint, printToRawBT, PrintPreviewComponent } = useReceiptPrintHandler();
 
   const handleEditReceipt = (receipt: ReceiptType) => {
     setEditingReceipt(receipt);
@@ -43,6 +43,7 @@ const ReceiptPage = () => {
         receipts={receipts}
         onEdit={handleEditReceipt}
         onPrint={checkPrinterAndPrint}
+        onRawBTPrint={printToRawBT}
       />
 
       <EditReceiptDialog

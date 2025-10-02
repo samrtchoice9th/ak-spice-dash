@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Receipt, Edit, Printer } from 'lucide-react';
+import { Receipt, Edit, Printer, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Receipt as ReceiptType } from '@/contexts/ReceiptsContext';
 
@@ -8,9 +8,10 @@ interface ReceiptsTableProps {
   receipts: ReceiptType[];
   onEdit: (receipt: ReceiptType) => void;
   onPrint: (receipt: ReceiptType) => void;
+  onRawBTPrint?: (receipt: ReceiptType) => void;
 }
 
-export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, onPrint }) => {
+export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, onPrint, onRawBTPrint }) => {
   if (receipts.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
@@ -106,6 +107,17 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
                       <Printer size={16} />
                       <span className="hidden sm:inline">Print</span>
                     </Button>
+                    {onRawBTPrint && (
+                      <Button
+                        onClick={() => onRawBTPrint(receipt)}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center space-x-1"
+                      >
+                        <Smartphone size={16} />
+                        <span className="hidden sm:inline">RawBT</span>
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>

@@ -2,6 +2,7 @@
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { PrintPreviewDialog } from './PrintPreviewDialog';
+import { ReceiptItem } from '@/contexts/ReceiptsContext';
 
 export const useReceiptPrintHandler = () => {
   const { toast } = useToast();
@@ -478,6 +479,117 @@ export const useReceiptPrintHandler = () => {
     setTimeout(handlePrint, 1000);
   };
 
+  // RawBT Thermal Printer Support for Android
+  const printToRawBT = (receipt: any): boolean => {
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if (!isAndroid) {
+      toast({
+        title: "Android Required",
+        description: "RawBT printing is only available on Android devices",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!receipt || !receipt.items || receipt.items.length === 0) {
+      toast({
+        title: "No items",
+        description: "Please add items before printing receipt",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    const currentDate = new Date();
+    const formattedDate = receipt.date || currentDate.toLocaleDateString();
+    const formattedTime = receipt.time || currentDate.toLocaleTimeString();
+    const invoiceNumber = `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
+
+    // Generate ESC/POS formatted text
+    const escPos = generateESCPOSText(invoiceNumber, formattedDate, formattedTime, receipt.items, receipt.totalAmount);
+
+    // Proper RawBT Intent URL
+    const rawbtUrl = `intent://print?text=${encodeURIComponent(escPos)}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end`;
+
+    try {
+      window.location.href = rawbtUrl;
+      toast({
+        title: "Sent to RawBT",
+        description: "Receipt sent to thermal printer",
+      });
+      return true;
+    } catch (error) {
+      console.error('RawBT print error:', error);
+      toast({
+        title: "Print failed",
+        description: "Failed to open RawBT app. Please make sure RawBT is installed.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  // Generate ESC/POS formatted text for thermal printer
+  const generateESCPOSText = (
+    invoiceNumber: string,
+    date: string,
+    time: string,
+    items: ReceiptItem[],
+    total: number
+  ): string => {
+    const ESC = '\x1B';
+    const INIT = ESC + '@';
+    const CENTER = ESC + 'a' + '\x01';
+    const LEFT = ESC + 'a' + '\x00';
+    const BOLD_ON = ESC + 'E' + '\x01';
+    const BOLD_OFF = ESC + 'E' + '\x00';
+    const CUT = ESC + 'i';
+    
+    let receipt = INIT;
+    
+    // Header
+    receipt += CENTER + BOLD_ON + 'AK SPICE TRADING' + BOLD_OFF + '\n';
+    receipt += 'Mob: +974773962001\n';
+    receipt += '36, In Front of Tile Factory\n';
+    receipt += 'Mahiyangana\n';
+    receipt += '--------------------------------\n';
+    
+    // Invoice info
+    receipt += LEFT;
+    receipt += `Invoice N: ${invoiceNumber}\n`;
+    receipt += `Invoice by: ADMIN\n`;
+    receipt += `${date} ${time}\n`;
+    receipt += '--------------------------------\n';
+    
+    // Items header
+    receipt += CENTER + BOLD_ON + 'ITEM | QTY | PRICE | AMOUNT' + BOLD_OFF + '\n';
+    receipt += '--------------------------------\n';
+    
+    // Items
+    receipt += LEFT;
+    items.forEach(item => {
+      receipt += BOLD_ON + item.itemName + BOLD_OFF + '\n';
+      receipt += CENTER + `${item.qty}kg | Rs.${item.price.toFixed(2)} | Rs.${item.total.toFixed(2)}\n`;
+      receipt += '................................\n';
+    });
+    
+    // Total
+    receipt += '================================\n';
+    receipt += CENTER + BOLD_ON + `TOTAL: Rs. ${total.toFixed(2)}` + BOLD_OFF + '\n';
+    receipt += '================================\n';
+    
+    // Footer
+    receipt += '\n';
+    receipt += 'Thank you for your business!\n';
+    receipt += 'Visit us again\n';
+    receipt += '\n\n\n';
+    
+    // Cut paper
+    receipt += CUT;
+    
+    return receipt;
+  };
+
   const showPrintPreview = (receipt: any) => {
     console.log('Print button clicked with receipt:', receipt);
     setCurrentReceipt(receipt);
@@ -511,6 +623,7 @@ export const useReceiptPrintHandler = () => {
 
   return { 
     checkPrinterAndPrint: showPrintPreview,
+    printToRawBT,
     PrintPreviewComponent 
   };
 };
