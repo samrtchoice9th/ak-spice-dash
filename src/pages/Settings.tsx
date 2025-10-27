@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useProducts } from '@/contexts/ProductsContext';
+import { useInventory } from '@/contexts/InventoryContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -31,6 +32,7 @@ declare global {
 
 const Settings = () => {
   const { products, updateProduct, deleteProduct, loading } = useProducts();
+  const { inventory } = useInventory();
   const { toast } = useToast();
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editName, setEditName] = useState('');
@@ -340,37 +342,44 @@ const Settings = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">Rs.{product.price.toFixed(2)}</div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{product.current_stock.toFixed(2)}</div>
-                      </td>
-                      <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => startEditing(product)}
-                            className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                            title="Edit item"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirmProduct(product)}
-                            className="p-1 text-red-600 hover:bg-red-100 rounded"
-                            title="Delete item"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {products.map((product) => {
+                    // Find matching inventory item for this product
+                    const inventoryItem = inventory.find(inv => inv.itemName === product.name);
+                    const displayPrice = inventoryItem?.averagePurchasePrice || 0;
+                    const displayStock = inventoryItem?.currentStock || 0;
+                    
+                    return (
+                      <tr key={product.id} className="hover:bg-gray-50">
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">Rs.{displayPrice.toFixed(2)}</div>
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{displayStock.toFixed(2)}</div>
+                        </td>
+                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => startEditing(product)}
+                              className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                              title="Edit item"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmProduct(product)}
+                              className="p-1 text-red-600 hover:bg-red-100 rounded"
+                              title="Delete item"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
