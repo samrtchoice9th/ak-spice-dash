@@ -40,12 +40,9 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Receipt ID
-              </th>
-              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Type
               </th>
-              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+              <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
               </th>
               <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
@@ -63,11 +60,6 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
             {receipts.map((receipt) => (
               <tr key={receipt.id} className="hover:bg-gray-50">
                 <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {receipt.id.slice(0, 8)}...
-                  </div>
-                </td>
-                <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     receipt.type === 'sales' 
                       ? 'bg-green-100 text-green-800'
@@ -76,7 +68,7 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
                     {receipt.type === 'sales' ? 'Sales' : 'Purchase'}
                   </span>
                 </td>
-                <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{receipt.date}</div>
                 </td>
                 <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell">

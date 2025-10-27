@@ -1,10 +1,11 @@
-
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { ReceiptItem } from '@/contexts/ReceiptsContext';
+import { ItemSearchDropdown } from './ItemSearchDropdown';
+import { useProducts } from '@/contexts/ProductsContext';
 
 interface EditReceiptItemRowProps {
   item: ReceiptItem;
@@ -19,16 +20,27 @@ export const EditReceiptItemRow: React.FC<EditReceiptItemRowProps> = ({
   onUpdate,
   onRemove
 }) => {
+  const { products } = useProducts();
+
+  const handleItemSelect = (itemName: string) => {
+    const selectedProduct = products.find(p => p.name === itemName);
+    if (selectedProduct) {
+      onUpdate(index, 'itemName', itemName);
+      onUpdate(index, 'price', selectedProduct.price);
+    }
+  };
+
   return (
     <div className="grid grid-cols-12 gap-2 items-center p-3 border rounded-lg">
       <div className="col-span-4">
         <Label htmlFor={`item-name-${index}`} className="text-xs">Item Name</Label>
-        <Input
-          id={`item-name-${index}`}
+        <ItemSearchDropdown
           value={item.itemName}
-          onChange={(e) => onUpdate(index, 'itemName', e.target.value)}
-          placeholder="Enter item name"
-          className="text-sm"
+          onChange={(value) => {
+            onUpdate(index, 'itemName', value);
+            handleItemSelect(value);
+          }}
+          placeholder="Search item..."
         />
       </div>
       <div className="col-span-2">
