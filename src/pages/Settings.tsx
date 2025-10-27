@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useProducts } from '@/contexts/ProductsContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Edit2, Trash2, Plus, Printer, Bluetooth, Wifi, Cable, Settings as SettingsIcon, Search, CheckCircle } from 'lucide-react';
 import { AddItemDialog } from '@/components/AddItemDialog';
 import { useToast } from '@/hooks/use-toast';
@@ -34,7 +35,9 @@ const Settings = () => {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editName, setEditName] = useState('');
   const [editPrice, setEditPrice] = useState('');
+  const [editStock, setEditStock] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [deleteConfirmProduct, setDeleteConfirmProduct] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('items');
   const [printerConnection, setPrinterConnection] = useState('bluetooth');
   const [paperSize, setPaperSize] = useState('3inch');
@@ -49,25 +52,44 @@ const Settings = () => {
       try {
         await updateProduct(editingProduct.id, {
           name: editName.trim(),
-          price: parseFloat(editPrice) || editingProduct.price
+          price: parseFloat(editPrice) || editingProduct.price,
+          current_stock: parseFloat(editStock) || editingProduct.current_stock
+        });
+        toast({
+          title: "Success",
+          description: "Item updated successfully!",
         });
         setEditingProduct(null);
         setEditName('');
         setEditPrice('');
+        setEditStock('');
       } catch (error) {
         console.error('Error updating product:', error);
-        alert('Failed to update item. Please try again.');
+        toast({
+          title: "Error",
+          description: "Failed to update item. Please try again.",
+          variant: "destructive"
+        });
       }
     }
   };
 
-  const handleDeleteProduct = async (product: any) => {
-    if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
+  const handleDeleteProduct = async () => {
+    if (deleteConfirmProduct) {
       try {
-        await deleteProduct(product.id);
+        await deleteProduct(deleteConfirmProduct.id);
+        toast({
+          title: "Success",
+          description: "Item deleted successfully!",
+        });
+        setDeleteConfirmProduct(null);
       } catch (error) {
         console.error('Error deleting product:', error);
-        alert('Failed to delete item. Please try again.');
+        toast({
+          title: "Error",
+          description: "Failed to delete item. Please try again.",
+          variant: "destructive"
+        });
       }
     }
   };
@@ -76,6 +98,7 @@ const Settings = () => {
     setEditingProduct(product);
     setEditName(product.name);
     setEditPrice(product.price.toString());
+    setEditStock(product.current_stock.toString());
   };
 
   const scanForBluetoothDevices = async () => {
@@ -338,7 +361,7 @@ const Settings = () => {
                             <Edit2 size={16} />
                           </button>
                           <button
-                            onClick={() => handleDeleteProduct(product)}
+                            onClick={() => setDeleteConfirmProduct(product)}
                             className="p-1 text-red-600 hover:bg-red-100 rounded"
                             title="Delete item"
                           >
@@ -518,6 +541,20 @@ const Settings = () => {
                 step="0.01"
               />
             </div>
+            <div>
+              <label htmlFor="editStock" className="block text-sm font-medium text-gray-700 mb-2">
+                Current Stock (Kg)
+              </label>
+              <input
+                id="editStock"
+                type="number"
+                value={editStock}
+                onChange={(e) => setEditStock(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="0.00"
+                step="0.01"
+              />
+            </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setEditingProduct(null)}>
                 Cancel
@@ -535,6 +572,24 @@ const Settings = () => {
         isOpen={showAddDialog}
         onClose={() => setShowAddDialog(false)}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmProduct} onOpenChange={() => setDeleteConfirmProduct(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to delete "<strong>{deleteConfirmProduct?.name}</strong>"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProduct} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Bluetooth Device Selection Dialog */}
       <Dialog open={showBluetoothDialog} onOpenChange={setShowBluetoothDialog}>

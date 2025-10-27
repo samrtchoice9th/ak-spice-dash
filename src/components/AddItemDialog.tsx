@@ -16,15 +16,27 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
   const [price, setPrice] = useState('');
   const [initialStock, setInitialStock] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { addProduct } = useProducts();
+  const { addProduct, products } = useProducts();
 
   const handleAddItem = async () => {
     try {
       setIsLoading(true);
       
+      // Check for duplicate item name
+      const itemName = newItemName.trim();
+      const isDuplicate = products.some(
+        product => product.name.toLowerCase() === itemName.toLowerCase()
+      );
+      
+      if (isDuplicate) {
+        alert('Item with this name already exists. Please use a different name.');
+        setIsLoading(false);
+        return;
+      }
+      
       // Validate input
       const productData = {
-        name: newItemName.trim(),
+        name: itemName,
         current_stock: parseFloat(initialStock) || 0,
         price: parseFloat(price) || 0
       };
