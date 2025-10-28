@@ -18,6 +18,7 @@ const Inventory = () => {
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [editStock, setEditStock] = useState('');
 
   const totalInventoryValue = inventory.reduce((sum, item) => 
     sum + (item.currentStock * item.averagePurchasePrice), 0
@@ -26,8 +27,10 @@ const Inventory = () => {
   const lowStockItems = inventory.filter(item => item.currentStock <= 5);
 
   const startEditing = (itemName: string) => {
+    const inventoryItem = inventory.find(item => item.itemName === itemName);
     setEditingItem(itemName);
     setEditName(itemName);
+    setEditStock(inventoryItem?.currentStock.toString() || '0');
   };
 
   const handleEditItem = async () => {
@@ -35,9 +38,10 @@ const Inventory = () => {
       try {
         const productToUpdate = products.find(p => p.name === editingItem);
         if (productToUpdate) {
-          // Update product name
+          // Update product name and stock
           await updateProduct(productToUpdate.id, {
-            name: editName.trim()
+            name: editName.trim(),
+            current_stock: parseFloat(editStock) || 0
           });
 
           // Update all receipt items with the old name to the new name
@@ -53,15 +57,16 @@ const Inventory = () => {
 
           toast({
             title: "Success",
-            description: "Item name updated successfully",
+            description: "Item updated successfully",
           });
         }
         setEditingItem(null);
         setEditName('');
+        setEditStock('');
       } catch (error) {
         toast({
           title: "Error",
-          description: "Failed to update item name",
+          description: "Failed to update item",
           variant: "destructive",
         });
       }
@@ -245,7 +250,7 @@ const Inventory = () => {
       <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Item Name</DialogTitle>
+            <DialogTitle>Edit Item</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -259,6 +264,20 @@ const Inventory = () => {
                 onChange={(e) => setEditName(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter item name"
+              />
+            </div>
+            <div>
+              <label htmlFor="editStock" className="block text-sm font-medium text-gray-700 mb-2">
+                Current Stock (Kg)
+              </label>
+              <input
+                id="editStock"
+                type="number"
+                value={editStock}
+                onChange={(e) => setEditStock(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="0.00"
+                step="0.01"
               />
             </div>
             <div className="flex justify-end space-x-2">
