@@ -1,10 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useInventory } from '@/contexts/InventoryContext';
-import { Package, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { useProducts } from '@/contexts/ProductsContext';
+import { Package, TrendingUp, TrendingDown, DollarSign, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const Inventory = () => {
   const { inventory } = useInventory();
+  const { products, deleteProduct } = useProducts();
+  const { toast } = useToast();
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<string | null>(null);
 
   const totalInventoryValue = inventory.reduce((sum, item) => 
     sum + (item.currentStock * item.averagePurchasePrice), 0
@@ -117,6 +123,9 @@ const Inventory = () => {
                   <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -156,6 +165,15 @@ const Inventory = () => {
                          item.currentStock <= 5 ? 'Low Stock' : 'In Stock'}
                       </span>
                     </td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
+                      <button
+                        onClick={() => setDeleteConfirmItem(item.itemName)}
+                        className="p-1 text-red-600 hover:bg-red-100 rounded"
+                        title="Delete item"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -163,6 +181,39 @@ const Inventory = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmItem} onOpenChange={() => setDeleteConfirmItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{deleteConfirmItem}" from your inventory. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (deleteConfirmItem) {
+                  const productToDelete = products.find(p => p.name === deleteConfirmItem);
+                  if (productToDelete) {
+                    await deleteProduct(productToDelete.id);
+                    toast({
+                      title: "Success",
+                      description: "Item deleted successfully",
+                    });
+                  }
+                  setDeleteConfirmItem(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
