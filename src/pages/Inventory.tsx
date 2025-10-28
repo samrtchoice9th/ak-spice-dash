@@ -2,13 +2,16 @@
 import React, { useState } from 'react';
 import { useInventory } from '@/contexts/InventoryContext';
 import { useProducts } from '@/contexts/ProductsContext';
+import { useReceipts } from '@/contexts/ReceiptsContext';
 import { Package, TrendingUp, TrendingDown, DollarSign, Trash2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Inventory = () => {
   const { inventory } = useInventory();
   const { products, deleteProduct } = useProducts();
+  const { refreshReceipts } = useReceipts();
   const { toast } = useToast();
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<string | null>(null);
 
@@ -196,12 +199,33 @@ const Inventory = () => {
             <AlertDialogAction
               onClick={async () => {
                 if (deleteConfirmItem) {
-                  const productToDelete = products.find(p => p.name === deleteConfirmItem);
-                  if (productToDelete) {
-                    await deleteProduct(productToDelete.id);
+                  try {
+                    // First delete all receipt items with this item name
+                    const { error: itemsError } = await supabase
+                      .from('receipt_items')
+                      .delete()
+                      .eq('item_name', deleteConfirmItem);
+
+                    if (itemsError) throw itemsError;
+
+                    // Then delete the product
+                    const productToDelete = products.find(p => p.name === deleteConfirmItem);
+                    if (productToDelete) {
+                      await deleteProduct(productToDelete.id);
+                    }
+
+                    // Refresh receipts to update inventory
+                    await refreshReceipts();
+
                     toast({
                       title: "Success",
                       description: "Item deleted successfully",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to delete item",
+                      variant: "destructive",
                     });
                   }
                   setDeleteConfirmItem(null);
