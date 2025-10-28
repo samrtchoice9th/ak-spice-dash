@@ -36,8 +36,6 @@ const Settings = () => {
   const { toast } = useToast();
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editName, setEditName] = useState('');
-  const [editPrice, setEditPrice] = useState('');
-  const [editStock, setEditStock] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteConfirmProduct, setDeleteConfirmProduct] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('items');
@@ -53,23 +51,19 @@ const Settings = () => {
     if (editingProduct && editName.trim()) {
       try {
         await updateProduct(editingProduct.id, {
-          name: editName.trim(),
-          price: parseFloat(editPrice) || editingProduct.price,
-          current_stock: parseFloat(editStock) || editingProduct.current_stock
+          name: editName.trim()
         });
         toast({
           title: "Success",
-          description: "Item updated successfully!",
+          description: "Item name updated successfully!",
         });
         setEditingProduct(null);
         setEditName('');
-        setEditPrice('');
-        setEditStock('');
       } catch (error) {
         console.error('Error updating product:', error);
         toast({
           title: "Error",
-          description: "Failed to update item. Please try again.",
+          description: "Failed to update item name. Please try again.",
           variant: "destructive"
         });
       }
@@ -99,8 +93,6 @@ const Settings = () => {
   const startEditing = (product: any) => {
     setEditingProduct(product);
     setEditName(product.name);
-    setEditPrice(product.price.toString());
-    setEditStock(product.current_stock.toString());
   };
 
   const scanForBluetoothDevices = async () => {
@@ -534,34 +526,6 @@ const Settings = () => {
                 onChange={(e) => setEditName(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter item name"
-              />
-            </div>
-            <div>
-              <label htmlFor="editPrice" className="block text-sm font-medium text-gray-700 mb-2">
-                Price per Kg (Rs.)
-              </label>
-              <input
-                id="editPrice"
-                type="number"
-                value={editPrice}
-                onChange={(e) => setEditPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0.00"
-                step="0.01"
-              />
-            </div>
-            <div>
-              <label htmlFor="editStock" className="block text-sm font-medium text-gray-700 mb-2">
-                Current Stock (Kg)
-              </label>
-              <input
-                id="editStock"
-                type="number"
-                value={editStock}
-                onChange={(e) => setEditStock(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0.00"
-                step="0.01"
               />
             </div>
             <div className="flex justify-end space-x-2">

@@ -3,23 +3,70 @@ import React, { useState } from 'react';
 import { useInventory } from '@/contexts/InventoryContext';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useReceipts } from '@/contexts/ReceiptsContext';
-import { Package, TrendingUp, TrendingDown, DollarSign, Trash2 } from 'lucide-react';
+import { Package, TrendingUp, TrendingDown, DollarSign, Trash2, Edit2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 const Inventory = () => {
   const { inventory } = useInventory();
-  const { products, deleteProduct } = useProducts();
+  const { products, updateProduct, deleteProduct } = useProducts();
   const { refreshReceipts } = useReceipts();
   const { toast } = useToast();
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
 
   const totalInventoryValue = inventory.reduce((sum, item) => 
     sum + (item.currentStock * item.averagePurchasePrice), 0
   );
 
   const lowStockItems = inventory.filter(item => item.currentStock <= 5);
+
+  const startEditing = (itemName: string) => {
+    setEditingItem(itemName);
+    setEditName(itemName);
+  };
+
+  const handleEditItem = async () => {
+    if (editingItem && editName.trim()) {
+      try {
+        const productToUpdate = products.find(p => p.name === editingItem);
+        if (productToUpdate) {
+          // Update product name
+          await updateProduct(productToUpdate.id, {
+            name: editName.trim()
+          });
+
+          // Update all receipt items with the old name to the new name
+          const { error: updateError } = await supabase
+            .from('receipt_items')
+            .update({ item_name: editName.trim() })
+            .eq('item_name', editingItem);
+
+          if (updateError) throw updateError;
+
+          // Refresh receipts to update inventory
+          await refreshReceipts();
+
+          toast({
+            title: "Success",
+            description: "Item name updated successfully",
+          });
+        }
+        setEditingItem(null);
+        setEditName('');
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update item name",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   return (
     <div className="flex-1 p-4 sm:p-6 lg:p-8">
@@ -169,13 +216,22 @@ const Inventory = () => {
                       </span>
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => setDeleteConfirmItem(item.itemName)}
-                        className="p-1 text-red-600 hover:bg-red-100 rounded"
-                        title="Delete item"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => startEditing(item.itemName)}
+                          className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                          title="Edit item"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmItem(item.itemName)}
+                          className="p-1 text-red-600 hover:bg-red-100 rounded"
+                          title="Delete item"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -184,6 +240,38 @@ const Inventory = () => {
           </div>
         )}
       </div>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Item Name</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="editName" className="block text-sm font-medium text-gray-700 mb-2">
+                Item Name *
+              </label>
+              <input
+                id="editName"
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter item name"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setEditingItem(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditItem}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmItem} onOpenChange={() => setDeleteConfirmItem(null)}>
