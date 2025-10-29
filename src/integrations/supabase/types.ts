@@ -87,6 +87,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          note: string | null
           time: string
           total_amount: number
           type: string
@@ -97,6 +98,7 @@ export type Database = {
           created_at?: string
           date: string
           id?: string
+          note?: string | null
           time: string
           total_amount: number
           type: string
@@ -107,6 +109,7 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          note?: string | null
           time?: string
           total_amount?: number
           type?: string
