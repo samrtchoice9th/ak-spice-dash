@@ -6,7 +6,7 @@ import { useProducts } from '@/contexts/ProductsContext';
 import { calculateGrandTotal } from '@/utils/calculations';
 import { useToast } from '@/hooks/use-toast';
 
-export const useTableData = (type: 'purchase' | 'sales' = 'sales') => {
+export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales') => {
   const [rows, setRows] = useState<TableRow[]>([
     { id: '1', itemName: '', qty: 0, price: 0 }
   ]);

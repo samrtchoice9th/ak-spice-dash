@@ -9,7 +9,7 @@ interface ProductsContextType {
   updateProduct: (id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   refreshProducts: () => Promise<void>;
-  updateStock: (productName: string, quantityChange: number, type: 'purchase' | 'sales') => Promise<void>;
+  updateStock: (productName: string, quantityChange: number, type: 'purchase' | 'sales' | 'adjustment') => Promise<void>;
 }
 
 const ProductsContext = createContext<ProductsContextType | undefined>(undefined);
@@ -80,7 +80,7 @@ export const ProductsProvider: React.FC<ProductsProviderProps> = ({ children }) 
     }
   };
 
-  const updateStock = async (productName: string, quantityChange: number, type: 'purchase' | 'sales') => {
+  const updateStock = async (productName: string, quantityChange: number, type: 'purchase' | 'sales' | 'adjustment') => {
     try {
       await productService.updateStock(productName, quantityChange, type);
       await refreshProducts(); // Refresh to get updated stock levels

@@ -12,7 +12,7 @@ export interface ReceiptItem {
 
 export interface Receipt {
   id: string;
-  type: 'purchase' | 'sales';
+  type: 'purchase' | 'sales' | 'adjustment';
   items: ReceiptItem[];
   totalAmount: number;
   date: string;

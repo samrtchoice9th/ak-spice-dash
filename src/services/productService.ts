@@ -92,7 +92,7 @@ export const productService = {
     }
   },
 
-  async updateStock(productName: string, quantityChange: number, type: 'purchase' | 'sales'): Promise<void> {
+  async updateStock(productName: string, quantityChange: number, type: 'purchase' | 'sales' | 'adjustment'): Promise<void> {
     // Validate input
     const validatedData = stockUpdateSchema.parse({ productName, quantityChange, type });
     
@@ -119,7 +119,7 @@ export const productService = {
       // Update existing product stock
       const newStock = validatedData.type === 'purchase' 
         ? product.current_stock + validatedData.quantityChange
-        : product.current_stock - validatedData.quantityChange;
+        : product.current_stock - validatedData.quantityChange; // 'sales' and 'adjustment' both reduce stock
 
       await this.updateProduct(product.id, {
         current_stock: Math.max(0, newStock) // Prevent negative stock

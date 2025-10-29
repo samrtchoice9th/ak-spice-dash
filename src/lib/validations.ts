@@ -34,7 +34,7 @@ export const receiptItemSchema = z.object({
 
 // Receipt validation schema
 export const receiptSchema = z.object({
-  type: z.literal('purchase').or(z.literal('sales')),
+  type: z.literal('purchase').or(z.literal('sales')).or(z.literal('adjustment')),
   totalAmount: z.number()
     .min(0, { message: "Total amount cannot be negative" })
     .max(9999999, { message: "Total amount too large" }),
@@ -67,5 +67,5 @@ export const stockUpdateSchema = z.object({
   quantityChange: z.number()
     .min(0.01, { message: "Quantity change must be greater than 0" })
     .max(9999, { message: "Quantity change too large" }),
-  type: z.literal('purchase').or(z.literal('sales'))
+  type: z.literal('purchase').or(z.literal('sales')).or(z.literal('adjustment'))
 });

@@ -7,8 +7,8 @@ export const printReceipt = (
   rows: TableRow[], 
   title: string, 
   calculateTotal: () => number,
-  addReceipt: (receipt: { type: 'purchase' | 'sales'; items: ReceiptItem[]; totalAmount: number }) => void,
-  type: 'purchase' | 'sales',
+  addReceipt: (receipt: { type: 'purchase' | 'sales' | 'adjustment'; items: ReceiptItem[]; totalAmount: number }) => void,
+  type: 'purchase' | 'sales' | 'adjustment',
   clearAllFields: () => void,
   showPreviewFirst: boolean = false,
   onShowPreview?: (receipt: any) => void
@@ -144,8 +144,8 @@ export const printToRawBT = (
   rows: TableRow[], 
   title: string, 
   calculateTotal: () => number,
-  addReceipt: (receipt: { type: 'purchase' | 'sales'; items: ReceiptItem[]; totalAmount: number }) => void,
-  type: 'purchase' | 'sales',
+  addReceipt: (receipt: { type: 'purchase' | 'sales' | 'adjustment'; items: ReceiptItem[]; totalAmount: number }) => void,
+  type: 'purchase' | 'sales' | 'adjustment',
   clearAllFields: () => void
 ): boolean => {
   // Check if Android

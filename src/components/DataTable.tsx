@@ -15,7 +15,7 @@ interface DataTableProps {
   title: string;
   showAddItem?: boolean;
   showSave?: boolean;
-  type?: 'purchase' | 'sales';
+  type?: 'purchase' | 'sales' | 'adjustment';
 }
 
 export const DataTable: React.FC<DataTableProps> = ({ 
