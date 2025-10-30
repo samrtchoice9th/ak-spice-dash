@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales') => {
   const [rows, setRows] = useState<TableRow[]>([
-    { id: '1', itemName: '', qty: 0, price: 0 }
+    { id: '1', itemName: '', qty: 0, price: 0, adjustmentType: 'increase' }
   ]);
   const [isSaving, setIsSaving] = useState(false);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
@@ -23,6 +23,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
       itemName: '',
       qty: 0,
       price: 0,
+      adjustmentType: 'increase',
     };
     setRows(prev => [...prev, newRow]);
     setTimeout(() => {
@@ -33,7 +34,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
 
   const clearAllFields = () => {
     const newId = Date.now().toString();
-    setRows([{ id: newId, itemName: '', qty: 0, price: 0 }]);
+    setRows([{ id: newId, itemName: '', qty: 0, price: 0, adjustmentType: 'increase' }]);
     setTimeout(() => {
       const firstRowRef = inputRefs.current[`${newId}-itemName`];
       firstRowRef?.focus();
@@ -60,12 +61,13 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
         if (isAdjustment && currentRow.qty !== 0) {
           // For adjustment, move to next row after quantity
           if (currentRow.itemName && currentRow.qty !== 0) {
-            if (rowIndex === rows.length - 1) {
+          if (rowIndex === rows.length - 1) {
               const newRow: TableRow = {
                 id: Date.now().toString(),
                 itemName: '',
                 qty: 0,
                 price: 0,
+                adjustmentType: 'increase',
               };
               setRows(prev => [...prev, newRow]);
               setTimeout(() => {
@@ -91,6 +93,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
               itemName: '',
               qty: 0,
               price: 0,
+              adjustmentType: 'increase',
             };
             setRows(prev => [...prev, newRow]);
             setTimeout(() => {
@@ -117,13 +120,20 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
         }
         return row.itemName && row.qty > 0 && row.price > 0;
       })
-      .map(row => ({
-        id: row.id,
-        itemName: row.itemName,
-        qty: row.qty,
-        price: isAdjustment ? 0 : row.price,
-        total: isAdjustment ? 0 : row.qty * row.price
-      }));
+      .map(row => {
+        let finalQty = row.qty;
+        if (isAdjustment) {
+          // Apply sign based on adjustment type
+          finalQty = row.adjustmentType === 'reduce' ? -Math.abs(row.qty) : Math.abs(row.qty);
+        }
+        return {
+          id: row.id,
+          itemName: row.itemName,
+          qty: finalQty,
+          price: isAdjustment ? 0 : row.price,
+          total: isAdjustment ? 0 : row.qty * row.price
+        };
+      });
 
     if (receiptItems.length > 0) {
       try {

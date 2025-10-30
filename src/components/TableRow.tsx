@@ -39,6 +39,18 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
             }}
           />
         </td>
+        {isAdjustment && (
+          <td className="px-6 py-4 border-r border-gray-200">
+            <select
+              value={row.adjustmentType || 'increase'}
+              onChange={(e) => onUpdateRow(row.id, 'adjustmentType', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="increase">Increase</option>
+              <option value="reduce">Reduce</option>
+            </select>
+          </td>
+        )}
         <td className="px-6 py-4 border-r border-gray-200">
           <input
             ref={(ref) => {
@@ -51,20 +63,16 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
             onChange={(e) => {
               const value = e.target.value;
               if (isAdjustment) {
-                // For adjustment, allow +/- signs and parse as signed number
-                if (value === '' || value === '+' || value === '-') {
-                  onUpdateRow(row.id, 'qty', 0);
-                } else {
-                  const numValue = parseFloat(value);
-                  onUpdateRow(row.id, 'qty', isNaN(numValue) ? 0 : numValue);
-                }
+                // For adjustment, just store positive number
+                const numValue = parseFloat(value);
+                onUpdateRow(row.id, 'qty', isNaN(numValue) ? 0 : Math.abs(numValue));
               } else {
                 onUpdateRow(row.id, 'qty', value === '' ? 0 : parseFloat(value) || 0);
               }
             }}
             onKeyDown={(e) => onKeyDown(e, index, 'qty')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder={isAdjustment ? "+10 or -5" : "0"}
+            placeholder={isAdjustment ? "10" : "0"}
             step="0.01"
           />
         </td>
@@ -117,32 +125,40 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
             </div>
             
             {isAdjustment ? (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Qty (Kg)</label>
-                <input
-                  ref={(ref) => {
-                    if (inputRefs.current) {
-                      inputRefs.current[`${row.id}-qty`] = ref;
-                    }
-                  }}
-                  type="text"
-                  value={row.qty === 0 ? '' : row.qty}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // For adjustment, allow +/- signs and parse as signed number
-                    if (value === '' || value === '+' || value === '-') {
-                      onUpdateRow(row.id, 'qty', 0);
-                    } else {
+              <>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Action</label>
+                  <select
+                    value={row.adjustmentType || 'increase'}
+                    onChange={(e) => onUpdateRow(row.id, 'adjustmentType', e.target.value)}
+                    className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                  >
+                    <option value="increase">Increase</option>
+                    <option value="reduce">Reduce</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Qty (Kg)</label>
+                  <input
+                    ref={(ref) => {
+                      if (inputRefs.current) {
+                        inputRefs.current[`${row.id}-qty`] = ref;
+                      }
+                    }}
+                    type="number"
+                    value={row.qty === 0 ? '' : row.qty}
+                    onChange={(e) => {
+                      const value = e.target.value;
                       const numValue = parseFloat(value);
-                      onUpdateRow(row.id, 'qty', isNaN(numValue) ? 0 : numValue);
-                    }
-                  }}
-                  onKeyDown={(e) => onKeyDown(e, index, 'qty')}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-                  placeholder="+10 or -5"
-                  step="0.01"
-                />
-              </div>
+                      onUpdateRow(row.id, 'qty', isNaN(numValue) ? 0 : Math.abs(numValue));
+                    }}
+                    onKeyDown={(e) => onKeyDown(e, index, 'qty')}
+                    className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                    placeholder="10"
+                    step="0.01"
+                  />
+                </div>
+              </>
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-4">

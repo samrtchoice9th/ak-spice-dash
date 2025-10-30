@@ -14,6 +14,11 @@ export const TableHeader: React.FC<TableHeaderProps> = ({ type = 'sales' }) => {
         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
           Item Name
         </th>
+        {isAdjustment && (
+          <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">
+            Action
+          </th>
+        )}
         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
           Qty (Kg)
         </th>

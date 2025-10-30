@@ -4,4 +4,5 @@ export interface TableRow {
   itemName: string;
   qty: number;
   price: number;
+  adjustmentType?: 'increase' | 'reduce';
 }
