@@ -50,7 +50,17 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
             value={row.qty === 0 ? '' : row.qty}
             onChange={(e) => {
               const value = e.target.value;
-              onUpdateRow(row.id, 'qty', value === '' ? 0 : parseFloat(value) || 0);
+              if (isAdjustment) {
+                // For adjustment, allow +/- signs and parse as signed number
+                if (value === '' || value === '+' || value === '-') {
+                  onUpdateRow(row.id, 'qty', 0);
+                } else {
+                  const numValue = parseFloat(value);
+                  onUpdateRow(row.id, 'qty', isNaN(numValue) ? 0 : numValue);
+                }
+              } else {
+                onUpdateRow(row.id, 'qty', value === '' ? 0 : parseFloat(value) || 0);
+              }
             }}
             onKeyDown={(e) => onKeyDown(e, index, 'qty')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -119,7 +129,13 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
                   value={row.qty === 0 ? '' : row.qty}
                   onChange={(e) => {
                     const value = e.target.value;
-                    onUpdateRow(row.id, 'qty', value === '' ? 0 : parseFloat(value) || 0);
+                    // For adjustment, allow +/- signs and parse as signed number
+                    if (value === '' || value === '+' || value === '-') {
+                      onUpdateRow(row.id, 'qty', 0);
+                    } else {
+                      const numValue = parseFloat(value);
+                      onUpdateRow(row.id, 'qty', isNaN(numValue) ? 0 : numValue);
+                    }
                   }}
                   onKeyDown={(e) => onKeyDown(e, index, 'qty')}
                   className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
