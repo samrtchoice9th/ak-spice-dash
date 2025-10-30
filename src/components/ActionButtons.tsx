@@ -12,6 +12,8 @@ interface ActionButtonsProps {
   showAddItem?: boolean;
   showSave?: boolean;
   showThermalPrint?: boolean;
+  showPrint?: boolean;
+  showAddRow?: boolean;
   disabled?: boolean;
 }
 
@@ -24,6 +26,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   showAddItem = false,
   showSave = false,
   showThermalPrint = false,
+  showPrint = true,
+  showAddRow = true,
   disabled = false
 }) => {
   const { toast } = useToast();
@@ -75,7 +79,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   return (
     <div className="mt-6 sm:mt-8 px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-center">
-        {onAddRow && (
+        {showAddRow && onAddRow && (
           <button
             onClick={handleAddRow}
             disabled={disabled}
@@ -86,14 +90,16 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           </button>
         )}
         
-        <button
-          onClick={handlePrint}
-          disabled={disabled}
-          className="flex items-center justify-center space-x-2 px-6 py-4 sm:py-3 bg-gray-600 text-white font-medium rounded-lg border-2 border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base sm:text-sm"
-        >
-          <Printer size={20} />
-          <span>Print</span>
-        </button>
+        {showPrint && (
+          <button
+            onClick={handlePrint}
+            disabled={disabled}
+            className="flex items-center justify-center space-x-2 px-6 py-4 sm:py-3 bg-gray-600 text-white font-medium rounded-lg border-2 border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] text-base sm:text-sm"
+          >
+            <Printer size={20} />
+            <span>Print</span>
+          </button>
+        )}
 
         {showThermalPrint && (
           <button

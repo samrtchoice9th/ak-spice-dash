@@ -54,10 +54,12 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   const totalAmount = calculateTotal();
 
+  const isAdjustment = type === 'adjustment';
+
   return (
     <>
       <DataTableContainer title={title}>
-        <TableHeader />
+        <TableHeader type={type} />
         <tbody>
           {rows.map((row, index) => (
             <TableRowComponent
@@ -67,10 +69,11 @@ export const DataTable: React.FC<DataTableProps> = ({
               onUpdateRow={updateRow}
               onKeyDown={handleKeyDown}
               inputRefs={inputRefs}
+              type={type}
             />
           ))}
         </tbody>
-        <TableFooter totalAmount={totalAmount} />
+        {!isAdjustment && <TableFooter totalAmount={totalAmount} />}
       </DataTableContainer>
 
       <ActionButtons
@@ -81,7 +84,9 @@ export const DataTable: React.FC<DataTableProps> = ({
         onAddRow={addRow}
         showAddItem={showAddItem}
         showSave={showSave}
-        showThermalPrint={true}
+        showThermalPrint={!isAdjustment}
+        showPrint={!isAdjustment}
+        showAddRow={!isAdjustment}
         disabled={isSaving}
       />
 

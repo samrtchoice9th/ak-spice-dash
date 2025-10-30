@@ -110,16 +110,30 @@ export const productService = {
 
     if (!product) {
       // Create new product if it doesn't exist
+      let initialStock = 0;
+      if (validatedData.type === 'purchase') {
+        initialStock = Math.abs(validatedData.quantityChange);
+      } else if (validatedData.type === 'adjustment' && validatedData.quantityChange > 0) {
+        initialStock = validatedData.quantityChange;
+      }
+      
       await this.createProduct({
         name: validatedData.productName,
-        current_stock: validatedData.type === 'purchase' ? validatedData.quantityChange : -validatedData.quantityChange,
+        current_stock: initialStock,
         price: 0 // Will be updated when price information is available
       });
     } else {
       // Update existing product stock
-      const newStock = validatedData.type === 'purchase' 
-        ? product.current_stock + validatedData.quantityChange
-        : product.current_stock - validatedData.quantityChange; // 'sales' and 'adjustment' both reduce stock
+      let newStock = product.current_stock;
+      
+      if (validatedData.type === 'purchase') {
+        newStock += Math.abs(validatedData.quantityChange);
+      } else if (validatedData.type === 'sales') {
+        newStock -= Math.abs(validatedData.quantityChange);
+      } else if (validatedData.type === 'adjustment') {
+        // For adjustment, the quantity can be positive or negative
+        newStock += validatedData.quantityChange;
+      }
 
       await this.updateProduct(product.id, {
         current_stock: Math.max(0, newStock) // Prevent negative stock

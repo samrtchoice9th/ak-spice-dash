@@ -1,7 +1,13 @@
 
 import React from 'react';
 
-export const TableHeader: React.FC = () => {
+interface TableHeaderProps {
+  type?: 'purchase' | 'sales' | 'adjustment';
+}
+
+export const TableHeader: React.FC<TableHeaderProps> = ({ type = 'sales' }) => {
+  const isAdjustment = type === 'adjustment';
+
   return (
     <thead className="hidden md:table-header-group">
       <tr className="bg-gray-50 border-b-2 border-gray-200">
@@ -11,12 +17,16 @@ export const TableHeader: React.FC = () => {
         <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
           Qty (Kg)
         </th>
-        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
-          Price
-        </th>
-        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-          Total
-        </th>
+        {!isAdjustment && (
+          <>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+              Price
+            </th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+              Total
+            </th>
+          </>
+        )}
       </tr>
     </thead>
   );

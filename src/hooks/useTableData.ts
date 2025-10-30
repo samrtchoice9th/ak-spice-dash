@@ -47,6 +47,8 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, rowIndex: number, field: 'itemName' | 'qty' | 'price') => {
+    const isAdjustment = type === 'adjustment';
+    
     if (e.key === 'Enter') {
       e.preventDefault();
       const currentRow = rows[rowIndex];
@@ -54,9 +56,33 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
       if (field === 'itemName' && currentRow.itemName) {
         const qtyRef = inputRefs.current[`${currentRow.id}-qty`];
         qtyRef?.focus();
-      } else if (field === 'qty' && currentRow.qty > 0) {
-        const priceRef = inputRefs.current[`${currentRow.id}-price`];
-        priceRef?.focus();
+      } else if (field === 'qty') {
+        if (isAdjustment && currentRow.qty !== 0) {
+          // For adjustment, move to next row after quantity
+          if (currentRow.itemName && currentRow.qty !== 0) {
+            if (rowIndex === rows.length - 1) {
+              const newRow: TableRow = {
+                id: Date.now().toString(),
+                itemName: '',
+                qty: 0,
+                price: 0,
+              };
+              setRows(prev => [...prev, newRow]);
+              setTimeout(() => {
+                const newRowRef = inputRefs.current[`${newRow.id}-itemName`];
+                newRowRef?.focus();
+              }, 0);
+            } else {
+              const nextRow = rows[rowIndex + 1];
+              const nextRowRef = inputRefs.current[`${nextRow.id}-itemName`];
+              nextRowRef?.focus();
+            }
+          }
+        } else if (currentRow.qty > 0) {
+          // For purchase/sales, move to price field
+          const priceRef = inputRefs.current[`${currentRow.id}-price`];
+          priceRef?.focus();
+        }
       } else if (field === 'price' && currentRow.price > 0) {
         if (currentRow.itemName && currentRow.qty > 0 && currentRow.price > 0) {
           if (rowIndex === rows.length - 1) {
@@ -82,14 +108,21 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
   };
 
   const handleSave = async () => {
+    const isAdjustment = type === 'adjustment';
+    
     const receiptItems: ReceiptItem[] = rows
-      .filter(row => row.itemName && row.qty > 0 && row.price > 0)
+      .filter(row => {
+        if (isAdjustment) {
+          return row.itemName && row.qty !== 0;
+        }
+        return row.itemName && row.qty > 0 && row.price > 0;
+      })
       .map(row => ({
         id: row.id,
         itemName: row.itemName,
         qty: row.qty,
-        price: row.price,
-        total: row.qty * row.price
+        price: isAdjustment ? 0 : row.price,
+        total: isAdjustment ? 0 : row.qty * row.price
       }));
 
     if (receiptItems.length > 0) {
@@ -99,7 +132,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
         await addReceipt({
           type,
           items: receiptItems,
-          totalAmount: calculateGrandTotal(rows)
+          totalAmount: isAdjustment ? 0 : calculateGrandTotal(rows)
         });
 
         for (const item of receiptItems) {
