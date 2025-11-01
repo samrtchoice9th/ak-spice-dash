@@ -23,13 +23,12 @@ export const receiptItemSchema = z.object({
     .min(1, { message: "Item name is required" })
     .max(100, { message: "Item name must be less than 100 characters" }),
   qty: z.number()
-    .min(0.01, { message: "Quantity must be greater than 0" })
-    .max(9999, { message: "Quantity too large" }),
+    .refine(val => val !== 0, { message: "Quantity cannot be zero" })
+    .refine(val => Math.abs(val) <= 9999, { message: "Quantity too large" }),
   price: z.number()
     .min(0, { message: "Price cannot be negative" })
     .max(999999, { message: "Price value too large" }),
   total: z.number()
-    .min(0, { message: "Total cannot be negative" })
 });
 
 // Receipt validation schema
