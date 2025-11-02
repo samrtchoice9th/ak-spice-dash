@@ -23,7 +23,7 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
   onSave
 }) => {
   const [items, setItems] = useState<ReceiptItem[]>([]);
-  const [type, setType] = useState<'purchase' | 'sales' | 'adjustment'>('sales');
+  const [type, setType] = useState<'purchase' | 'sales' | 'adjustment' | 'increase' | 'reduce'>('sales');
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
@@ -125,7 +125,7 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="type">Receipt Type</Label>
-              <Select value={type} onValueChange={(value: 'purchase' | 'sales' | 'adjustment') => setType(value)}>
+              <Select value={type} onValueChange={(value: 'purchase' | 'sales' | 'adjustment' | 'increase' | 'reduce') => setType(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -133,6 +133,8 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
                   <SelectItem value="sales">Sales</SelectItem>
                   <SelectItem value="purchase">Purchase</SelectItem>
                   <SelectItem value="adjustment">Adjustment</SelectItem>
+                  <SelectItem value="increase">Increase</SelectItem>
+                  <SelectItem value="reduce">Reduce</SelectItem>
                 </SelectContent>
               </Select>
             </div>

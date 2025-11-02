@@ -51,6 +51,7 @@ export type Database = {
           item_name: string
           price: number
           qty: number
+          reason: string | null
           receipt_id: string
           total: number
         }
@@ -60,6 +61,7 @@ export type Database = {
           item_name: string
           price: number
           qty: number
+          reason?: string | null
           receipt_id: string
           total: number
         }
@@ -69,6 +71,7 @@ export type Database = {
           item_name?: string
           price?: number
           qty?: number
+          reason?: string | null
           receipt_id?: string
           total?: number
         }

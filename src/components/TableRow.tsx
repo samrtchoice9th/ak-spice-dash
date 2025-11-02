@@ -76,6 +76,17 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
             step="0.01"
           />
         </td>
+        {isAdjustment && (
+          <td className="px-6 py-4 border-r border-gray-200">
+            <input
+              type="text"
+              value={row.reason || ''}
+              onChange={(e) => onUpdateRow(row.id, 'reason', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="e.g., Damaged, Expired, Returned"
+            />
+          </td>
+        )}
         {!isAdjustment && (
           <>
             <td className="px-6 py-4 border-r border-gray-200">
@@ -156,6 +167,16 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
                     className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
                     placeholder="10"
                     step="0.01"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Reason</label>
+                  <input
+                    type="text"
+                    value={row.reason || ''}
+                    onChange={(e) => onUpdateRow(row.id, 'reason', e.target.value)}
+                    className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                    placeholder="e.g., Damaged, Expired, Returned"
                   />
                 </div>
               </>

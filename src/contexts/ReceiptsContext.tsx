@@ -8,11 +8,12 @@ export interface ReceiptItem {
   qty: number;
   price: number;
   total: number;
+  reason?: string;
 }
 
 export interface Receipt {
   id: string;
-  type: 'purchase' | 'sales' | 'adjustment';
+  type: 'purchase' | 'sales' | 'adjustment' | 'increase' | 'reduce';
   items: ReceiptItem[];
   totalAmount: number;
   date: string;

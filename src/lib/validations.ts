@@ -28,12 +28,13 @@ export const receiptItemSchema = z.object({
   price: z.number()
     .min(0, { message: "Price cannot be negative" })
     .max(999999, { message: "Price value too large" }),
-  total: z.number()
+  total: z.number(),
+  reason: z.string().optional()
 });
 
 // Receipt validation schema
 export const receiptSchema = z.object({
-  type: z.literal('purchase').or(z.literal('sales')).or(z.literal('adjustment')),
+  type: z.enum(['purchase', 'sales', 'adjustment', 'increase', 'reduce']),
   totalAmount: z.number()
     .min(0, { message: "Total amount cannot be negative" })
     .max(9999999, { message: "Total amount too large" }),
@@ -66,5 +67,5 @@ export const stockUpdateSchema = z.object({
   quantityChange: z.number()
     .refine(val => val !== 0, { message: "Quantity change cannot be zero" })
     .refine(val => Math.abs(val) <= 9999, { message: "Quantity change too large" }),
-  type: z.literal('purchase').or(z.literal('sales')).or(z.literal('adjustment'))
+  type: z.enum(['purchase', 'sales', 'adjustment', 'increase', 'reduce'])
 });

@@ -24,7 +24,7 @@ export const receiptService = {
     // Transform the data to match our Receipt interface
     const receipts: Receipt[] = receiptsData.map(receipt => ({
       id: receipt.id,
-      type: receipt.type as 'purchase' | 'sales',
+      type: receipt.type as 'purchase' | 'sales' | 'adjustment' | 'increase' | 'reduce',
       totalAmount: Number(receipt.total_amount),
       date: receipt.date,
       time: receipt.time,
@@ -33,7 +33,8 @@ export const receiptService = {
         itemName: item.item_name,
         qty: Number(item.qty),
         price: Number(item.price),
-        total: Number(item.total)
+        total: Number(item.total),
+        reason: item.reason
       }))
     }));
 
@@ -78,7 +79,8 @@ export const receiptService = {
       item_name: item.itemName,
       qty: item.qty,
       price: item.price,
-      total: item.total
+      total: item.total,
+      reason: item.reason
     }));
 
     const { data: itemsResult, error: itemsError } = await supabase
@@ -142,7 +144,8 @@ export const receiptService = {
       item_name: item.itemName,
       qty: item.qty,
       price: item.price,
-      total: item.total
+      total: item.total,
+      reason: item.reason
     }));
 
     const { error: itemsError } = await supabase

@@ -92,7 +92,7 @@ export const productService = {
     }
   },
 
-  async updateStock(productName: string, quantityChange: number, type: 'purchase' | 'sales' | 'adjustment'): Promise<void> {
+  async updateStock(productName: string, quantityChange: number, type: 'purchase' | 'sales' | 'adjustment' | 'increase' | 'reduce'): Promise<void> {
     // Validate input
     const validatedData = stockUpdateSchema.parse({ productName, quantityChange, type });
     
@@ -111,7 +111,7 @@ export const productService = {
     if (!product) {
       // Create new product if it doesn't exist
       let initialStock = 0;
-      if (validatedData.type === 'purchase') {
+      if (validatedData.type === 'purchase' || validatedData.type === 'increase') {
         initialStock = Math.abs(validatedData.quantityChange);
       } else if (validatedData.type === 'adjustment' && validatedData.quantityChange > 0) {
         initialStock = validatedData.quantityChange;
@@ -126,9 +126,9 @@ export const productService = {
       // Update existing product stock
       let newStock = product.current_stock;
       
-      if (validatedData.type === 'purchase') {
+      if (validatedData.type === 'purchase' || validatedData.type === 'increase') {
         newStock += Math.abs(validatedData.quantityChange);
-      } else if (validatedData.type === 'sales') {
+      } else if (validatedData.type === 'sales' || validatedData.type === 'reduce') {
         newStock -= Math.abs(validatedData.quantityChange);
       } else if (validatedData.type === 'adjustment') {
         // For adjustment, the quantity can be positive or negative

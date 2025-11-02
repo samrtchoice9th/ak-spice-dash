@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales') => {
   const [rows, setRows] = useState<TableRow[]>([
-    { id: '1', itemName: '', qty: 0, price: 0, adjustmentType: 'increase' }
+    { id: '1', itemName: '', qty: 0, price: 0, adjustmentType: 'increase', reason: '' }
   ]);
   const [isSaving, setIsSaving] = useState(false);
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
@@ -24,6 +24,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
       qty: 0,
       price: 0,
       adjustmentType: 'increase',
+      reason: '',
     };
     setRows(prev => [...prev, newRow]);
     setTimeout(() => {
@@ -34,7 +35,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
 
   const clearAllFields = () => {
     const newId = Date.now().toString();
-    setRows([{ id: newId, itemName: '', qty: 0, price: 0, adjustmentType: 'increase' }]);
+    setRows([{ id: newId, itemName: '', qty: 0, price: 0, adjustmentType: 'increase', reason: '' }]);
     setTimeout(() => {
       const firstRowRef = inputRefs.current[`${newId}-itemName`];
       firstRowRef?.focus();
@@ -68,6 +69,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
                 qty: 0,
                 price: 0,
                 adjustmentType: 'increase',
+                reason: '',
               };
               setRows(prev => [...prev, newRow]);
               setTimeout(() => {
@@ -94,6 +96,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
               qty: 0,
               price: 0,
               adjustmentType: 'increase',
+              reason: '',
             };
             setRows(prev => [...prev, newRow]);
             setTimeout(() => {
@@ -122,16 +125,22 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
       })
       .map(row => {
         let finalQty = row.qty;
+        let receiptType: 'purchase' | 'sales' | 'increase' | 'reduce' = type as any;
+        
         if (isAdjustment) {
           // Apply sign based on adjustment type
           finalQty = row.adjustmentType === 'reduce' ? -Math.abs(row.qty) : Math.abs(row.qty);
+          // Set receipt type to increase or reduce
+          receiptType = row.adjustmentType === 'reduce' ? 'reduce' : 'increase';
         }
+        
         return {
           id: row.id,
           itemName: row.itemName,
           qty: finalQty,
           price: isAdjustment ? 0 : row.price,
-          total: isAdjustment ? 0 : row.qty * row.price
+          total: isAdjustment ? 0 : row.qty * row.price,
+          reason: isAdjustment ? row.reason : undefined
         };
       });
 
@@ -139,14 +148,19 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
       try {
         setIsSaving(true);
         
+        // For adjustments, determine the receipt type from the first item
+        const finalReceiptType = isAdjustment 
+          ? (rows[0]?.adjustmentType === 'reduce' ? 'reduce' : 'increase')
+          : type;
+        
         await addReceipt({
-          type,
+          type: finalReceiptType as any,
           items: receiptItems,
           totalAmount: isAdjustment ? 0 : calculateGrandTotal(rows)
         });
 
         for (const item of receiptItems) {
-          await updateStock(item.itemName, item.qty, type);
+          await updateStock(item.itemName, item.qty, finalReceiptType as any);
         }
 
         toast({
