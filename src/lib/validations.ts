@@ -64,7 +64,7 @@ export const stockUpdateSchema = z.object({
     .min(1, { message: "Product name is required" })
     .max(100, { message: "Product name must be less than 100 characters" }),
   quantityChange: z.number()
-    .min(0.01, { message: "Quantity change must be greater than 0" })
-    .max(9999, { message: "Quantity change too large" }),
+    .refine(val => val !== 0, { message: "Quantity change cannot be zero" })
+    .refine(val => Math.abs(val) <= 9999, { message: "Quantity change too large" }),
   type: z.literal('purchase').or(z.literal('sales')).or(z.literal('adjustment'))
 });
