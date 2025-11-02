@@ -116,7 +116,8 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
   const handleSave = async () => {
     const isAdjustment = type === 'adjustment';
     
-    const receiptItems: ReceiptItem[] = rows
+    // Create a structure to store items with their adjustment type
+    const itemsWithType = rows
       .filter(row => {
         if (isAdjustment) {
           return row.itemName && row.qty !== 0;
@@ -124,43 +125,69 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
         return row.itemName && row.qty > 0 && row.price > 0;
       })
       .map(row => {
-        let finalQty = row.qty;
-        let receiptType: 'purchase' | 'sales' | 'increase' | 'reduce' = type as any;
-        
-        if (isAdjustment) {
-          // Apply sign based on adjustment type
-          finalQty = row.adjustmentType === 'reduce' ? -Math.abs(row.qty) : Math.abs(row.qty);
-          // Set receipt type to increase or reduce
-          receiptType = row.adjustmentType === 'reduce' ? 'reduce' : 'increase';
-        }
+        const adjustmentType = isAdjustment ? row.adjustmentType : undefined;
+        const itemType: 'purchase' | 'sales' | 'increase' | 'reduce' = isAdjustment
+          ? (row.adjustmentType === 'reduce' ? 'reduce' : 'increase')
+          : type as any;
         
         return {
-          id: row.id,
-          itemName: row.itemName,
-          qty: finalQty,
-          price: isAdjustment ? 0 : row.price,
-          total: isAdjustment ? 0 : row.qty * row.price,
-          reason: isAdjustment ? row.reason : undefined
+          item: {
+            id: row.id,
+            itemName: row.itemName,
+            qty: isAdjustment 
+              ? (row.adjustmentType === 'reduce' ? Math.abs(row.qty) : row.qty)
+              : row.qty,
+            price: isAdjustment ? 0 : row.price,
+            total: isAdjustment ? 0 : row.qty * row.price,
+            reason: isAdjustment ? row.reason : undefined
+          },
+          type: itemType
         };
       });
 
-    if (receiptItems.length > 0) {
+    if (itemsWithType.length > 0) {
       try {
         setIsSaving(true);
         
-        // For adjustments, determine the receipt type from the first item
-        const finalReceiptType = isAdjustment 
-          ? (rows[0]?.adjustmentType === 'reduce' ? 'reduce' : 'increase')
-          : type;
-        
-        await addReceipt({
-          type: finalReceiptType as any,
-          items: receiptItems,
-          totalAmount: isAdjustment ? 0 : calculateGrandTotal(rows)
-        });
+        if (isAdjustment) {
+          // Group items by type (increase/reduce) and create separate receipts
+          const increaseItems = itemsWithType.filter(i => i.type === 'increase');
+          const reduceItems = itemsWithType.filter(i => i.type === 'reduce');
+          
+          if (increaseItems.length > 0) {
+            await addReceipt({
+              type: 'increase',
+              items: increaseItems.map(i => i.item),
+              totalAmount: 0
+            });
 
-        for (const item of receiptItems) {
-          await updateStock(item.itemName, item.qty, finalReceiptType as any);
+            for (const { item } of increaseItems) {
+              await updateStock(item.itemName, item.qty, 'increase');
+            }
+          }
+          
+          if (reduceItems.length > 0) {
+            await addReceipt({
+              type: 'reduce',
+              items: reduceItems.map(i => i.item),
+              totalAmount: 0
+            });
+
+            for (const { item } of reduceItems) {
+              await updateStock(item.itemName, item.qty, 'reduce');
+            }
+          }
+        } else {
+          // For purchase/sales, create a single receipt
+          await addReceipt({
+            type: type as any,
+            items: itemsWithType.map(i => i.item),
+            totalAmount: calculateGrandTotal(rows)
+          });
+
+          for (const { item, type: itemType } of itemsWithType) {
+            await updateStock(item.itemName, item.qty, itemType);
+          }
         }
 
         toast({
