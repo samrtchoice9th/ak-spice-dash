@@ -101,9 +101,9 @@ export const productService = {
       .from('products')
       .select('*')
       .eq('name', validatedData.productName)
-      .single();
+      .maybeSingle();
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
+    if (fetchError) {
       console.error('Error fetching product for stock update:', fetchError);
       throw fetchError;
     }
@@ -130,9 +130,6 @@ export const productService = {
         newStock += Math.abs(validatedData.quantityChange);
       } else if (validatedData.type === 'sales' || validatedData.type === 'reduce') {
         newStock -= Math.abs(validatedData.quantityChange);
-      } else if (validatedData.type === 'adjustment') {
-        // For adjustment, the quantity can be positive or negative
-        newStock += validatedData.quantityChange;
       }
 
       await this.updateProduct(product.id, {
