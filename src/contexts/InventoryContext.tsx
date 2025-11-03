@@ -49,15 +49,12 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
           totalSalesValue: 0,
         };
 
-        if (receipt.type === 'purchase') {
+        if (receipt.type === 'purchase' || receipt.type === 'increase') {
           existingItem.totalPurchased += item.qty;
           existingItem.totalPurchaseValue += item.total;
           existingItem.averagePurchasePrice = existingItem.totalPurchaseValue / existingItem.totalPurchased;
-        } else if (receipt.type === 'sales') {
+        } else if (receipt.type === 'sales' || receipt.type === 'reduce' || receipt.type === 'adjustment') {
           existingItem.totalSold += item.qty;
-          existingItem.totalSalesValue += item.total;
-        } else if (receipt.type === 'adjustment') {
-          existingItem.totalSold += item.qty; // Adjustments also reduce stock
           existingItem.totalSalesValue += item.total;
         }
 
