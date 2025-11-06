@@ -15,6 +15,8 @@ interface DataTableProps {
   title: string;
   showAddItem?: boolean;
   showSave?: boolean;
+  showPrint?: boolean;
+  showThermalPrint?: boolean;
   type?: 'purchase' | 'sales' | 'adjustment';
 }
 
@@ -22,6 +24,8 @@ export const DataTable: React.FC<DataTableProps> = ({
   title, 
   showAddItem = false, 
   showSave = false,
+  showPrint,
+  showThermalPrint,
   type = 'sales'
 }) => {
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
@@ -84,8 +88,8 @@ export const DataTable: React.FC<DataTableProps> = ({
         onAddRow={addRow}
         showAddItem={showAddItem}
         showSave={showSave}
-        showThermalPrint={!isAdjustment}
-        showPrint={!isAdjustment}
+        showThermalPrint={showThermalPrint ?? !isAdjustment}
+        showPrint={showPrint ?? !isAdjustment}
         showAddRow={!isAdjustment}
         disabled={isSaving}
       />

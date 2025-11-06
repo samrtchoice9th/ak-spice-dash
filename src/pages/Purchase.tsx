@@ -4,7 +4,14 @@ import { DataTable } from '@/components/DataTable';
 
 const Purchase = () => {
   return (
-    <DataTable title="Purchase Management" showAddItem={false} showSave={true} type="purchase" />
+    <DataTable 
+      title="Purchase Management" 
+      showAddItem={false} 
+      showSave={true} 
+      showPrint={false}
+      showThermalPrint={true}
+      type="purchase" 
+    />
   );
 };
 
