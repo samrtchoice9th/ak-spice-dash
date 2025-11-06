@@ -31,7 +31,7 @@ export const PrintPreviewDialog: React.FC<PrintPreviewDialogProps> = ({
         
         <div id="receipt-preview" className="bg-white text-black p-4 font-mono text-sm border rounded">
           <div className="text-center mb-4 border-b border-dashed border-black pb-2">
-            <div className="text-lg font-bold mb-1">AK SPICE TRADING</div>
+            <div className="text-lg font-bold mb-1">AK TRADING</div>
             <div className="text-xs mb-1">
               Mob: +974773962001<br />
               36, In Front of Tile Factory<br />
@@ -68,6 +68,9 @@ export const PrintPreviewDialog: React.FC<PrintPreviewDialogProps> = ({
           <div className="border-t border-dashed border-black mt-3 pt-2 text-center">
             <div className="text-sm font-bold mb-2 border-2 border-black p-2">
               TOTAL: Rs. {receipt.totalAmount?.toFixed(2)}
+            </div>
+            <div className="text-xs mt-2">
+              Total Items: {receipt.items?.length || 0}
             </div>
             <div className="text-xs mt-3 border-t border-dashed border-black pt-2">
               Thank you for your business!<br />

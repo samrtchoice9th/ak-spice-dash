@@ -138,7 +138,7 @@ export const useReceiptPrintHandler = () => {
         <body>
           <div class="receipt-container">
             <div class="receipt-header">
-              <div class="company-name">AK SPICE TRADING</div>
+              <div class="company-name">AK TRADING</div>
               <div class="company-details">
                 Mob: +974773962001<br>
                 36, In Front of Tile Factory<br>
@@ -176,6 +176,9 @@ export const useReceiptPrintHandler = () => {
             <div class="receipt-total">
               <div class="total-line">
                 TOTAL: Rs. ${receipt.totalAmount.toFixed(2)}
+              </div>
+              <div class="total-items">
+                Total Items: ${receipt.items.length}
               </div>
               <div class="thank-you">
                 Thank you for your business!<br>
@@ -386,7 +389,7 @@ export const useReceiptPrintHandler = () => {
         <body>
           <div class="receipt-container">
             <div class="receipt-header">
-              <div class="company-name">AK SPICE TRADING</div>
+              <div class="company-name">AK TRADING</div>
               <div class="company-details">
                 Mob: +974773962001<br>
                 36, In Front of Tile Factory<br>
@@ -423,6 +426,9 @@ export const useReceiptPrintHandler = () => {
             <div class="receipt-total">
               <div class="total-line">
                 TOTAL: Rs. ${receipt.totalAmount.toFixed(2)}
+              </div>
+              <div class="total-items">
+                Total Items: ${receipt.items.length}
               </div>
               <div class="thank-you">
                 Thank you for your business!<br>
@@ -548,7 +554,7 @@ export const useReceiptPrintHandler = () => {
     let receipt = INIT;
     
     // Header
-    receipt += CENTER + BOLD_ON + 'AK SPICE TRADING' + BOLD_OFF + '\n';
+    receipt += CENTER + BOLD_ON + 'AK TRADING' + BOLD_OFF + '\n';
     receipt += 'Mob: +974773962001\n';
     receipt += '36, In Front of Tile Factory\n';
     receipt += 'Mahiyangana\n';
@@ -577,6 +583,8 @@ export const useReceiptPrintHandler = () => {
     receipt += '================================\n';
     receipt += CENTER + BOLD_ON + `TOTAL: Rs. ${total.toFixed(2)}` + BOLD_OFF + '\n';
     receipt += '================================\n';
+    receipt += '\n';
+    receipt += `Total Items: ${items.length}\n`;
     
     // Footer
     receipt += '\n';

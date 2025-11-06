@@ -103,7 +103,7 @@ export const useRawBTPrinter = () => {
     content += commands.alignCenter;
     content += commands.boldOn;
     content += commands.doubleHeight;
-    content += 'AK SPICE TRADING';
+    content += 'AK TRADING';
     content += commands.feed;
     content += commands.normalSize;
     content += commands.boldOff;
@@ -155,6 +155,9 @@ export const useRawBTPrinter = () => {
     content += commands.feed;
     content += commands.normalSize;
     content += commands.boldOff;
+    content += commands.feed;
+    content += `Total Items: ${receipt.items.length}`;
+    content += commands.feed;
     content += commands.feed;
     
     // Footer
