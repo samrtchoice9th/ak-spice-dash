@@ -12,3 +12,7 @@ export const calculateGrandTotal = (rows: TableRow[]): number => {
 export const calculateTotalQuantity = (rows: TableRow[]): number => {
   return rows.reduce((sum, row) => sum + row.qty, 0);
 };
+
+export const calculateDistinctItems = (rows: TableRow[]): number => {
+  return rows.filter(row => row.itemName.trim() !== '').length;
+};
