@@ -10,6 +10,7 @@ import { printReceipt, printToRawBT } from '@/utils/printReceipt';
 import { useTableData } from '@/hooks/useTableData';
 import { useReceipts } from '@/contexts/ReceiptsContext';
 import { useReceiptPrintHandler } from '@/components/ReceiptPrintHandler';
+import { calculateTotalQuantity } from '@/utils/calculations';
 
 interface DataTableProps {
   title: string;
@@ -57,6 +58,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   };
 
   const totalAmount = calculateTotal();
+  const totalQuantity = calculateTotalQuantity(rows);
 
   const isAdjustment = type === 'adjustment';
 
@@ -77,7 +79,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             />
           ))}
         </tbody>
-        {!isAdjustment && <TableFooter totalAmount={totalAmount} />}
+        {!isAdjustment && <TableFooter totalAmount={totalAmount} totalQuantity={totalQuantity} />}
       </DataTableContainer>
 
       <ActionButtons
