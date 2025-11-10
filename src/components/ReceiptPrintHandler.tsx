@@ -455,18 +455,18 @@ export const useReceiptPrintHandler = () => {
     printWindow.document.write(printContent);
     printWindow.document.close();
     
+    const handleAfterPrint = () => {
+      printWindow.close();
+      toast({
+        title: "Print job sent",
+        description: "Receipt has been sent to your printer or save as PDF.",
+      });
+    };
+
     const handlePrint = () => {
       try {
         printWindow.focus();
         printWindow.print();
-        
-        setTimeout(() => {
-          printWindow.close();
-          toast({
-            title: "Print job sent",
-            description: "Receipt has been sent to your printer or save as PDF.",
-          });
-        }, 1000);
       } catch (error) {
         console.error('Print error:', error);
         printWindow.close();
@@ -479,10 +479,10 @@ export const useReceiptPrintHandler = () => {
     };
 
     printWindow.onload = () => {
+      printWindow.onafterprint = handleAfterPrint;
+      printWindow.onbeforeunload = handleAfterPrint;
       setTimeout(handlePrint, 500);
     };
-    
-    setTimeout(handlePrint, 1000);
   };
 
   // RawBT Thermal Printer Support for Android
