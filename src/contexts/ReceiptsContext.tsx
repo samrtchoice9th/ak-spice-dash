@@ -77,11 +77,8 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
   const updateReceipt = async (id: string, receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
     try {
       await receiptService.updateReceipt(id, receiptData);
-      setReceipts(prev => prev.map(receipt => 
-        receipt.id === id 
-          ? { ...receipt, ...receiptData }
-          : receipt
-      ));
+      // Refresh receipts from database to get the latest data with new item IDs
+      await refreshReceipts();
     } catch (error) {
       console.error('Failed to update receipt:', error);
       throw error;

@@ -99,7 +99,10 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
         description: "Receipt updated successfully."
       });
       
-      onClose();
+      // Small delay to ensure state updates propagate before closing
+      setTimeout(() => {
+        onClose();
+      }, 300);
     } catch (error) {
       console.error('Error updating receipt:', error);
       toast({

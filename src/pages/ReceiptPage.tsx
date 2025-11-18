@@ -19,7 +19,14 @@ const ReceiptPage = () => {
   };
 
   const handleSaveReceipt = async (id: string, receiptData: any) => {
-    await updateReceipt(id, receiptData);
+    try {
+      await updateReceipt(id, receiptData);
+      // Wait a moment to ensure state updates propagate
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } catch (error) {
+      console.error('Failed to save receipt:', error);
+      throw error;
+    }
   };
 
   if (loading) {
