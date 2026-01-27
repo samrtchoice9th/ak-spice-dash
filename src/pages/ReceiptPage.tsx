@@ -21,8 +21,9 @@ const ReceiptPage = () => {
   const handleSaveReceipt = async (id: string, receiptData: any) => {
     try {
       await updateReceipt(id, receiptData);
-      // Wait a moment to ensure state updates propagate
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Clear editingReceipt immediately to prevent stale data
+      setEditingReceipt(null);
+      setIsEditDialogOpen(false);
     } catch (error) {
       console.error('Failed to save receipt:', error);
       throw error;
