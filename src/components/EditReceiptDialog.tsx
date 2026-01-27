@@ -28,11 +28,11 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (receipt) {
+    if (receipt && isOpen) {
       setItems([...receipt.items]);
       setType(receipt.type);
     }
-  }, [receipt]);
+  }, [receipt, isOpen]);
 
   const addNewItem = () => {
     const newItem: ReceiptItem = {
@@ -98,11 +98,7 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
         title: "Success",
         description: "Receipt updated successfully."
       });
-      
-      // Small delay to ensure state updates propagate before closing
-      setTimeout(() => {
-        onClose();
-      }, 300);
+      // Dialog will be closed by parent component after successful save
     } catch (error) {
       console.error('Error updating receipt:', error);
       toast({
