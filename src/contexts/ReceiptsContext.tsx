@@ -47,6 +47,15 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const silentRefreshReceipts = async () => {
+    try {
+      const fetchedReceipts = await receiptService.getAllReceipts();
+      setReceipts(fetchedReceipts);
+    } catch (error) {
+      console.error('Failed to fetch receipts:', error);
+    }
+  };
+
   const refreshReceipts = async () => {
     try {
       setLoading(true);
@@ -77,8 +86,12 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
   const updateReceipt = async (id: string, receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
     try {
       await receiptService.updateReceipt(id, receiptData);
-      // Refresh receipts from database to get the latest data with new item IDs
-      await refreshReceipts();
+      // Optimistic update - no loading spinner
+      setReceipts(prev => prev.map(r => 
+        r.id === id ? { ...r, type: receiptData.type, items: receiptData.items, totalAmount: receiptData.totalAmount } : r
+      ));
+      // Silent refresh to sync IDs from database
+      silentRefreshReceipts();
     } catch (error) {
       console.error('Failed to update receipt:', error);
       throw error;
