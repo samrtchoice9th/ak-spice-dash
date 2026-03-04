@@ -1,5 +1,6 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 import { receiptService } from '@/services/receiptService';
 
 export interface ReceiptItem {
@@ -44,19 +45,25 @@ interface ReceiptsProviderProps {
 }
 
 export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) => {
+  const { user } = useAuth();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const silentRefreshReceipts = async () => {
+  const silentRefreshReceipts = useCallback(async () => {
+    if (!user) return;
     try {
       const fetchedReceipts = await receiptService.getAllReceipts();
       setReceipts(fetchedReceipts);
     } catch (error) {
       console.error('Failed to fetch receipts:', error);
     }
-  };
+  }, [user]);
 
-  const refreshReceipts = async () => {
+  const refreshReceipts = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const fetchedReceipts = await receiptService.getAllReceipts();
@@ -66,11 +73,11 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     refreshReceipts();
-  }, []);
+  }, [refreshReceipts]);
 
   const addReceipt = async (receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
     try {
