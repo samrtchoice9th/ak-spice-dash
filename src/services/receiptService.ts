@@ -14,7 +14,8 @@ export const receiptService = {
         *,
         receipt_items (*)
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(5000);
 
     if (receiptsError) {
       console.error('Error fetching receipts:', receiptsError);
