@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   ShoppingCart, 
@@ -11,7 +11,8 @@ import {
   BarChart3,
   Settings,
   Shield,
-  LogOut
+  LogOut,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -34,7 +35,8 @@ export const TopNavigation = () => {
   const { signOut, user } = useAuth();
   const { toast } = useToast();
   const { isSuperAdmin, isAdmin, isStaff } = useUserRole();
-  const { shop } = useShop();
+  const { shop, isViewingAsAdmin, exitShop } = useShop();
+  const navigate = useNavigate();
 
   const menuItems = useMemo(() => {
     const filtered = (() => {
@@ -58,10 +60,25 @@ export const TopNavigation = () => {
     });
   };
 
+  const handleBackToAdmin = () => {
+    exitShop();
+    navigate('/super-admin');
+  };
+
   return (
     <div className="xl:hidden bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-gray-800">{shop?.name || (isSuperAdmin ? 'Super Admin Panel' : 'My Shop')}</h1>
+        <div className="flex items-center space-x-2">
+          {isViewingAsAdmin && (
+            <button
+              onClick={handleBackToAdmin}
+              className="flex items-center space-x-1 text-primary hover:text-primary/80 transition-colors p-2"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
+          <h1 className="text-lg font-bold text-gray-800">{shop?.name || (isSuperAdmin ? 'Super Admin Panel' : 'My Shop')}</h1>
+        </div>
         {user && (
           <button
             onClick={handleLogout}
