@@ -10,31 +10,41 @@ import {
   Receipt,
   BarChart3,
   Settings,
+  Shield,
   LogOut
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useShop } from '@/contexts/ShopContext';
 
 const allMenuItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard, adminOnly: true },
-  { name: 'Sales', path: '/sales', icon: ShoppingCart, adminOnly: false },
-  { name: 'Purchase', path: '/purchase', icon: Package, adminOnly: false },
-  { name: 'Stock Adjustment', path: '/stock-adjustment', icon: PackageMinus, adminOnly: true },
-  { name: 'Inventory', path: '/inventory', icon: Warehouse, adminOnly: true },
-  { name: 'Receipt', path: '/receipt', icon: Receipt, adminOnly: false },
-  { name: 'Report', path: '/report', icon: BarChart3, adminOnly: true },
-  { name: 'Settings', path: '/settings', icon: Settings, adminOnly: true },
+  { name: 'Super Admin', path: '/super-admin', icon: Shield, superAdminOnly: true, adminOnly: false, staffVisible: false },
+  { name: 'Dashboard', path: '/', icon: LayoutDashboard, superAdminOnly: false, adminOnly: true, staffVisible: false },
+  { name: 'Sales', path: '/sales', icon: ShoppingCart, superAdminOnly: false, adminOnly: false, staffVisible: true },
+  { name: 'Purchase', path: '/purchase', icon: Package, superAdminOnly: false, adminOnly: false, staffVisible: true },
+  { name: 'Stock Adjustment', path: '/stock-adjustment', icon: PackageMinus, superAdminOnly: false, adminOnly: true, staffVisible: false },
+  { name: 'Inventory', path: '/inventory', icon: Warehouse, superAdminOnly: false, adminOnly: true, staffVisible: false },
+  { name: 'Receipt', path: '/receipt', icon: Receipt, superAdminOnly: false, adminOnly: false, staffVisible: true },
+  { name: 'Report', path: '/report', icon: BarChart3, superAdminOnly: false, adminOnly: true, staffVisible: false },
+  { name: 'Settings', path: '/settings', icon: Settings, superAdminOnly: false, adminOnly: true, staffVisible: false },
 ];
 
 export const TopNavigation = () => {
   const { signOut, user } = useAuth();
   const { toast } = useToast();
-  const { isAdmin } = useUserRole();
+  const { isSuperAdmin, isAdmin, isStaff } = useUserRole();
+  const { shop } = useShop();
 
   const menuItems = useMemo(() => 
-    allMenuItems.filter(item => !item.adminOnly || isAdmin),
-    [isAdmin]
+    allMenuItems.filter(item => {
+      if (item.superAdminOnly) return isSuperAdmin;
+      if (isSuperAdmin) return true;
+      if (isAdmin) return !item.superAdminOnly;
+      if (isStaff) return item.staffVisible;
+      return item.staffVisible;
+    }),
+    [isSuperAdmin, isAdmin, isStaff]
   );
 
   const handleLogout = async () => {
@@ -48,7 +58,7 @@ export const TopNavigation = () => {
   return (
     <div className="xl:hidden bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-gray-800">Ak Spice</h1>
+        <h1 className="text-lg font-bold text-gray-800">{shop?.name || 'Ak Spice'}</h1>
         {user && (
           <button
             onClick={handleLogout}
