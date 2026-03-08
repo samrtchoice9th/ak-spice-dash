@@ -327,7 +327,7 @@ const Settings = () => {
       <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-gray-800">Settings</h1>
       
       {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 max-w-md mx-auto">
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 max-w-lg mx-auto">
         <button
           onClick={() => setActiveTab('items')}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
@@ -349,6 +349,17 @@ const Settings = () => {
         >
           <Printer className="inline w-4 h-4 mr-2" />
           Printer
+        </button>
+        <button
+          onClick={() => setActiveTab('shop')}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'shop'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Store className="inline w-4 h-4 mr-2" />
+          Shop
         </button>
       </div>
 
