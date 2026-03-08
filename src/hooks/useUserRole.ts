@@ -40,7 +40,7 @@ export const useUserRole = () => {
   return {
     role,
     isSuperAdmin: role === 'super_admin',
-    isAdmin: role === 'super_admin' || role === 'admin',
+    isAdmin: role === 'super_admin' || role === 'admin' || role === 'shop_owner',
     isShopOwner: role === 'shop_owner',
     isStaff: role === 'staff',
     loading,
