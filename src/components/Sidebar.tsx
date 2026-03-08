@@ -54,7 +54,9 @@ export const Sidebar = () => {
       <MobileSidebar 
         isOpen={isOpen} 
         onClose={closeSidebar} 
-        menuItems={menuItems} 
+        menuItems={menuItems}
+        shopName={shop?.name}
+        isSuperAdmin={isSuperAdmin}
       />
       <DesktopSidebar menuItems={menuItems} shopName={shop?.name} isSuperAdmin={isSuperAdmin} />
     </>

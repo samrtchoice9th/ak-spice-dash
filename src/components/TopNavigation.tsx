@@ -58,7 +58,7 @@ export const TopNavigation = () => {
   return (
     <div className="xl:hidden bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-gray-800">{isSuperAdmin ? 'Super Admin Panel' : (shop?.name || 'My Shop')}</h1>
+        <h1 className="text-lg font-bold text-gray-800">{shop?.name || (isSuperAdmin ? 'Super Admin Panel' : 'My Shop')}</h1>
         {user && (
           <button
             onClick={handleLogout}
