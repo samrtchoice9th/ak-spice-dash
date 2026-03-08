@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -14,21 +14,28 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 
-const menuItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-  { name: 'Sales', path: '/sales', icon: ShoppingCart },
-  { name: 'Purchase', path: '/purchase', icon: Package },
-  { name: 'Stock Adjustment', path: '/stock-adjustment', icon: PackageMinus },
-  { name: 'Inventory', path: '/inventory', icon: Warehouse },
-  { name: 'Receipt', path: '/receipt', icon: Receipt },
-  { name: 'Report', path: '/report', icon: BarChart3 },
-  { name: 'Settings', path: '/settings', icon: Settings },
+const allMenuItems = [
+  { name: 'Dashboard', path: '/', icon: LayoutDashboard, adminOnly: true },
+  { name: 'Sales', path: '/sales', icon: ShoppingCart, adminOnly: false },
+  { name: 'Purchase', path: '/purchase', icon: Package, adminOnly: false },
+  { name: 'Stock Adjustment', path: '/stock-adjustment', icon: PackageMinus, adminOnly: true },
+  { name: 'Inventory', path: '/inventory', icon: Warehouse, adminOnly: true },
+  { name: 'Receipt', path: '/receipt', icon: Receipt, adminOnly: false },
+  { name: 'Report', path: '/report', icon: BarChart3, adminOnly: true },
+  { name: 'Settings', path: '/settings', icon: Settings, adminOnly: true },
 ];
 
 export const TopNavigation = () => {
   const { signOut, user } = useAuth();
   const { toast } = useToast();
+  const { isAdmin } = useUserRole();
+
+  const menuItems = useMemo(() => 
+    allMenuItems.filter(item => !item.adminOnly || isAdmin),
+    [isAdmin]
+  );
 
   const handleLogout = async () => {
     await signOut();

@@ -12,6 +12,7 @@ import { ReceiptsProvider } from "./contexts/ReceiptsContext";
 import { InventoryProvider } from "./contexts/InventoryContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { RoleProtectedRoute } from "./components/RoleProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Sales from "./pages/Sales";
 import Purchase from "./pages/Purchase";
@@ -48,14 +49,14 @@ const App = () => (
                             
                             <main className="flex-1">
                               <Routes>
-                                <Route path="/" element={<Dashboard />} />
+                                <Route path="/" element={<RoleProtectedRoute><Dashboard /></RoleProtectedRoute>} />
                                 <Route path="/sales" element={<Sales />} />
                                 <Route path="/purchase" element={<Purchase />} />
-                                <Route path="/stock-adjustment" element={<StockAdjustment />} />
-                                <Route path="/inventory" element={<Inventory />} />
+                                <Route path="/stock-adjustment" element={<RoleProtectedRoute><StockAdjustment /></RoleProtectedRoute>} />
+                                <Route path="/inventory" element={<RoleProtectedRoute><Inventory /></RoleProtectedRoute>} />
                                 <Route path="/receipt" element={<ReceiptPage />} />
-                                <Route path="/report" element={<Report />} />
-                                <Route path="/settings" element={<Settings />} />
+                                <Route path="/report" element={<RoleProtectedRoute><Report /></RoleProtectedRoute>} />
+                                <Route path="/settings" element={<RoleProtectedRoute><Settings /></RoleProtectedRoute>} />
                                 <Route path="*" element={<NotFound />} />
                               </Routes>
                             </main>
