@@ -1,6 +1,7 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { productService, Product } from '@/services/productService';
+import { useShop } from './ShopContext';
 
 interface ProductsContextType {
   products: Product[];
@@ -29,26 +30,29 @@ interface ProductsProviderProps {
 export const ProductsProvider: React.FC<ProductsProviderProps> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { shop } = useShop();
 
-  const refreshProducts = async () => {
+  const shopId = shop?.id;
+
+  const refreshProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const fetchedProducts = await productService.getAllProducts();
+      const fetchedProducts = await productService.getAllProducts(shopId);
       setProducts(fetchedProducts);
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [shopId]);
 
   useEffect(() => {
     refreshProducts();
-  }, []);
+  }, [refreshProducts]);
 
   const addProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
     try {
-      const newProduct = await productService.createProduct(productData);
+      const newProduct = await productService.createProduct(productData, shopId);
       setProducts(prev => [newProduct, ...prev]);
     } catch (error) {
       console.error('Failed to add product:', error);
@@ -82,8 +86,8 @@ export const ProductsProvider: React.FC<ProductsProviderProps> = ({ children }) 
 
   const updateStock = async (productName: string, quantityChange: number, type: 'purchase' | 'sales' | 'adjustment' | 'increase' | 'reduce') => {
     try {
-      await productService.updateStock(productName, quantityChange, type);
-      await refreshProducts(); // Refresh to get updated stock levels
+      await productService.updateStock(productName, quantityChange, type, shopId);
+      await refreshProducts();
     } catch (error) {
       console.error('Failed to update stock:', error);
       throw error;
