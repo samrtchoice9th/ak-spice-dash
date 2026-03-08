@@ -55,7 +55,7 @@ export const Sidebar = () => {
         onClose={closeSidebar} 
         menuItems={menuItems} 
       />
-      <DesktopSidebar menuItems={menuItems} shopName={shop?.name} />
+      <DesktopSidebar menuItems={menuItems} shopName={shop?.name} isSuperAdmin={isSuperAdmin} />
     </>
   );
 };
