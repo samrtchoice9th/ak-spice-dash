@@ -37,15 +37,18 @@ export const TopNavigation = () => {
   const { shop } = useShop();
 
   const menuItems = useMemo(() => {
-    if (isSuperAdmin && !shop) return allMenuItems.filter(item => item.superAdminOnly);
-    if (isSuperAdmin && shop) return allMenuItems;
-    return allMenuItems.filter(item => {
-      if (item.superAdminOnly) return false;
-      if (isAdmin) return true;
-      if (isStaff) return item.staffVisible;
-      return item.staffVisible;
-    });
-  }, [isSuperAdmin, isAdmin, isStaff]);
+    const filtered = (() => {
+      if (isSuperAdmin && !shop) return allMenuItems.filter(item => item.superAdminOnly);
+      if (isSuperAdmin && shop) return allMenuItems;
+      return allMenuItems.filter(item => {
+        if (item.superAdminOnly) return false;
+        if (isAdmin) return true;
+        if (isStaff) return item.staffVisible;
+        return item.staffVisible;
+      });
+    })();
+    return filtered.filter(item => !item.superAdminOnly);
+  }, [isSuperAdmin, isAdmin, isStaff, shop]);
 
   const handleLogout = async () => {
     await signOut();
