@@ -37,7 +37,8 @@ export const TopNavigation = () => {
   const { shop } = useShop();
 
   const menuItems = useMemo(() => {
-    if (isSuperAdmin) return allMenuItems.filter(item => item.superAdminOnly);
+    if (isSuperAdmin && !shop) return allMenuItems.filter(item => item.superAdminOnly);
+    if (isSuperAdmin && shop) return allMenuItems;
     return allMenuItems.filter(item => {
       if (item.superAdminOnly) return false;
       if (isAdmin) return true;
