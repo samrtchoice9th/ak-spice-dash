@@ -62,7 +62,7 @@ const AppContent = () => {
                 
                 <main className="flex-1">
                   <Routes>
-                    <Route path="/" element={<RoleProtectedRoute><Dashboard /></RoleProtectedRoute>} />
+                    <Route path="/" element={isSuperAdmin ? <Navigate to="/super-admin" replace /> : <RoleProtectedRoute><Dashboard /></RoleProtectedRoute>} />
                     <Route path="/sales" element={<Sales />} />
                     <Route path="/purchase" element={<Purchase />} />
                     <Route path="/stock-adjustment" element={<RoleProtectedRoute><StockAdjustment /></RoleProtectedRoute>} />
