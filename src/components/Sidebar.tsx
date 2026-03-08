@@ -34,16 +34,15 @@ export const Sidebar = () => {
   const { isSuperAdmin, isAdmin, isStaff } = useUserRole();
   const { shop } = useShop();
 
-  const menuItems = useMemo(() => 
-    allMenuItems.filter(item => {
-      if (item.superAdminOnly) return isSuperAdmin;
-      if (isSuperAdmin) return true;
-      if (isAdmin) return !item.superAdminOnly;
+  const menuItems = useMemo(() => {
+    if (isSuperAdmin) return allMenuItems.filter(item => item.superAdminOnly);
+    return allMenuItems.filter(item => {
+      if (item.superAdminOnly) return false;
+      if (isAdmin) return true;
       if (isStaff) return item.staffVisible;
-      return item.staffVisible; // default for shop_owner etc
-    }),
-    [isSuperAdmin, isAdmin, isStaff]
-  );
+      return item.staffVisible;
+    });
+  }, [isSuperAdmin, isAdmin, isStaff]);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
   const closeSidebar = () => setIsOpen(false);

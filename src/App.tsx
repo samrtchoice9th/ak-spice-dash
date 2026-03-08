@@ -1,6 +1,7 @@
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Navigate } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -61,7 +62,7 @@ const AppContent = () => {
                 
                 <main className="flex-1">
                   <Routes>
-                    <Route path="/" element={<RoleProtectedRoute><Dashboard /></RoleProtectedRoute>} />
+                    <Route path="/" element={isSuperAdmin ? <Navigate to="/super-admin" replace /> : <RoleProtectedRoute><Dashboard /></RoleProtectedRoute>} />
                     <Route path="/sales" element={<Sales />} />
                     <Route path="/purchase" element={<Purchase />} />
                     <Route path="/stock-adjustment" element={<RoleProtectedRoute><StockAdjustment /></RoleProtectedRoute>} />
