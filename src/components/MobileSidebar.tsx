@@ -14,9 +14,11 @@ interface MobileSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   menuItems: MenuItem[];
+  shopName?: string;
+  isSuperAdmin?: boolean;
 }
 
-export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, menuItems }) => {
+export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, menuItems, shopName, isSuperAdmin }) => {
   return (
     <>
       {/* Mobile backdrop overlay */}
@@ -33,7 +35,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, m
       }`}>
         {/* Mobile sidebar header with close button */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-800">Ak Spice</h1>
+          <h1 className="text-xl font-bold text-gray-800">{shopName || (isSuperAdmin ? 'Super Admin Panel' : 'My Shop')}</h1>
           <button
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-gray-100 touch-manipulation"
