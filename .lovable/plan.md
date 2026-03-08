@@ -1,81 +1,31 @@
 
 
-# Fix: Receipt Editable Only Once Per Day
+# Fix: Correct Role-Based Menu Access
 
-## Root Cause Analysis
+## Problem
+The `useUserRole` hook defines `isAdmin` as only `super_admin || admin`, which **excludes `shop_owner`**. This means the Ak Spice owner (role: `shop_owner`) only sees staff-visible menu items instead of all shop management items (Dashboard, Inventory, Report, Settings, etc.).
 
-After reviewing all relevant code, there is **no explicit daily editing restriction** in the codebase. The issue stems from two problems:
+Also need to ensure the Super Admin menu item never shows for non-super-admin users.
 
-### Problem 1: Loading State Flicker
-When `updateReceipt` is called, it triggers `refreshReceipts()` which sets `loading=true`. This causes the **entire ReceiptPage to unmount the table and show a loading spinner**. While this works, it creates a jarring UX and can cause timing issues with state management.
+## Role Mapping (confirmed by user)
+- **super_admin**: `smartchoice9thmile@gmail.com` — sees only Super Admin panel (no shop)
+- **shop_owner**: `ak7live1140@gmail.com` — sees all shop items, NO Super Admin
+- **staff**: `msanan7@gmail.com` — sees only staff-visible items (Sales, Purchase, Receipt)
 
-### Problem 2: Supabase 1000-Row Default Limit
-The `getAllReceipts()` query has **no explicit row limit**, so Supabase applies its default limit of 1000 rows. With 1,800+ receipts in the database, older receipts may disappear from the list after a refresh, making it appear that edits were lost.
+## Changes
 
-### Problem 3: Stale State After Refresh
-After `refreshReceipts()` completes, the `receipts` array is replaced with a fresh array. If the user tries to edit the same receipt again, the `editingReceipt` reference is stale (pointing to the old array's object). The previous fix (clearing `editingReceipt` on save) helps, but the `refreshReceipts` call during `updateReceipt` sets `loading=true`, which unmounts the table and can interfere with the dialog state.
-
-## Solution
-
-### Step 1: Don't show full loading spinner during updates
-**File: `src/contexts/ReceiptsContext.tsx`**
-
-- In `updateReceipt`, update the local state optimistically instead of calling `refreshReceipts()` which triggers a full loading state
-- Use a silent refresh (without setting `loading=true`) to sync with the database afterward
-- This prevents the table from unmounting during edits
-
-### Step 2: Add pagination/higher limit to receipt queries
-**File: `src/services/receiptService.ts`**
-
-- Add `.limit(5000)` or use pagination to ensure all receipts are returned
-- This prevents receipts from disappearing after refresh
-
-### Step 3: Ensure edit dialog always gets fresh data
-**File: `src/pages/ReceiptPage.tsx`**
-
-- When opening the edit dialog, find the receipt from the current `receipts` array by ID
-- This guarantees fresh data even after multiple edits
-
-## Technical Implementation
-
-### File 1: `src/contexts/ReceiptsContext.tsx`
-
-```tsx
-// Add a silent refresh that doesn't trigger loading state
-const silentRefreshReceipts = async () => {
-  try {
-    const fetchedReceipts = await receiptService.getAllReceipts();
-    setReceipts(fetchedReceipts);
-  } catch (error) {
-    console.error('Failed to fetch receipts:', error);
-  }
-};
-
-// Update updateReceipt to use optimistic update + silent refresh
-const updateReceipt = async (id, receiptData) => {
-  await receiptService.updateReceipt(id, receiptData);
-  // Update local state immediately (optimistic)
-  setReceipts(prev => prev.map(r => 
-    r.id === id ? { ...r, type: receiptData.type, items: receiptData.items, totalAmount: receiptData.totalAmount } : r
-  ));
-  // Silent refresh to sync IDs from database
-  silentRefreshReceipts();
-};
+### 1. `src/hooks/useUserRole.ts` — Include `shop_owner` in admin check
+```typescript
+isAdmin: role === 'super_admin' || role === 'admin' || role === 'shop_owner',
 ```
+This allows shop owners to see all admin-level menu items (Dashboard, Inventory, Report, Settings, Stock Adjustment).
 
-### File 2: `src/services/receiptService.ts`
+### 2. `src/components/Sidebar.tsx` + `src/components/TopNavigation.tsx` — Verify filtering
+Current logic already correctly handles:
+- `isSuperAdmin && !shop` → only Super Admin item
+- `isSuperAdmin && shop` → all items
+- `isAdmin` (now includes shop_owner) → all non-superAdminOnly items
+- `isStaff` → only staffVisible items
 
-Add `.limit(5000)` to `getAllReceipts()` query to prevent Supabase's 1000-row default from hiding receipts.
-
-## Files to Modify
-
-1. **`src/contexts/ReceiptsContext.tsx`** - Optimistic updates, silent refresh
-2. **`src/services/receiptService.ts`** - Add explicit query limit
-
-## Expected Outcome
-
-- Receipts can be edited unlimited times with no daily restriction
-- Table stays visible during updates (no loading spinner flash)
-- All receipts remain visible after edits
-- Changes reflect immediately in the table and related pages
+No changes needed to menu filtering logic since fixing `isAdmin` resolves it.
 
