@@ -28,7 +28,10 @@ interface ShopContextType {
   isShopPending: boolean;
   shopRole: string | null;
   loading: boolean;
+  isViewingAsAdmin: boolean;
   refreshShop: () => Promise<void>;
+  switchShop: (shop: Shop) => void;
+  exitShop: () => void;
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
@@ -44,6 +47,7 @@ export const useShop = () => {
 export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [shop, setShop] = useState<Shop | null>(null);
+  const [overrideShop, setOverrideShop] = useState<Shop | null>(null);
   const [shopMembers, setShopMembers] = useState<ShopMember[]>([]);
   const [shopRole, setShopRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +64,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setLoading(true);
 
-      // Get user's shop membership
       const { data: membership, error: memError } = await supabase
         .from('shop_members')
         .select('*')
@@ -78,7 +81,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setShopRole(membership.role);
 
-      // Get the shop
       const { data: shopData, error: shopError } = await supabase
         .from('shops')
         .select('*')
@@ -93,7 +95,6 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setShop(shopData as Shop);
 
-      // Get all members of this shop
       const { data: members } = await supabase
         .from('shop_members')
         .select('*')
@@ -111,15 +112,29 @@ export const ShopProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     refreshShop();
   }, [refreshShop]);
 
+  const switchShop = useCallback((targetShop: Shop) => {
+    setOverrideShop(targetShop);
+  }, []);
+
+  const exitShop = useCallback(() => {
+    setOverrideShop(null);
+  }, []);
+
+  const activeShop = overrideShop || shop;
+  const isViewingAsAdmin = overrideShop !== null;
+
   return (
     <ShopContext.Provider value={{
-      shop,
+      shop: activeShop,
       shopMembers,
-      isShopActive: shop?.status === 'active',
-      isShopPending: shop?.status === 'pending',
+      isShopActive: activeShop?.status === 'active',
+      isShopPending: activeShop?.status === 'pending',
       shopRole,
       loading,
+      isViewingAsAdmin,
       refreshShop,
+      switchShop,
+      exitShop,
     }}>
       {children}
     </ShopContext.Provider>

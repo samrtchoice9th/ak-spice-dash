@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useShop } from '@/contexts/ShopContext';
 import { CheckCircle, XCircle, Store, Users, Shield } from 'lucide-react';
-import { ShopDetailView } from '@/components/ShopDetailView';
 
 interface ShopWithOwner {
   id: string;
@@ -19,10 +20,11 @@ interface ShopWithOwner {
 
 const SuperAdmin = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { switchShop } = useShop();
   const [shops, setShops] = useState<ShopWithOwner[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'all'>('pending');
-  const [selectedShop, setSelectedShop] = useState<ShopWithOwner | null>(null);
 
   const fetchShops = async () => {
     setLoading(true);
@@ -86,20 +88,20 @@ const SuperAdmin = () => {
     fetchShops();
   };
 
-  // If a shop is selected, show its detail view
-  if (selectedShop) {
-    return (
-      <div className="flex-1 p-4 sm:p-6 lg:p-8">
-        <ShopDetailView
-          shopId={selectedShop.id}
-          shopName={selectedShop.name}
-          shopAddress={selectedShop.address}
-          shopPhone={selectedShop.phone}
-          onBack={() => setSelectedShop(null)}
-        />
-      </div>
-    );
-  }
+  const handleShopClick = (shop: ShopWithOwner) => {
+    if (shop.status === 'active') {
+      switchShop({
+        id: shop.id,
+        name: shop.name,
+        owner_id: shop.owner_id,
+        status: shop.status,
+        created_at: shop.created_at,
+        address: shop.address || null,
+        phone: shop.phone || null,
+      });
+      navigate('/');
+    }
+  };
 
   const filteredShops = shops.filter(shop => {
     if (activeTab === 'pending') return shop.status === 'pending';
@@ -180,7 +182,7 @@ const SuperAdmin = () => {
               className={`bg-card rounded-lg shadow border p-4 ${
                 shop.status === 'active' ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''
               }`}
-              onClick={() => shop.status === 'active' && setSelectedShop(shop)}
+              onClick={() => handleShopClick(shop)}
             >
               <div className="flex items-center justify-between">
                 <div>
