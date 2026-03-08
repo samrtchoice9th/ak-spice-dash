@@ -60,6 +60,14 @@ const Settings = () => {
 
   const handleInviteStaff = async () => {
     if (!inviteEmail.trim() || !shop) return;
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteEmail.trim()) || inviteEmail.trim().length > 255) {
+      toast({ title: 'Invalid Email', description: 'Please enter a valid email address', variant: 'destructive' });
+      return;
+    }
+    
     setInviting(true);
     try {
       const { error } = await supabase
