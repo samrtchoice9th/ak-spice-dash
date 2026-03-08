@@ -76,11 +76,11 @@ const Auth = () => {
             {isLogin ? 'Sign in to your account' : 'Create your account'}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Ak Spice Management System
+            Multi-Shop Management System
           </p>
           {!isLogin && (
             <p className="mt-1 text-center text-xs text-orange-600 bg-orange-50 p-2 rounded">
-              ⚠️ Limited to first 3 users only
+              ⚠️ New shop registrations require admin approval
             </p>
           )}
         </div>

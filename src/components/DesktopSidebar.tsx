@@ -11,13 +11,14 @@ interface MenuItem {
 
 interface DesktopSidebarProps {
   menuItems: MenuItem[];
+  shopName?: string;
 }
 
-export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ menuItems }) => {
+export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ menuItems, shopName }) => {
   return (
     <div className="hidden xl:flex xl:flex-col xl:w-64 xl:bg-gray-100 xl:h-screen xl:border-r xl:border-gray-300 xl:p-4">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Ak Spice</h1>
+        <h1 className="text-2xl font-bold text-gray-800">{shopName || 'Ak Spice'}</h1>
       </div>
       
       <nav className="space-y-2">

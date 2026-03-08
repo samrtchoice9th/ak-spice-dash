@@ -5,10 +5,11 @@ import { useUserRole } from '@/hooks/useUserRole';
 
 interface RoleProtectedRouteProps {
   children: React.ReactNode;
+  requiredRole?: 'super_admin' | 'admin';
 }
 
-export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ children }) => {
-  const { isAdmin, loading } = useUserRole();
+export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ children, requiredRole }) => {
+  const { isAdmin, isSuperAdmin, loading } = useUserRole();
 
   if (loading) {
     return (
@@ -16,6 +17,10 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ children
         <div className="text-lg">Loading...</div>
       </div>
     );
+  }
+
+  if (requiredRole === 'super_admin' && !isSuperAdmin) {
+    return <Navigate to="/sales" replace />;
   }
 
   if (!isAdmin) {

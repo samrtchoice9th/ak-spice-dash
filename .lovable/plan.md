@@ -1,163 +1,81 @@
 
 
-# Multi-Shop Architecture with Super Admin / Admin / Staff Roles
+# Fix: Receipt Editable Only Once Per Day
 
-## Overview
+## Root Cause Analysis
 
-Transform the current single-shop app into a multi-tenant system with four roles: **Super Admin** (system-wide), **Shop Owner** (pending approval), **Admin** (per-shop), and **Staff** (per-shop, limited). New shop registrations require Super Admin approval before becoming active.
+After reviewing all relevant code, there is **no explicit daily editing restriction** in the codebase. The issue stems from two problems:
 
-## Database Changes
+### Problem 1: Loading State Flicker
+When `updateReceipt` is called, it triggers `refreshReceipts()` which sets `loading=true`. This causes the **entire ReceiptPage to unmount the table and show a loading spinner**. While this works, it creates a jarring UX and can cause timing issues with state management.
 
-### 1. Update Role Enum
-Extend `app_role` to include new roles:
-```sql
-ALTER TYPE public.app_role ADD VALUE 'super_admin';
-ALTER TYPE public.app_role ADD VALUE 'shop_owner';
-ALTER TYPE public.app_role ADD VALUE 'staff';
+### Problem 2: Supabase 1000-Row Default Limit
+The `getAllReceipts()` query has **no explicit row limit**, so Supabase applies its default limit of 1000 rows. With 1,800+ receipts in the database, older receipts may disappear from the list after a refresh, making it appear that edits were lost.
+
+### Problem 3: Stale State After Refresh
+After `refreshReceipts()` completes, the `receipts` array is replaced with a fresh array. If the user tries to edit the same receipt again, the `editingReceipt` reference is stale (pointing to the old array's object). The previous fix (clearing `editingReceipt` on save) helps, but the `refreshReceipts` call during `updateReceipt` sets `loading=true`, which unmounts the table and can interfere with the dialog state.
+
+## Solution
+
+### Step 1: Don't show full loading spinner during updates
+**File: `src/contexts/ReceiptsContext.tsx`**
+
+- In `updateReceipt`, update the local state optimistically instead of calling `refreshReceipts()` which triggers a full loading state
+- Use a silent refresh (without setting `loading=true`) to sync with the database afterward
+- This prevents the table from unmounting during edits
+
+### Step 2: Add pagination/higher limit to receipt queries
+**File: `src/services/receiptService.ts`**
+
+- Add `.limit(5000)` or use pagination to ensure all receipts are returned
+- This prevents receipts from disappearing after refresh
+
+### Step 3: Ensure edit dialog always gets fresh data
+**File: `src/pages/ReceiptPage.tsx`**
+
+- When opening the edit dialog, find the receipt from the current `receipts` array by ID
+- This guarantees fresh data even after multiple edits
+
+## Technical Implementation
+
+### File 1: `src/contexts/ReceiptsContext.tsx`
+
+```tsx
+// Add a silent refresh that doesn't trigger loading state
+const silentRefreshReceipts = async () => {
+  try {
+    const fetchedReceipts = await receiptService.getAllReceipts();
+    setReceipts(fetchedReceipts);
+  } catch (error) {
+    console.error('Failed to fetch receipts:', error);
+  }
+};
+
+// Update updateReceipt to use optimistic update + silent refresh
+const updateReceipt = async (id, receiptData) => {
+  await receiptService.updateReceipt(id, receiptData);
+  // Update local state immediately (optimistic)
+  setReceipts(prev => prev.map(r => 
+    r.id === id ? { ...r, type: receiptData.type, items: receiptData.items, totalAmount: receiptData.totalAmount } : r
+  ));
+  // Silent refresh to sync IDs from database
+  silentRefreshReceipts();
+};
 ```
 
-### 2. Create `shops` Table
-```
-shops
-  id          uuid PK
-  name        text NOT NULL
-  owner_id    uuid -> auth.users(id)
-  status      text ('pending' | 'active' | 'suspended') DEFAULT 'pending'
-  created_at  timestamptz DEFAULT now()
-```
+### File 2: `src/services/receiptService.ts`
 
-### 3. Create `shop_members` Table
-Links users to shops with their shop-level role.
-```
-shop_members
-  id        uuid PK
-  shop_id   uuid -> shops(id) ON DELETE CASCADE
-  user_id   uuid -> auth.users(id) ON DELETE CASCADE
-  role      text ('owner' | 'admin' | 'staff')
-  created_at timestamptz DEFAULT now()
-  UNIQUE(shop_id, user_id)
-```
+Add `.limit(5000)` to `getAllReceipts()` query to prevent Supabase's 1000-row default from hiding receipts.
 
-### 4. Create `shop_invitations` Table
-For admin to invite staff.
-```
-shop_invitations
-  id        uuid PK
-  shop_id   uuid -> shops(id) ON DELETE CASCADE
-  email     text NOT NULL
-  role      text ('staff') DEFAULT 'staff'
-  status    text ('pending' | 'accepted') DEFAULT 'pending'
-  created_at timestamptz DEFAULT now()
-```
+## Files to Modify
 
-### 5. Add `shop_id` to Existing Tables
-Add `shop_id` (nullable initially) to `products` and `receipts`. Migrate existing data, then make NOT NULL.
+1. **`src/contexts/ReceiptsContext.tsx`** - Optimistic updates, silent refresh
+2. **`src/services/receiptService.ts`** - Add explicit query limit
 
-### 6. Migrate Existing Data
-- Create shop "Ak Spice" with `owner_id` = admin user (`287bbc16-...`), `status` = 'active'
-- Add both existing users to `shop_members` (admin as 'owner', other as 'staff')
-- Set `shop_id` on all existing products and receipts
-- Assign `super_admin` role to the admin user in `user_roles`
+## Expected Outcome
 
-### 7. Security Definer Functions
-```sql
--- Get user's shop_id
-CREATE FUNCTION public.get_user_shop_id(_user_id uuid) RETURNS uuid
-
--- Check shop membership
-CREATE FUNCTION public.is_shop_member(_user_id uuid, _shop_id uuid) RETURNS boolean
-```
-
-### 8. Update RLS Policies
-Replace all `user_id = auth.uid()` policies with shop-based policies:
-- `products`: `shop_id = get_user_shop_id(auth.uid())`
-- `receipts`: same
-- `receipt_items`: via receipts join
-- Super admin bypass: `OR has_role(auth.uid(), 'super_admin')`
-
-### 9. Update Signup Trigger
-Change `handle_new_user_role` to:
-- Assign 'shop_owner' role (not 'user')
-- Create a new shop with status 'pending'
-- Add user as 'owner' in `shop_members`
-
-## Frontend Changes
-
-### 1. New Context: `ShopContext.tsx`
-- Fetch current user's shop from `shop_members`
-- Provide `{ shop, shopMembers, isShopActive }` to all components
-- Gate all data pages behind `isShopActive` check
-
-### 2. Update Role System (`useUserRole.ts`)
-- Support new roles: `super_admin`, `admin`, `staff`, `shop_owner`
-- Return `{ role, isSuperAdmin, isAdmin, isStaff, loading }`
-- `isAdmin` = true for both `super_admin` and `admin`
-
-### 3. New Page: Super Admin Dashboard (`/super-admin`)
-- List all shops with status (pending/active/suspended)
-- Approve/reject pending shops
-- Assign admin to shops
-- View all shop data
-
-### 4. Pending Approval Screen
-- When a shop owner logs in and shop status is 'pending', show a "Your shop is pending approval" message instead of the app
-- No access to any data pages until approved
-
-### 5. Update Services
-- `productService.ts`: Include `shop_id` when creating products
-- `receiptService.ts`: Include `shop_id` when creating receipts
-- RLS handles filtering, but inserts need `shop_id`
-
-### 6. Update Navigation
-- **Super Admin**: Sees all pages + "Super Admin" panel
-- **Admin**: Sees all shop pages (Dashboard, Sales, Purchase, Stock Adjustment, Inventory, Receipt, Report, Settings)
-- **Staff**: Sees only pages assigned (default: Sales, Purchase, Receipt)
-- Shop name displayed dynamically from ShopContext
-
-### 7. Update Settings Page
-- Add "Shop" tab (admin only): Shop name, member list, invite staff
-- Add "Staff Management" section: Add/remove staff, view members
-
-### 8. Update Auth Page
-- Normal signup creates a new shop (pending)
-- If email has pending invitation, join existing shop as staff instead
-
-### 9. Update Receipt Print
-- Use shop name from ShopContext instead of hardcoded "AK SPICE TRADING"
-
-## Access Matrix
-
-| Page | Super Admin | Admin | Staff | Shop Owner (pending) |
-|------|------------|-------|-------|---------------------|
-| Super Admin Panel | Yes | No | No | No |
-| Dashboard | Yes (all shops) | Yes (own shop) | No | No |
-| Sales | Yes | Yes | Yes | No |
-| Purchase | Yes | Yes | Yes | No |
-| Stock Adjustment | Yes | Yes | No | No |
-| Inventory | Yes | Yes | No | No |
-| Receipt | Yes | Yes | Yes | No |
-| Report | Yes | Yes | No | No |
-| Settings | Yes | Yes | No | No |
-
-## Files to Create/Modify
-
-| Action | File |
-|--------|------|
-| Create | Migration: shops, shop_members, shop_invitations tables |
-| Create | Migration: add shop_id to products & receipts, migrate data |
-| Create | Migration: update RLS policies for shop-based access |
-| Create | Migration: update role enum, helper functions |
-| Create | `src/contexts/ShopContext.tsx` |
-| Create | `src/pages/SuperAdmin.tsx` |
-| Create | `src/components/PendingApprovalScreen.tsx` |
-| Modify | `src/hooks/useUserRole.ts` — support 4 roles |
-| Modify | `src/components/RoleProtectedRoute.tsx` — support super_admin |
-| Modify | `src/components/Sidebar.tsx` — dynamic menu per role |
-| Modify | `src/components/TopNavigation.tsx` — dynamic menu per role |
-| Modify | `src/App.tsx` — add ShopProvider, super admin route, pending screen |
-| Modify | `src/services/productService.ts` — add shop_id |
-| Modify | `src/services/receiptService.ts` — add shop_id |
-| Modify | `src/pages/Auth.tsx` — handle invitations on signup |
-| Modify | `src/pages/Settings.tsx` — add shop/staff management tab |
-| Modify | `src/utils/printReceipt.ts` — dynamic shop name |
+- Receipts can be edited unlimited times with no daily restriction
+- Table stays visible during updates (no loading spinner flash)
+- All receipts remain visible after edits
+- Changes reflect immediately in the table and related pages
 

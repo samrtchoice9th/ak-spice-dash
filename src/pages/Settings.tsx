@@ -5,9 +5,12 @@ import { useInventory } from '@/contexts/InventoryContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Edit2, Trash2, Plus, Printer, Bluetooth, Wifi, Cable, Settings as SettingsIcon, Search, CheckCircle } from 'lucide-react';
+import { Edit2, Trash2, Plus, Printer, Bluetooth, Wifi, Cable, Settings as SettingsIcon, Search, CheckCircle, Store, UserPlus, Users } from 'lucide-react';
 import { AddItemDialog } from '@/components/AddItemDialog';
 import { useToast } from '@/hooks/use-toast';
+import { useShop } from '@/contexts/ShopContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
 
 // Extend Navigator interface for Web Bluetooth API
 declare global {
@@ -34,6 +37,7 @@ const Settings = () => {
   const { products, updateProduct, deleteProduct, loading } = useProducts();
   const { inventory } = useInventory();
   const { toast } = useToast();
+  const { shop, shopMembers, refreshShop } = useShop();
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editName, setEditName] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -46,6 +50,61 @@ const Settings = () => {
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [showBluetoothDialog, setShowBluetoothDialog] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [shopName, setShopName] = useState(shop?.name || '');
+
+  useEffect(() => {
+    if (shop) setShopName(shop.name);
+  }, [shop]);
+
+  const handleInviteStaff = async () => {
+    if (!inviteEmail.trim() || !shop) return;
+    setInviting(true);
+    try {
+      const { error } = await supabase
+        .from('shop_invitations')
+        .insert({ shop_id: shop.id, email: inviteEmail.trim(), role: 'staff' });
+
+      if (error) throw error;
+
+      toast({ title: 'Invitation Sent', description: `Staff invitation sent to ${inviteEmail}` });
+      setInviteEmail('');
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to send invitation', variant: 'destructive' });
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleUpdateShopName = async () => {
+    if (!shopName.trim() || !shop) return;
+    const { error } = await supabase
+      .from('shops')
+      .update({ name: shopName.trim() })
+      .eq('id', shop.id);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update shop name', variant: 'destructive' });
+    } else {
+      toast({ title: 'Updated', description: 'Shop name updated' });
+      refreshShop();
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    const { error } = await supabase
+      .from('shop_members')
+      .delete()
+      .eq('id', memberId);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to remove member', variant: 'destructive' });
+    } else {
+      toast({ title: 'Removed', description: 'Member removed from shop' });
+      refreshShop();
+    }
+  };
 
   const handleEditProduct = async () => {
     if (editingProduct && editName.trim()) {
@@ -223,7 +282,7 @@ const Settings = () => {
   const ReceiptPreview = () => (
     <div className="bg-white border rounded-lg p-4 max-w-xs mx-auto font-mono text-xs">
       <div className="text-center border-b border-dashed border-gray-400 pb-2 mb-2">
-        <div className="font-bold text-sm">AK SPICE TRADING</div>
+        <div className="font-bold text-sm">{shop?.name?.toUpperCase() || 'YOUR SHOP'}</div>
         <div className="text-xs">Mo: +974773962001</div>
         <div className="text-xs">36, In Front of Ajile Factory</div>
         <div className="text-xs">Mahiyangana</div>
@@ -268,7 +327,7 @@ const Settings = () => {
       <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-gray-800">Settings</h1>
       
       {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 max-w-md mx-auto">
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 max-w-lg mx-auto">
         <button
           onClick={() => setActiveTab('items')}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
@@ -290,6 +349,17 @@ const Settings = () => {
         >
           <Printer className="inline w-4 h-4 mr-2" />
           Printer
+        </button>
+        <button
+          onClick={() => setActiveTab('shop')}
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'shop'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Store className="inline w-4 h-4 mr-2" />
+          Shop
         </button>
       </div>
 
@@ -504,6 +574,61 @@ const Settings = () => {
                 <ReceiptPreview />
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+
+      {/* Shop Management Tab */}
+      {activeTab === 'shop' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+              <Store size={20} />
+              <span>Shop Information</span>
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Shop Name</label>
+                <div className="flex space-x-2">
+                  <Input value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Shop name" />
+                  <Button onClick={handleUpdateShopName} disabled={shopName === shop?.name}>Save</Button>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500">
+                Status: <span className={`font-medium ${shop?.status === 'active' ? 'text-green-600' : 'text-amber-600'}`}>{shop?.status || 'Unknown'}</span>
+              </p>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+              <Users size={20} />
+              <span>Shop Members ({shopMembers.length})</span>
+            </h3>
+            <div className="space-y-3">
+              {shopMembers.map(member => (
+                <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">User: {member.user_id.slice(0, 8)}...</p>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${member.role === 'owner' ? 'bg-purple-100 text-purple-800' : member.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{member.role}</span>
+                  </div>
+                  {member.role === 'staff' && (
+                    <Button onClick={() => handleRemoveMember(member.id)} size="sm" variant="outline" className="text-red-600 border-red-300 hover:bg-red-50"><Trash2 size={14} /></Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+              <UserPlus size={20} />
+              <span>Invite Staff</span>
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">Send an invitation to a staff member. When they sign up with this email, they'll automatically join your shop.</p>
+            <div className="flex space-x-2">
+              <Input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="staff@example.com" />
+              <Button onClick={handleInviteStaff} disabled={inviting || !inviteEmail.trim()}>{inviting ? 'Sending...' : 'Invite'}</Button>
+            </div>
           </div>
         </div>
       )}
