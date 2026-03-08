@@ -18,7 +18,7 @@ interface MobileSidebarProps {
   isSuperAdmin?: boolean;
 }
 
-export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, menuItems }) => {
+export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, menuItems, shopName, isSuperAdmin }) => {
   return (
     <>
       {/* Mobile backdrop overlay */}
