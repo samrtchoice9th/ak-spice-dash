@@ -36,7 +36,7 @@ export const Sidebar = () => {
 
   const menuItems = useMemo(() => {
     if (isSuperAdmin && !shop) return allMenuItems.filter(item => item.superAdminOnly);
-    if (isSuperAdmin && shop) return allMenuItems;
+    if (isSuperAdmin && shop) return allMenuItems.filter(item => !item.superAdminOnly);
     return allMenuItems.filter(item => {
       if (item.superAdminOnly) return false;
       if (isAdmin) return true;
