@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, metadata?: { shop_name?: string; shop_address?: string; shop_phone?: string }) => {
     try {
       // Validate input
       authSchema.parse({ email, password });
@@ -81,13 +81,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: { message: validationError.issues?.[0]?.message || 'Invalid input' } };
     }
 
-    // Simple signup without email confirmation
-    // The limitation will be enforced at the Supabase project level
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`
+        emailRedirectTo: `${window.location.origin}/`,
+        data: metadata || {}
       }
     });
 

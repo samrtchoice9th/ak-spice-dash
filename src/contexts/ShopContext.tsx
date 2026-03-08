@@ -9,6 +9,8 @@ export interface Shop {
   owner_id: string;
   status: string;
   created_at: string;
+  address: string | null;
+  phone: string | null;
 }
 
 export interface ShopMember {
