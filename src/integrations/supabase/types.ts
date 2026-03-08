@@ -21,6 +21,7 @@ export type Database = {
           id: string
           name: string
           price: number
+          shop_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -30,6 +31,7 @@ export type Database = {
           id?: string
           name: string
           price?: number
+          shop_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -39,10 +41,19 @@ export type Database = {
           id?: string
           name?: string
           price?: number
+          shop_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       receipt_items: {
         Row: {
@@ -91,6 +102,7 @@ export type Database = {
           date: string
           id: string
           note: string | null
+          shop_id: string | null
           time: string
           total_amount: number
           type: string
@@ -102,6 +114,7 @@ export type Database = {
           date: string
           id?: string
           note?: string | null
+          shop_id?: string | null
           time: string
           total_amount: number
           type: string
@@ -113,11 +126,111 @@ export type Database = {
           date?: string
           id?: string
           note?: string | null
+          shop_id?: string | null
           time?: string
           total_amount?: number
           type?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          role: string
+          shop_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          role?: string
+          shop_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          role?: string
+          shop_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_invitations_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_members: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          shop_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          shop_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          shop_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_members_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shops: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          status?: string
         }
         Relationships: []
       }
@@ -144,11 +257,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_shop_role: {
+        Args: { _shop_id: string; _user_id: string }
+        Returns: string
+      }
+      get_user_shop_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_shop_member: {
+        Args: { _shop_id: string; _user_id: string }
         Returns: boolean
       }
     }
