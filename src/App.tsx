@@ -12,6 +12,7 @@ import { ReceiptsProvider } from "./contexts/ReceiptsContext";
 import { InventoryProvider } from "./contexts/InventoryContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { RoleProtectedRoute } from "./components/RoleProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Sales from "./pages/Sales";
 import Purchase from "./pages/Purchase";
