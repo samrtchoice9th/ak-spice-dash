@@ -43,7 +43,7 @@ export const Sidebar = () => {
       if (isStaff) return item.staffVisible;
       return item.staffVisible;
     });
-  }, [isSuperAdmin, isAdmin, isStaff]);
+  }, [isSuperAdmin, isAdmin, isStaff, shop]);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
   const closeSidebar = () => setIsOpen(false);
