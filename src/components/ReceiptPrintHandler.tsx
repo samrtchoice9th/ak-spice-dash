@@ -3,13 +3,28 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { PrintPreviewDialog } from './PrintPreviewDialog';
 import { ReceiptItem } from '@/contexts/ReceiptsContext';
+import { useShop } from '@/contexts/ShopContext';
+
+interface ShopInfo {
+  name: string;
+  phone: string;
+  address: string;
+}
 
 export const useReceiptPrintHandler = () => {
   const { toast } = useToast();
   const [showPreview, setShowPreview] = useState(false);
   const [currentReceipt, setCurrentReceipt] = useState<any>(null);
+  const { shop } = useShop();
+
+  const getShopInfo = (): ShopInfo => ({
+    name: shop?.name || 'My Shop',
+    phone: shop?.phone || '',
+    address: shop?.address || '',
+  });
 
   const generatePrintContent = (receipt: any, useMobileFormat = false) => {
+    const shopInfo = getShopInfo();
     const printStyles = `
       <style>
         @media print {
@@ -126,11 +141,16 @@ export const useReceiptPrintHandler = () => {
     const currentDate = new Date();
     const invoiceNumber = `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
 
+    const shopDetailsHtml = [
+      shopInfo.phone ? `Mob: ${shopInfo.phone}` : '',
+      shopInfo.address || '',
+    ].filter(Boolean).join('<br>');
+
     const mobileContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>AK Spice - Receipt</title>
+          <title>${shopInfo.name} - Receipt</title>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           ${printStyles}
@@ -138,12 +158,8 @@ export const useReceiptPrintHandler = () => {
         <body>
           <div class="receipt-container">
             <div class="receipt-header">
-              <div class="company-name">AK TRADING</div>
-              <div class="company-details">
-                Mob: +974773962001<br>
-                36, In Front of Tile Factory<br>
-                Mahiyangana
-              </div>
+              <div class="company-name">${shopInfo.name.toUpperCase()}</div>
+              ${shopDetailsHtml ? `<div class="company-details">${shopDetailsHtml}</div>` : ''}
             </div>
             
             <div class="invoice-info">
@@ -194,17 +210,13 @@ export const useReceiptPrintHandler = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>AK Spice - Receipt</title>
+          <title>${shopInfo.name} - Receipt</title>
           ${printStyles}
         </head>
         <body>
           <div class="receipt-header">
-            <div class="company-name">AK SPICE TRADING</div>
-            <div class="company-details">
-              Mo: +974773962001<br>
-              36, In Front of Ajile Factory<br>
-              Mahiyangana
-            </div>
+            <div class="company-name">${shopInfo.name.toUpperCase()}</div>
+            ${shopDetailsHtml ? `<div class="company-details">${shopDetailsHtml}</div>` : ''}
           </div>
           
           <div class="invoice-info">
@@ -262,6 +274,7 @@ export const useReceiptPrintHandler = () => {
   };
 
   const printReceiptNative = (receipt: any) => {
+    const shopInfo = getShopInfo();
     const printStyles = `
       <style>
         @media print {
@@ -377,11 +390,16 @@ export const useReceiptPrintHandler = () => {
     const formattedDate = currentDate.toLocaleDateString();
     const formattedTime = currentDate.toLocaleTimeString();
 
+    const shopDetailsHtml = [
+      shopInfo.phone ? `Mob: ${shopInfo.phone}` : '',
+      shopInfo.address || '',
+    ].filter(Boolean).join('<br>');
+
     const printContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>AK Spice - Receipt</title>
+          <title>${shopInfo.name} - Receipt</title>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           ${printStyles}
@@ -389,12 +407,8 @@ export const useReceiptPrintHandler = () => {
         <body>
           <div class="receipt-container">
             <div class="receipt-header">
-              <div class="company-name">AK TRADING</div>
-              <div class="company-details">
-                Mob: +974773962001<br>
-                36, In Front of Tile Factory<br>
-                Mahiyangana
-              </div>
+              <div class="company-name">${shopInfo.name.toUpperCase()}</div>
+              ${shopDetailsHtml ? `<div class="company-details">${shopDetailsHtml}</div>` : ''}
             </div>
             
             <div class="invoice-info">
@@ -506,15 +520,14 @@ export const useReceiptPrintHandler = () => {
       return false;
     }
 
+    const shopInfo = getShopInfo();
     const currentDate = new Date();
     const formattedDate = receipt.date || currentDate.toLocaleDateString();
     const formattedTime = receipt.time || currentDate.toLocaleTimeString();
     const invoiceNumber = `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
 
-    // Generate ESC/POS formatted text
-    const escPos = generateESCPOSText(invoiceNumber, formattedDate, formattedTime, receipt.items, receipt.totalAmount);
+    const escPos = generateESCPOSText(shopInfo, invoiceNumber, formattedDate, formattedTime, receipt.items, receipt.totalAmount);
 
-    // Proper RawBT Intent URL
     const rawbtUrl = `intent://print?text=${encodeURIComponent(escPos)}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end`;
 
     try {
@@ -535,8 +548,8 @@ export const useReceiptPrintHandler = () => {
     }
   };
 
-  // Generate ESC/POS formatted text for thermal printer
   const generateESCPOSText = (
+    shopInfo: ShopInfo,
     invoiceNumber: string,
     date: string,
     time: string,
@@ -554,10 +567,9 @@ export const useReceiptPrintHandler = () => {
     let receipt = INIT;
     
     // Header
-    receipt += CENTER + BOLD_ON + 'AK TRADING' + BOLD_OFF + '\n';
-    receipt += 'Mob: +974773962001\n';
-    receipt += '36, In Front of Tile Factory\n';
-    receipt += 'Mahiyangana\n';
+    receipt += CENTER + BOLD_ON + shopInfo.name.toUpperCase() + BOLD_OFF + '\n';
+    if (shopInfo.phone) receipt += `Mob: ${shopInfo.phone}\n`;
+    if (shopInfo.address) receipt += `${shopInfo.address}\n`;
     receipt += '--------------------------------\n';
     
     // Invoice info
