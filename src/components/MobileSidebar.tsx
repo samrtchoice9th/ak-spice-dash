@@ -14,6 +14,8 @@ interface MobileSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   menuItems: MenuItem[];
+  shopName?: string;
+  isSuperAdmin?: boolean;
 }
 
 export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, menuItems }) => {
