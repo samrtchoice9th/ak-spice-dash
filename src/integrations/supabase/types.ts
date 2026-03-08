@@ -212,24 +212,30 @@ export type Database = {
       }
       shops: {
         Row: {
+          address: string | null
           created_at: string
           id: string
           name: string
           owner_id: string
+          phone: string | null
           status: string
         }
         Insert: {
+          address?: string | null
           created_at?: string
           id?: string
           name: string
           owner_id: string
+          phone?: string | null
           status?: string
         }
         Update: {
+          address?: string | null
           created_at?: string
           id?: string
           name?: string
           owner_id?: string
+          phone?: string | null
           status?: string
         }
         Relationships: []

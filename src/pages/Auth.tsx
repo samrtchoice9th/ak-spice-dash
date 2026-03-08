@@ -12,6 +12,9 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [shopName, setShopName] = useState('');
+  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
@@ -28,14 +31,26 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Validate input
       const validatedData = authSchema.parse({ email: email.trim(), password });
       
       let result;
       if (isLogin) {
         result = await signIn(validatedData.email, validatedData.password);
       } else {
-        result = await signUp(validatedData.email, validatedData.password);
+        if (!shopName.trim()) {
+          toast({
+            title: "Validation Error",
+            description: "Shop name is required",
+            variant: "destructive"
+          });
+          setLoading(false);
+          return;
+        }
+        result = await signUp(validatedData.email, validatedData.password, {
+          shop_name: shopName.trim(),
+          shop_address: address.trim() || undefined,
+          shop_phone: phone.trim() || undefined,
+        });
       }
 
       if (result.error) {
@@ -116,6 +131,50 @@ const Auth = () => {
                 placeholder="Enter your password"
               />
             </div>
+
+            {!isLogin && (
+              <>
+                <div>
+                  <Label htmlFor="shopName">Shop Name *</Label>
+                  <Input
+                    id="shopName"
+                    type="text"
+                    required
+                    value={shopName}
+                    onChange={(e) => setShopName(e.target.value)}
+                    className="mt-1"
+                    placeholder="Enter your shop name"
+                    maxLength={100}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="mt-1"
+                    placeholder="Shop address"
+                    maxLength={255}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="phone">Phone Number (T.P)</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="mt-1"
+                    placeholder="e.g. +94771234567"
+                    maxLength={20}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <div>
