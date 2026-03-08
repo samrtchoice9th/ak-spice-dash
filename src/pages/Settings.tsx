@@ -87,6 +87,10 @@ const Settings = () => {
 
   const handleUpdateShopName = async () => {
     if (!shopName.trim() || !shop) return;
+    if (shopName.trim().length > 100) {
+      toast({ title: 'Error', description: 'Shop name must be less than 100 characters', variant: 'destructive' });
+      return;
+    }
     const { error } = await supabase
       .from('shops')
       .update({ name: shopName.trim() })
