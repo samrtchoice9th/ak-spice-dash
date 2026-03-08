@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { X, ArrowLeft } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
+import { useShop } from '@/contexts/ShopContext';
 
 interface MenuItem {
   name: string;
@@ -16,9 +17,19 @@ interface MobileSidebarProps {
   menuItems: MenuItem[];
   shopName?: string;
   isSuperAdmin?: boolean;
+  isViewingAsAdmin?: boolean;
 }
 
-export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, menuItems, shopName, isSuperAdmin }) => {
+export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, menuItems, shopName, isSuperAdmin, isViewingAsAdmin }) => {
+  const { exitShop } = useShop();
+  const navigate = useNavigate();
+
+  const handleBackToAdmin = () => {
+    exitShop();
+    navigate('/super-admin');
+    onClose();
+  };
+
   return (
     <>
       {/* Mobile backdrop overlay */}
@@ -44,6 +55,17 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, m
             <X size={20} className="text-gray-700" />
           </button>
         </div>
+
+        {/* Back to Admin Panel button */}
+        {isViewingAsAdmin && (
+          <button
+            onClick={handleBackToAdmin}
+            className="flex items-center space-x-2 w-full px-4 py-3 text-sm font-medium text-primary hover:bg-primary/10 transition-colors border-b border-gray-200"
+          >
+            <ArrowLeft size={16} />
+            <span>Back to Admin Panel</span>
+          </button>
+        )}
         
         {/* Mobile navigation menu */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
