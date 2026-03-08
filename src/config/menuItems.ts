@@ -29,7 +29,7 @@ export const allMenuItems: MenuItem[] = [
   { name: 'Stock Adjustment', path: '/stock-adjustment', icon: PackageMinus, superAdminOnly: false, adminOnly: true, staffVisible: false },
   { name: 'Inventory', path: '/inventory', icon: Warehouse, superAdminOnly: false, adminOnly: true, staffVisible: false },
   { name: 'Receipt', path: '/receipt', icon: Receipt, superAdminOnly: false, adminOnly: false, staffVisible: true },
-  { name: 'Report', path: '/report', icon: BarChart3, superAdminOnly: false, adminOnly: true, staffVisible: false },
+  { name: 'Report', path: '/report', icon: BarChart3, superAdminOnly: false, adminOnly: false, staffVisible: true },
   { name: 'Settings', path: '/settings', icon: Settings, superAdminOnly: false, adminOnly: true, staffVisible: false },
 ];
 

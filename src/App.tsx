@@ -68,7 +68,7 @@ const AppContent = () => {
                     <Route path="/stock-adjustment" element={<RoleProtectedRoute><StockAdjustment /></RoleProtectedRoute>} />
                     <Route path="/inventory" element={<RoleProtectedRoute><Inventory /></RoleProtectedRoute>} />
                     <Route path="/receipt" element={<ReceiptPage />} />
-                    <Route path="/report" element={<RoleProtectedRoute><Report /></RoleProtectedRoute>} />
+                    <Route path="/report" element={<Report />} />
                     <Route path="/settings" element={<RoleProtectedRoute><Settings /></RoleProtectedRoute>} />
                     <Route path="/super-admin" element={<RoleProtectedRoute requiredRole="super_admin"><SuperAdmin /></RoleProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
