@@ -37,6 +37,7 @@ const Settings = () => {
   const { products, updateProduct, deleteProduct, loading } = useProducts();
   const { inventory } = useInventory();
   const { toast } = useToast();
+  const { shop, shopMembers, refreshShop } = useShop();
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editName, setEditName] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -49,6 +50,61 @@ const Settings = () => {
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [showBluetoothDialog, setShowBluetoothDialog] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [shopName, setShopName] = useState(shop?.name || '');
+
+  useEffect(() => {
+    if (shop) setShopName(shop.name);
+  }, [shop]);
+
+  const handleInviteStaff = async () => {
+    if (!inviteEmail.trim() || !shop) return;
+    setInviting(true);
+    try {
+      const { error } = await supabase
+        .from('shop_invitations')
+        .insert({ shop_id: shop.id, email: inviteEmail.trim(), role: 'staff' });
+
+      if (error) throw error;
+
+      toast({ title: 'Invitation Sent', description: `Staff invitation sent to ${inviteEmail}` });
+      setInviteEmail('');
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to send invitation', variant: 'destructive' });
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleUpdateShopName = async () => {
+    if (!shopName.trim() || !shop) return;
+    const { error } = await supabase
+      .from('shops')
+      .update({ name: shopName.trim() })
+      .eq('id', shop.id);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update shop name', variant: 'destructive' });
+    } else {
+      toast({ title: 'Updated', description: 'Shop name updated' });
+      refreshShop();
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    const { error } = await supabase
+      .from('shop_members')
+      .delete()
+      .eq('id', memberId);
+
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to remove member', variant: 'destructive' });
+    } else {
+      toast({ title: 'Removed', description: 'Member removed from shop' });
+      refreshShop();
+    }
+  };
 
   const handleEditProduct = async () => {
     if (editingProduct && editName.trim()) {
