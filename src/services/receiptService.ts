@@ -112,6 +112,11 @@ export const receiptService = {
       totalAmount: validatedData.totalAmount,
       date,
       time,
+      customer_id: receiptResult.customer_id,
+      supplier_id: receiptResult.supplier_id,
+      paid_amount: Number(receiptResult.paid_amount || 0),
+      due_amount: Number(receiptResult.due_amount || 0),
+      due_date: receiptResult.due_date,
       items: validatedData.items.map((item, index) => ({
         ...item,
         id: itemsResult[index].id
