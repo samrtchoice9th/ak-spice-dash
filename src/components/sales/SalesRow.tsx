@@ -61,14 +61,9 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
               inputRef={el => { inputRefs.current[`${row.id}-name`] = el; }}
             />
           </div>
-          <div className="flex gap-1">
-            <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onDuplicate(row.id)}>
-              <Copy className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive" onClick={() => onDelete(row.id)}>
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive" onClick={() => onDelete(row.id)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
         <div className="grid grid-cols-[2fr_1fr_1fr] gap-2">
           <div>
@@ -173,9 +168,6 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
       </td>
       <td className="p-2 w-[13%]">
         <div className="flex gap-1 justify-center">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDuplicate(row.id)} title="Duplicate">
-            <Copy className="h-3.5 w-3.5" />
-          </Button>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => onDelete(row.id)} title="Delete">
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
