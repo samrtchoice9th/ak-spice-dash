@@ -19,6 +19,11 @@ export interface Receipt {
   totalAmount: number;
   date: string;
   time: string;
+  customer_id?: string | null;
+  supplier_id?: string | null;
+  paid_amount?: number;
+  due_amount?: number;
+  due_date?: string | null;
 }
 
 interface ReceiptsContextType {
