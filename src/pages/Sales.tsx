@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSalesData } from '@/hooks/useSalesData';
+import { usePOSData } from '@/hooks/usePOSData';
 import { SalesRowComponent } from '@/components/sales/SalesRow';
 import { TotalBar } from '@/components/sales/TotalBar';
 import { SaveSuccessModal } from '@/components/sales/SaveSuccessModal';
@@ -7,44 +7,25 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const Sales = () => {
   const {
-    rows,
-    errors,
-    isSaving,
-    showSuccess,
-    setShowSuccess,
-    lastSavedRows,
-    grandTotal,
-    distinctItems,
-    inputRefs,
-    updateRow,
-    addRow,
-    deleteRow,
-    duplicateRow,
-    handleKeyDown,
-    handleSave,
-  } = useSalesData();
+    rows, errors, isSaving, showSuccess, setShowSuccess,
+    lastSavedRows, grandTotal, distinctItems, inputRefs,
+    updateRow, addRow, deleteRow, duplicateRow, handleKeyDown, handleSave,
+  } = usePOSData('sales');
 
   const isMobile = useIsMobile();
 
   return (
     <div className="pb-24">
-      <div className="mb-4">
-        <h1 className="text-xl font-bold text-foreground">Sales</h1>
+      <div className="mb-3">
+        <h1 className="text-lg sm:text-xl font-bold text-foreground">Sales</h1>
       </div>
 
       {isMobile ? (
         <div className="space-y-2">
           {rows.map(row => (
-            <SalesRowComponent
-              key={row.id}
-              row={row}
-              rowErrors={errors[row.id]}
-              onUpdate={updateRow}
-              onDelete={deleteRow}
-              onDuplicate={duplicateRow}
-              onKeyDown={handleKeyDown}
-              inputRefs={inputRefs}
-            />
+            <SalesRowComponent key={row.id} row={row} rowErrors={errors[row.id]}
+              onUpdate={updateRow} onDelete={deleteRow} onDuplicate={duplicateRow}
+              onKeyDown={handleKeyDown} inputRefs={inputRefs} />
           ))}
         </div>
       ) : (
@@ -61,36 +42,21 @@ const Sales = () => {
             </thead>
             <tbody>
               {rows.map(row => (
-                <SalesRowComponent
-                  key={row.id}
-                  row={row}
-                  rowErrors={errors[row.id]}
-                  onUpdate={updateRow}
-                  onDelete={deleteRow}
-                  onDuplicate={duplicateRow}
-                  onKeyDown={handleKeyDown}
-                  inputRefs={inputRefs}
-                />
+                <SalesRowComponent key={row.id} row={row} rowErrors={errors[row.id]}
+                  onUpdate={updateRow} onDelete={deleteRow} onDuplicate={duplicateRow}
+                  onKeyDown={handleKeyDown} inputRefs={inputRefs} />
               ))}
             </tbody>
           </table>
         </div>
       )}
 
-      <TotalBar
-        distinctItems={distinctItems}
-        grandTotal={grandTotal}
-        isSaving={isSaving}
-        hasErrors={Object.keys(errors).length > 0}
-        onSave={handleSave}
-        onAddRow={addRow}
-      />
+      <TotalBar distinctItems={distinctItems} grandTotal={grandTotal}
+        isSaving={isSaving} hasErrors={Object.keys(errors).length > 0}
+        onSave={handleSave} onAddRow={addRow} />
 
-      <SaveSuccessModal
-        open={showSuccess}
-        onClose={() => setShowSuccess(false)}
-        savedRows={lastSavedRows}
-      />
+      <SaveSuccessModal open={showSuccess} onClose={() => setShowSuccess(false)}
+        savedRows={lastSavedRows} type="sales" />
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { useReceipts } from '@/contexts/ReceiptsContext';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useToast } from '@/hooks/use-toast';
 
-export interface SalesRow {
+export interface POSRow {
   id: string;
   item_id: string;
   name: string;
@@ -12,14 +12,15 @@ export interface SalesRow {
   total: number;
 }
 
-export interface SalesErrors {
+export interface POSErrors {
   [rowId: string]: { [field: string]: string };
 }
 
-const DRAFT_KEY = 'pos-sales-draft';
-const DRAFT_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+type POSType = 'sales' | 'purchase';
 
-const createEmptyRow = (): SalesRow => ({
+const DRAFT_MAX_AGE = 24 * 60 * 60 * 1000;
+
+const createEmptyRow = (): POSRow => ({
   id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
   item_id: '',
   name: '',
@@ -28,52 +29,53 @@ const createEmptyRow = (): SalesRow => ({
   total: 0,
 });
 
-const loadDraft = (): SalesRow[] | null => {
+const getDraftKey = (type: POSType) => `pos-${type}-draft`;
+
+const loadDraft = (type: POSType): POSRow[] | null => {
   try {
-    const raw = localStorage.getItem(DRAFT_KEY);
+    const raw = localStorage.getItem(getDraftKey(type));
     if (!raw) return null;
     const draft = JSON.parse(raw);
     if (Date.now() - draft.timestamp > DRAFT_MAX_AGE) {
-      localStorage.removeItem(DRAFT_KEY);
+      localStorage.removeItem(getDraftKey(type));
       return null;
     }
-    return draft.rows as SalesRow[];
+    return draft.rows as POSRow[];
   } catch {
     return null;
   }
 };
 
-const saveDraft = (rows: SalesRow[]) => {
+const saveDraft = (type: POSType, rows: POSRow[]) => {
   try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ rows, timestamp: Date.now() }));
+    localStorage.setItem(getDraftKey(type), JSON.stringify({ rows, timestamp: Date.now() }));
   } catch { /* ignore */ }
 };
 
-const clearDraft = () => {
-  localStorage.removeItem(DRAFT_KEY);
+const clearDraft = (type: POSType) => {
+  localStorage.removeItem(getDraftKey(type));
 };
 
-export const useSalesData = () => {
-  const [rows, setRows] = useState<SalesRow[]>(() => {
-    const draft = loadDraft();
+export const usePOSData = (type: POSType) => {
+  const [rows, setRows] = useState<POSRow[]>(() => {
+    const draft = loadDraft(type);
     return draft && draft.length > 0 ? draft : [createEmptyRow()];
   });
-  const [errors, setErrors] = useState<SalesErrors>({});
+  const [errors, setErrors] = useState<POSErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [lastSavedRows, setLastSavedRows] = useState<SalesRow[]>([]);
+  const [lastSavedRows, setLastSavedRows] = useState<POSRow[]>([]);
 
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const { addReceipt } = useReceipts();
   const { updateStock } = useProducts();
   const { toast } = useToast();
 
-  // Save draft on every row change
   useEffect(() => {
-    saveDraft(rows);
-  }, [rows]);
+    saveDraft(type, rows);
+  }, [rows, type]);
 
-  const updateRow = useCallback((id: string, field: keyof SalesRow, value: string | number) => {
+  const updateRow = useCallback((id: string, field: keyof POSRow, value: string | number) => {
     setRows(prev => prev.map(row => {
       if (row.id !== id) return row;
       const updated = { ...row, [field]: value };
@@ -82,7 +84,6 @@ export const useSalesData = () => {
       }
       return updated;
     }));
-    // Clear error for this field
     setErrors(prev => {
       if (!prev[id]) return prev;
       const { [field]: _, ...rest } = prev[id];
@@ -105,9 +106,7 @@ export const useSalesData = () => {
   const deleteRow = useCallback((id: string) => {
     setRows(prev => {
       if (prev.length <= 1) {
-        // Reset instead of delete
-        const fresh = createEmptyRow();
-        return [fresh];
+        return [createEmptyRow()];
       }
       return prev.filter(r => r.id !== id);
     });
@@ -118,7 +117,7 @@ export const useSalesData = () => {
       const idx = prev.findIndex(r => r.id === id);
       if (idx === -1) return prev;
       const source = prev[idx];
-      const copy: SalesRow = {
+      const copy: POSRow = {
         ...source,
         id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
       };
@@ -158,7 +157,7 @@ export const useSalesData = () => {
   }, []);
 
   const validate = useCallback((): boolean => {
-    const newErrors: SalesErrors = {};
+    const newErrors: POSErrors = {};
     const validRows = rows.filter(r => r.name.trim() || r.qty > 0 || r.price > 0);
 
     if (validRows.length === 0) {
@@ -193,7 +192,7 @@ export const useSalesData = () => {
       setIsSaving(true);
 
       await addReceipt({
-        type: 'sales',
+        type,
         items: validItems.map(r => ({
           id: r.id,
           itemName: r.name,
@@ -205,11 +204,11 @@ export const useSalesData = () => {
       });
 
       for (const item of validItems) {
-        await updateStock(item.name, item.qty, 'sales');
+        await updateStock(item.name, item.qty, type);
       }
 
       setLastSavedRows(validItems);
-      clearDraft();
+      clearDraft(type);
 
       const freshRow = createEmptyRow();
       setRows([freshRow]);
@@ -229,7 +228,7 @@ export const useSalesData = () => {
     } finally {
       setIsSaving(false);
     }
-  }, [rows, validate, addReceipt, updateStock, toast]);
+  }, [rows, validate, addReceipt, updateStock, toast, type]);
 
   const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
   const distinctItems = rows.filter(r => r.name.trim() !== '').length;

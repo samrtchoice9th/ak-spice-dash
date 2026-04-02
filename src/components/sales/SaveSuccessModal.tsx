@@ -9,17 +9,19 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Printer, X, CheckCircle } from 'lucide-react';
-import { SalesRow } from '@/hooks/useSalesData';
+import { POSRow } from '@/hooks/usePOSData';
 import { printToRawBT } from '@/utils/printReceipt';
 
 interface SaveSuccessModalProps {
   open: boolean;
   onClose: () => void;
-  savedRows: SalesRow[];
+  savedRows: POSRow[];
+  type?: 'sales' | 'purchase';
 }
 
-export const SaveSuccessModal: React.FC<SaveSuccessModalProps> = ({ open, onClose, savedRows }) => {
+export const SaveSuccessModal: React.FC<SaveSuccessModalProps> = ({ open, onClose, savedRows, type = 'sales' }) => {
   const grandTotal = savedRows.reduce((sum, r) => sum + r.total, 0);
+  const label = type === 'purchase' ? 'Purchase' : 'Sale';
 
   const handlePrint = () => {
     const tableRows = savedRows.map(r => ({
@@ -31,11 +33,11 @@ export const SaveSuccessModal: React.FC<SaveSuccessModalProps> = ({ open, onClos
 
     printToRawBT(
       tableRows,
-      'Sales',
+      label,
       () => grandTotal,
-      () => Promise.resolve(), // receipt already saved
-      'sales',
-      () => {} // no clear needed
+      () => Promise.resolve(),
+      type,
+      () => {}
     );
     onClose();
   };
@@ -46,7 +48,7 @@ export const SaveSuccessModal: React.FC<SaveSuccessModalProps> = ({ open, onClos
         <DialogHeader>
           <div className="flex items-center gap-2">
             <CheckCircle className="h-6 w-6 text-primary" />
-            <DialogTitle>Sale Saved!</DialogTitle>
+            <DialogTitle>{label} Saved!</DialogTitle>
           </div>
           <DialogDescription>
             {savedRows.length} item{savedRows.length !== 1 ? 's' : ''} — Total: Rs. {grandTotal.toFixed(2)}

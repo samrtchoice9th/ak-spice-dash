@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { SalesRow as SalesRowType } from '@/hooks/useSalesData';
+import { POSRow } from '@/hooks/usePOSData';
 import { ItemSearch } from './ItemSearch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,9 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SalesRowProps {
-  row: SalesRowType;
+  row: POSRow;
   rowErrors?: { [field: string]: string };
-  onUpdate: (id: string, field: keyof SalesRowType, value: string | number) => void;
+  onUpdate: (id: string, field: keyof POSRow, value: string | number) => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onKeyDown: (e: React.KeyboardEvent, rowId: string, field: 'name' | 'qty' | 'price') => void;
@@ -32,7 +32,6 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
     onUpdate(row.id, 'name', name);
     onUpdate(row.id, 'price', price);
     onUpdate(row.id, 'qty', 1);
-    // Focus qty after select
     setTimeout(() => {
       inputRefs.current[`${row.id}-qty`]?.focus();
       inputRefs.current[`${row.id}-qty`]?.select();
@@ -63,11 +62,11 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
             />
           </div>
           <div className="flex gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDuplicate(row.id)}>
-              <Copy className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => onDuplicate(row.id)}>
+              <Copy className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDelete(row.id)}>
-              <Trash2 className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive" onClick={() => onDelete(row.id)}>
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -75,8 +74,8 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Qty</label>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleQtyStep(-0.25)}>
-                <Minus className="h-3 w-3" />
+              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => handleQtyStep(-0.25)}>
+                <Minus className="h-4 w-4" />
               </Button>
               <Input
                 ref={el => { inputRefs.current[`${row.id}-qty`] = el; }}
@@ -86,10 +85,10 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
                 value={row.qty || ''}
                 onChange={e => onUpdate(row.id, 'qty', parseFloat(e.target.value) || 0)}
                 onKeyDown={e => onKeyDown(e, row.id, 'qty')}
-                className={cn("h-8 text-center text-sm", rowErrors?.qty && "border-destructive")}
+                className={cn("h-10 text-center", rowErrors?.qty && "border-destructive")}
               />
-              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleQtyStep(0.25)}>
-                <Plus className="h-3 w-3" />
+              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => handleQtyStep(0.25)}>
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
             {rowErrors?.qty && <span className="text-xs text-destructive">{rowErrors.qty}</span>}
@@ -104,13 +103,13 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
               value={row.price || ''}
               onChange={e => onUpdate(row.id, 'price', parseFloat(e.target.value) || 0)}
               onKeyDown={e => onKeyDown(e, row.id, 'price')}
-              className={cn("h-8 text-sm", rowErrors?.price && "border-destructive")}
+              className={cn("h-10", rowErrors?.price && "border-destructive")}
             />
             {rowErrors?.price && <span className="text-xs text-destructive">{rowErrors.price}</span>}
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Total</label>
-            <div className="h-8 flex items-center text-sm font-semibold text-foreground">
+            <div className="h-10 flex items-center font-semibold text-foreground">
               Rs.{row.total.toFixed(2)}
             </div>
           </div>
@@ -119,7 +118,6 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
     );
   }
 
-  // Desktop table row
   return (
     <tr className={cn(
       "border-b transition-colors",
