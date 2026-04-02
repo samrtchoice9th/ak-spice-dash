@@ -73,6 +73,11 @@ export const receiptService = {
         time,
         user_id: user.id,
         shop_id: membership?.shop_id || null,
+        customer_id: (receiptData as any).customer_id || null,
+        supplier_id: (receiptData as any).supplier_id || null,
+        paid_amount: (receiptData as any).paid_amount || 0,
+        due_amount: (receiptData as any).due_amount || 0,
+        due_date: (receiptData as any).due_date || null,
       })
       .select()
       .single();
