@@ -8,8 +8,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Edit2, Trash2, Plus, Printer, Bluetooth, Wifi, Cable, Settings as SettingsIcon, Search, CheckCircle } from 'lucide-react';
 import { AddItemDialog } from '@/components/AddItemDialog';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
 
 // Extend Navigator interface for Web Bluetooth API
 declare global {
