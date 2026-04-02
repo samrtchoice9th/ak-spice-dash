@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useProducts } from '@/contexts/ProductsContext';
 
 export const useItemDropdown = (value: string) => {
@@ -8,10 +8,14 @@ export const useItemDropdown = (value: string) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const { products } = useProducts();
 
-  // Get item names from products
-  const itemNames = products.map(product => product.name);
+  const itemNames = useMemo(() => products.map(p => p.name), [products]);
 
   useEffect(() => {
+    if (!value.trim()) {
+      setFilteredItems([]);
+      setIsOpen(false);
+      return;
+    }
     const filtered = itemNames.filter(item =>
       item.toLowerCase().includes(value.toLowerCase())
     );
