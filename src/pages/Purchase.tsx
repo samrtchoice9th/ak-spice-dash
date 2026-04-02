@@ -45,7 +45,7 @@ const Purchase = () => {
           ))}
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden bg-card">
+        <div className="border rounded-lg overflow-visible bg-card">
           <table className="w-full">
             <thead>
               <tr className="border-b bg-muted/50">
