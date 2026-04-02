@@ -50,13 +50,7 @@ const Settings = () => {
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [showBluetoothDialog, setShowBluetoothDialog] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviting, setInviting] = useState(false);
-  const [shopName, setShopName] = useState(shop?.name || '');
-
-  useEffect(() => {
-    if (shop) setShopName(shop.name);
-  }, [shop]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleInviteStaff = async () => {
     if (!inviteEmail.trim() || !shop) return;
