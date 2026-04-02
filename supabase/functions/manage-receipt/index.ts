@@ -99,10 +99,13 @@ async function getOrCreateProduct(
   shopId: string | null,
   userId: string
 ) {
+  if (!shopId) throw new Error("shop_id is required for all operations");
+
   const { data: product } = await db
     .from("products")
     .select("id, current_stock, avg_cost, price")
     .eq("name", itemName)
+    .eq("shop_id", shopId)
     .maybeSingle();
 
   if (product) return product;
@@ -170,11 +173,14 @@ async function applyStockEffect(
   if (error) throw new Error(`Failed to update stock for ${item.itemName}: ${error.message}`);
 }
 
-async function reverseStockEffect(db: any, type: string, item: ReceiptItem) {
+async function reverseStockEffect(db: any, type: string, item: ReceiptItem, shopId: string) {
+  if (!shopId) throw new Error("shop_id is required for stock reversal");
+
   const { data: product } = await db
     .from("products")
     .select("id, current_stock, avg_cost")
     .eq("name", item.itemName)
+    .eq("shop_id", shopId)
     .maybeSingle();
 
   if (!product) return; // product was deleted, nothing to reverse
@@ -222,6 +228,7 @@ async function handleCreate(
 ) {
   const { type, items, totalAmount, customer_id, supplier_id, paid_amount, due_amount, due_date } = body;
 
+  if (!shopId) return jsonResponse({ error: "shop_id is required" }, 400);
   if (!type || !items || items.length === 0) {
     return jsonResponse({ error: "type and items are required" }, 400);
   }
@@ -337,7 +344,7 @@ async function handleUpdate(db: any, body: RequestBody, shopId: string | null) {
 
   // 2. Reverse old stock effects
   for (const item of oldItems) {
-    await reverseStockEffect(db, oldReceipt.type, item);
+    await reverseStockEffect(db, oldReceipt.type, item, shopId);
   }
 
   // 3. Update receipt
@@ -395,6 +402,9 @@ async function handleDelete(db: any, body: RequestBody) {
     return jsonResponse({ error: "Receipt not found" }, 404);
   }
 
+  const shopId = receipt.shop_id;
+  if (!shopId) return jsonResponse({ error: "Receipt has no shop_id" }, 400);
+
   const oldItems: ReceiptItem[] = receipt.receipt_items.map((ri: any) => ({
     itemName: ri.item_name,
     qty: Number(ri.qty),
@@ -404,7 +414,7 @@ async function handleDelete(db: any, body: RequestBody) {
 
   // 2. Reverse stock effects
   for (const item of oldItems) {
-    await reverseStockEffect(db, receipt.type, item);
+    await reverseStockEffect(db, receipt.type, item, shopId);
   }
 
   // 3. Delete receipt items then receipt
