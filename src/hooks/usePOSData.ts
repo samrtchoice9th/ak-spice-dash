@@ -262,5 +262,11 @@ export const usePOSData = (type: POSType) => {
     duplicateRow,
     handleKeyDown,
     handleSave,
+    paidAmount,
+    setPaidAmount,
+    dueDate,
+    setDueDate,
+    selectedContactId,
+    setSelectedContactId,
   };
 };
