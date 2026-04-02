@@ -229,7 +229,7 @@ const Settings = () => {
   const ReceiptPreview = () => (
     <div className="bg-white border rounded-lg p-4 max-w-xs mx-auto font-mono text-xs">
       <div className="text-center border-b border-dashed border-gray-400 pb-2 mb-2">
-        <div className="font-bold text-sm">{shop?.name?.toUpperCase() || 'YOUR SHOP'}</div>
+        <div className="font-bold text-sm">YOUR SHOP</div>
         <div className="text-xs">Mo: +974773962001</div>
         <div className="text-xs">36, In Front of Ajile Factory</div>
         <div className="text-xs">Mahiyangana</div>
