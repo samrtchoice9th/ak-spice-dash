@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useReceipts } from '@/contexts/ReceiptsContext';
+import { useProducts } from '@/contexts/ProductsContext';
 import { ReceiptSummaryCards } from '@/components/ReceiptSummaryCards';
 import { ReceiptsTable } from '@/components/ReceiptsTable';
 import { EditReceiptDialog } from '@/components/EditReceiptDialog';
