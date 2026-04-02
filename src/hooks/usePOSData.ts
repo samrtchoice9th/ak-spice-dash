@@ -190,6 +190,8 @@ export const usePOSData = (type: POSType) => {
     if (!validate()) return;
 
     const validItems = rows.filter(r => r.name.trim() && r.qty > 0 && r.price > 0);
+    const totalAmount = validItems.reduce((sum, r) => sum + r.total, 0);
+    const dueAmount = selectedContactId ? Math.max(0, totalAmount - paidAmount) : 0;
 
     try {
       setIsSaving(true);
@@ -203,7 +205,12 @@ export const usePOSData = (type: POSType) => {
           price: r.price,
           total: r.total,
         })),
-        totalAmount: validItems.reduce((sum, r) => sum + r.total, 0),
+        totalAmount,
+        customer_id: type === 'sales' ? selectedContactId : null,
+        supplier_id: type === 'purchase' ? selectedContactId : null,
+        paid_amount: selectedContactId ? paidAmount : totalAmount,
+        due_amount: dueAmount,
+        due_date: dueAmount > 0 ? dueDate || null : null,
       });
 
       for (const item of validItems) {
@@ -216,6 +223,9 @@ export const usePOSData = (type: POSType) => {
       const freshRow = createEmptyRow();
       setRows([freshRow]);
       setErrors({});
+      setPaidAmount(0);
+      setDueDate('');
+      setSelectedContactId(null);
       setShowSuccess(true);
 
       setTimeout(() => {
@@ -231,7 +241,7 @@ export const usePOSData = (type: POSType) => {
     } finally {
       setIsSaving(false);
     }
-  }, [rows, validate, addReceipt, updateStock, toast, type]);
+  }, [rows, validate, addReceipt, updateStock, toast, type, selectedContactId, paidAmount, dueDate]);
 
   const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
   const distinctItems = rows.filter(r => r.name.trim() !== '').length;
