@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { productService, Product } from '@/services/productService';
-import { useShop } from './ShopContext';
 
 interface ProductsContextType {
   products: Product[];
@@ -30,21 +29,18 @@ interface ProductsProviderProps {
 export const ProductsProvider: React.FC<ProductsProviderProps> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { shop } = useShop();
-
-  const shopId = shop?.id;
 
   const refreshProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const fetchedProducts = await productService.getAllProducts(shopId);
+      const fetchedProducts = await productService.getAllProducts();
       setProducts(fetchedProducts);
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {
       setLoading(false);
     }
-  }, [shopId]);
+  }, []);
 
   useEffect(() => {
     refreshProducts();
@@ -52,7 +48,7 @@ export const ProductsProvider: React.FC<ProductsProviderProps> = ({ children }) 
 
   const addProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
     try {
-      const newProduct = await productService.createProduct(productData, shopId);
+      const newProduct = await productService.createProduct(productData);
       setProducts(prev => [newProduct, ...prev]);
     } catch (error) {
       console.error('Failed to add product:', error);
@@ -86,7 +82,7 @@ export const ProductsProvider: React.FC<ProductsProviderProps> = ({ children }) 
 
   const updateStock = async (productName: string, quantityChange: number, type: 'purchase' | 'sales' | 'adjustment' | 'increase' | 'reduce') => {
     try {
-      await productService.updateStock(productName, quantityChange, type, shopId);
+      await productService.updateStock(productName, quantityChange, type);
       await refreshProducts();
     } catch (error) {
       console.error('Failed to update stock:', error);

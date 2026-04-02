@@ -14,17 +14,11 @@ export interface Product {
 }
 
 export const productService = {
-  async getAllProducts(shopId?: string): Promise<Product[]> {
+  async getAllProducts(): Promise<Product[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    let query = supabase.from('products').select('*').order('name');
-
-    if (shopId) {
-      query = query.eq('shop_id', shopId);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await supabase.from('products').select('*').order('name');
 
     if (error) {
       console.error('Error fetching products:', error);
@@ -34,24 +28,19 @@ export const productService = {
     return data || [];
   },
 
-  async createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'shop_id'>, shopId?: string): Promise<Product> {
+  async createProduct(product: Omit<Product, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'shop_id'>): Promise<Product> {
     const validatedData = productSchema.parse(product);
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error('User must be authenticated to create products');
 
-    // Use provided shopId or fall back to user's shop membership
-    let resolvedShopId = shopId;
-    if (!resolvedShopId) {
-      const { data } = await supabase
-        .from('shop_members')
-        .select('shop_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .single();
-      if (!data) throw new Error('User not assigned to a shop');
-      resolvedShopId = data.shop_id;
-    }
+    // Get user's shop via shop_members
+    const { data: membership } = await supabase
+      .from('shop_members')
+      .select('shop_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .single();
 
     const { data, error } = await supabase
       .from('products')
@@ -60,7 +49,7 @@ export const productService = {
         current_stock: validatedData.current_stock,
         price: validatedData.price,
         user_id: user.id,
-        shop_id: resolvedShopId,
+        shop_id: membership?.shop_id || null,
       })
       .select()
       .single();
@@ -105,13 +94,14 @@ export const productService = {
     }
   },
 
-  async updateStock(productName: string, quantityChange: number, type: 'purchase' | 'sales' | 'adjustment' | 'increase' | 'reduce', shopId?: string): Promise<void> {
+  async updateStock(productName: string, quantityChange: number, type: 'purchase' | 'sales' | 'adjustment' | 'increase' | 'reduce'): Promise<void> {
     const validatedData = stockUpdateSchema.parse({ productName, quantityChange, type });
     
-    let query = supabase.from('products').select('*').eq('name', validatedData.productName);
-    if (shopId) query = query.eq('shop_id', shopId);
-    
-    const { data: product, error: fetchError } = await query.maybeSingle();
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('name', validatedData.productName)
+      .maybeSingle();
 
     if (fetchError) {
       console.error('Error fetching product for stock update:', fetchError);
@@ -130,7 +120,7 @@ export const productService = {
         name: validatedData.productName,
         current_stock: initialStock,
         price: 0
-      }, shopId);
+      });
     } else {
       let newStock = product.current_stock;
       

@@ -3,7 +3,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { PrintPreviewDialog } from './PrintPreviewDialog';
 import { ReceiptItem } from '@/contexts/ReceiptsContext';
-import { useShop } from '@/contexts/ShopContext';
 
 interface ShopInfo {
   name: string;
@@ -15,12 +14,11 @@ export const useReceiptPrintHandler = () => {
   const { toast } = useToast();
   const [showPreview, setShowPreview] = useState(false);
   const [currentReceipt, setCurrentReceipt] = useState<any>(null);
-  const { shop } = useShop();
 
   const getShopInfo = (): ShopInfo => ({
-    name: shop?.name || 'My Shop',
-    phone: shop?.phone || '',
-    address: shop?.address || '',
+    name: 'My Shop',
+    phone: '',
+    address: '',
   });
 
   const generatePrintContent = (receipt: any, useMobileFormat = false) => {

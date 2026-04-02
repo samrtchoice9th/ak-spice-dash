@@ -1,8 +1,7 @@
 
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { LucideIcon, ArrowLeft } from 'lucide-react';
-import { useShop } from '@/contexts/ShopContext';
+import { NavLink } from 'react-router-dom';
+import { LucideIcon } from 'lucide-react';
 
 interface MenuItem {
   name: string;
@@ -12,33 +11,13 @@ interface MenuItem {
 
 interface DesktopSidebarProps {
   menuItems: MenuItem[];
-  shopName?: string;
-  isSuperAdmin?: boolean;
 }
 
-export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ menuItems, shopName, isSuperAdmin }) => {
-  const { isViewingAsAdmin, exitShop } = useShop();
-  const navigate = useNavigate();
-
-  const handleBackToAdmin = () => {
-    exitShop();
-    navigate('/super-admin');
-  };
-
+export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ menuItems }) => {
   return (
     <div className="hidden xl:flex xl:flex-col xl:w-64 xl:bg-gray-100 xl:h-screen xl:border-r xl:border-gray-300 xl:p-4">
-      {isViewingAsAdmin && (
-        <button
-          onClick={handleBackToAdmin}
-          className="flex items-center space-x-2 px-3 py-2 mb-4 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
-        >
-          <ArrowLeft size={16} />
-          <span>Back to Admin Panel</span>
-        </button>
-      )}
-      
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">{shopName || (isSuperAdmin ? 'Super Admin Panel' : 'My Shop')}</h1>
+        <h1 className="text-2xl font-bold text-gray-800">My Shop</h1>
       </div>
       
       <nav className="space-y-2">

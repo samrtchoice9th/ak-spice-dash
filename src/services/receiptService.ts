@@ -4,11 +4,11 @@ import { Receipt, ReceiptItem } from '@/contexts/ReceiptsContext';
 import { receiptSchema } from '@/lib/validations';
 
 export const receiptService = {
-  async getAllReceipts(shopId?: string): Promise<Receipt[]> {
+  async getAllReceipts(): Promise<Receipt[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    let query = supabase
+    const { data: receiptsData, error: receiptsError } = await supabase
       .from('receipts')
       .select(`
         *,
@@ -16,12 +16,6 @@ export const receiptService = {
       `)
       .order('created_at', { ascending: false })
       .limit(5000);
-
-    if (shopId) {
-      query = query.eq('shop_id', shopId);
-    }
-
-    const { data: receiptsData, error: receiptsError } = await query;
 
     if (receiptsError) {
       console.error('Error fetching receipts:', receiptsError);
@@ -47,24 +41,19 @@ export const receiptService = {
     return receipts;
   },
 
-  async createReceipt(receiptData: Omit<Receipt, 'id' | 'date' | 'time'>, shopId?: string): Promise<Receipt> {
+  async createReceipt(receiptData: Omit<Receipt, 'id' | 'date' | 'time'>): Promise<Receipt> {
     const validatedData = receiptSchema.parse(receiptData);
     
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error('User must be authenticated to create receipts');
 
-    // Use provided shopId or fall back to user's shop membership
-    let resolvedShopId = shopId;
-    if (!resolvedShopId) {
-      const { data } = await supabase
-        .from('shop_members')
-        .select('shop_id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .single();
-      if (!data) throw new Error('User not assigned to a shop');
-      resolvedShopId = data.shop_id;
-    }
+    // Get user's shop via shop_members
+    const { data: membership } = await supabase
+      .from('shop_members')
+      .select('shop_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .single();
 
     const now = new Date();
     const date = now.toISOString().split('T')[0];
@@ -78,7 +67,7 @@ export const receiptService = {
         date,
         time,
         user_id: user.id,
-        shop_id: resolvedShopId,
+        shop_id: membership?.shop_id || null,
       })
       .select()
       .single();

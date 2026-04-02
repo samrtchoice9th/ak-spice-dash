@@ -8,7 +8,7 @@ interface RoleProtectedRouteProps {
   requiredRole?: 'super_admin' | 'admin';
 }
 
-export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ children, requiredRole }) => {
+export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ children, requiredRole = 'admin' }) => {
   const { isAdmin, isSuperAdmin, loading } = useUserRole();
 
   if (loading) {
@@ -23,7 +23,7 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({ children
     return <Navigate to="/sales" replace />;
   }
 
-  if (!isAdmin) {
+  if (requiredRole === 'admin' && !isAdmin) {
     return <Navigate to="/sales" replace />;
   }
 

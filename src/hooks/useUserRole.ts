@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-type AppRole = 'super_admin' | 'admin' | 'shop_owner' | 'staff' | 'user';
+type AppRole = 'super_admin' | 'admin' | 'user';
 
 export const useUserRole = () => {
   const { user } = useAuth();
@@ -40,9 +40,7 @@ export const useUserRole = () => {
   return {
     role,
     isSuperAdmin: role === 'super_admin',
-    isAdmin: role === 'super_admin' || role === 'admin' || role === 'shop_owner',
-    isShopOwner: role === 'shop_owner',
-    isStaff: role === 'staff',
+    isAdmin: role === 'super_admin' || role === 'admin',
     loading,
   };
 };

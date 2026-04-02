@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { useShop } from './ShopContext';
 import { receiptService } from '@/services/receiptService';
 
 export interface ReceiptItem {
@@ -47,21 +46,18 @@ interface ReceiptsProviderProps {
 
 export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  const { shop } = useShop();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const shopId = shop?.id;
 
   const silentRefreshReceipts = useCallback(async () => {
     if (!user) return;
     try {
-      const fetchedReceipts = await receiptService.getAllReceipts(shopId);
+      const fetchedReceipts = await receiptService.getAllReceipts();
       setReceipts(fetchedReceipts);
     } catch (error) {
       console.error('Failed to fetch receipts:', error);
     }
-  }, [user, shopId]);
+  }, [user]);
 
   const refreshReceipts = useCallback(async () => {
     if (!user) {
@@ -70,14 +66,14 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
     }
     try {
       setLoading(true);
-      const fetchedReceipts = await receiptService.getAllReceipts(shopId);
+      const fetchedReceipts = await receiptService.getAllReceipts();
       setReceipts(fetchedReceipts);
     } catch (error) {
       console.error('Failed to fetch receipts:', error);
     } finally {
       setLoading(false);
     }
-  }, [user, shopId]);
+  }, [user]);
 
   useEffect(() => {
     refreshReceipts();
@@ -85,9 +81,8 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
 
   const addReceipt = async (receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
     try {
-      const newReceipt = await receiptService.createReceipt(receiptData, shopId);
+      const newReceipt = await receiptService.createReceipt(receiptData);
       setReceipts(prev => [newReceipt, ...prev]);
-      console.log('Receipt saved to database:', newReceipt);
     } catch (error) {
       console.error('Failed to save receipt:', error);
       throw error;

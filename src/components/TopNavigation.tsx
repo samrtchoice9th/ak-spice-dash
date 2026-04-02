@@ -1,28 +1,20 @@
 
 import React, { useMemo } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, ArrowLeft } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useShop } from '@/contexts/ShopContext';
 import { getFilteredMenuItems } from '@/config/menuItems';
 
 export const TopNavigation = () => {
   const { signOut, user } = useAuth();
   const { toast } = useToast();
-  const { isSuperAdmin, isAdmin, isStaff } = useUserRole();
-  const { shop, isViewingAsAdmin, exitShop } = useShop();
-  const navigate = useNavigate();
+  const { role } = useUserRole();
 
   const menuItems = useMemo(() => {
-    const filtered = (() => {
-      if (isSuperAdmin && !shop) return getFilteredMenuItems(isSuperAdmin, isAdmin, isStaff, false);
-      if (isSuperAdmin && shop) return getFilteredMenuItems(isSuperAdmin, isAdmin, isStaff, true);
-      return getFilteredMenuItems(isSuperAdmin, isAdmin, isStaff, !!shop);
-    })();
-    return filtered.filter(item => !item.superAdminOnly);
-  }, [isSuperAdmin, isAdmin, isStaff, shop]);
+    return getFilteredMenuItems(role);
+  }, [role]);
 
   const handleLogout = async () => {
     await signOut();
@@ -32,25 +24,10 @@ export const TopNavigation = () => {
     });
   };
 
-  const handleBackToAdmin = () => {
-    exitShop();
-    navigate('/super-admin');
-  };
-
   return (
     <div className="xl:hidden bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          {isViewingAsAdmin && (
-            <button
-              onClick={handleBackToAdmin}
-              className="flex items-center space-x-1 text-primary hover:text-primary/80 transition-colors p-2"
-            >
-              <ArrowLeft size={18} />
-            </button>
-          )}
-          <h1 className="text-lg font-bold text-gray-800">{shop?.name || (isSuperAdmin ? 'Super Admin Panel' : 'My Shop')}</h1>
-        </div>
+        <h1 className="text-lg font-bold text-gray-800">My Shop</h1>
         {user && (
           <button
             onClick={handleLogout}
