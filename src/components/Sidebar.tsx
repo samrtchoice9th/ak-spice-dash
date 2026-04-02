@@ -19,7 +19,7 @@ export const Sidebar = () => {
 
   return (
     <>
-      <MobileSidebarButton onClick={toggleSidebar} />
+      
       <MobileSidebar 
         isOpen={isOpen} 
         onClose={closeSidebar} 
