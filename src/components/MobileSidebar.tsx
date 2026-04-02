@@ -1,9 +1,8 @@
 
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { X, ArrowLeft } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { X } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
-import { useShop } from '@/contexts/ShopContext';
 
 interface MenuItem {
   name: string;
@@ -15,24 +14,11 @@ interface MobileSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   menuItems: MenuItem[];
-  shopName?: string;
-  isSuperAdmin?: boolean;
-  isViewingAsAdmin?: boolean;
 }
 
-export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, menuItems, shopName, isSuperAdmin, isViewingAsAdmin }) => {
-  const { exitShop } = useShop();
-  const navigate = useNavigate();
-
-  const handleBackToAdmin = () => {
-    exitShop();
-    navigate('/super-admin');
-    onClose();
-  };
-
+export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, menuItems }) => {
   return (
     <>
-      {/* Mobile backdrop overlay */}
       <div
         className={`fixed inset-0 bg-black bg-opacity-50 z-40 xl:hidden transition-opacity duration-300 ${
           isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
@@ -40,13 +26,11 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, m
         onClick={onClose}
       />
 
-      {/* Mobile sidebar */}
       <div className={`fixed left-0 top-0 h-full w-64 bg-white shadow-xl z-50 xl:hidden transform transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        {/* Mobile sidebar header with close button */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-800">{shopName || (isSuperAdmin ? 'Super Admin Panel' : 'My Shop')}</h1>
+          <h1 className="text-xl font-bold text-gray-800">My Shop</h1>
           <button
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-gray-100 touch-manipulation"
@@ -55,19 +39,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, m
             <X size={20} className="text-gray-700" />
           </button>
         </div>
-
-        {/* Back to Admin Panel button */}
-        {isViewingAsAdmin && (
-          <button
-            onClick={handleBackToAdmin}
-            className="flex items-center space-x-2 w-full px-4 py-3 text-sm font-medium text-primary hover:bg-primary/10 transition-colors border-b border-gray-200"
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Admin Panel</span>
-          </button>
-        )}
         
-        {/* Mobile navigation menu */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuItems.map((item) => (
             <NavLink
