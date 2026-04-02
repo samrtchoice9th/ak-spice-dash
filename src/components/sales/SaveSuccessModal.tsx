@@ -45,7 +45,7 @@ export const SaveSuccessModal: React.FC<SaveSuccessModalProps> = ({ open, onClos
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-6 w-6 text-green-500" />
+            <CheckCircle className="h-6 w-6 text-primary" />
             <DialogTitle>Sale Saved!</DialogTitle>
           </div>
           <DialogDescription>

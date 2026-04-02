@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { SalesRow as SalesRowType, SalesErrors } from '@/hooks/useSalesData';
+import { SalesRow as SalesRowType } from '@/hooks/useSalesData';
 import { ItemSearch } from './ItemSearch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
