@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { TableRow } from '@/types/table';
 import { useReceipts, ReceiptItem } from '@/contexts/ReceiptsContext';
@@ -14,7 +13,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const { addReceipt } = useReceipts();
-  const { updateStock } = useProducts();
+  const { refreshProducts } = useProducts();
   const { toast } = useToast();
 
   const addRow = () => {
@@ -60,7 +59,6 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
         qtyRef?.focus();
       } else if (field === 'qty') {
         if (isAdjustment && currentRow.qty !== 0) {
-          // For adjustment, move to next row after quantity
           if (currentRow.itemName && currentRow.qty !== 0) {
           if (rowIndex === rows.length - 1) {
               const newRow: TableRow = {
@@ -83,7 +81,6 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
             }
           }
         } else if (currentRow.qty > 0) {
-          // For purchase/sales, move to price field
           const priceRef = inputRefs.current[`${currentRow.id}-price`];
           priceRef?.focus();
         }
@@ -116,7 +113,6 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
   const handleSave = async () => {
     const isAdjustment = type === 'adjustment';
     
-    // Create a structure to store items with their adjustment type
     const itemsWithType = rows
       .filter(row => {
         if (isAdjustment) {
@@ -125,7 +121,6 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
         return row.itemName && row.qty > 0 && row.price > 0;
       })
       .map(row => {
-        const adjustmentType = isAdjustment ? row.adjustmentType : undefined;
         const itemType: 'purchase' | 'sales' | 'increase' | 'reduce' = isAdjustment
           ? (row.adjustmentType === 'reduce' ? 'reduce' : 'increase')
           : type as any;
@@ -150,7 +145,6 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
         setIsSaving(true);
         
         if (isAdjustment) {
-          // Group items by type (increase/reduce) and create separate receipts
           const increaseItems = itemsWithType.filter(i => i.type === 'increase');
           const reduceItems = itemsWithType.filter(i => i.type === 'reduce');
           
@@ -160,10 +154,6 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
               items: increaseItems.map(i => i.item),
               totalAmount: 0
             });
-
-            for (const { item } of increaseItems) {
-              await updateStock(item.itemName, item.qty, 'increase');
-            }
           }
           
           if (reduceItems.length > 0) {
@@ -172,23 +162,17 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
               items: reduceItems.map(i => i.item),
               totalAmount: 0
             });
-
-            for (const { item } of reduceItems) {
-              await updateStock(item.itemName, item.qty, 'reduce');
-            }
           }
         } else {
-          // For purchase/sales, create a single receipt
           await addReceipt({
             type: type as any,
             items: itemsWithType.map(i => i.item),
             totalAmount: calculateGrandTotal(rows)
           });
-
-          for (const { item, type: itemType } of itemsWithType) {
-            await updateStock(item.itemName, item.qty, itemType);
-          }
         }
+
+        // Refresh products to get updated stock from edge function
+        await refreshProducts();
 
         toast({
           title: "Saved successfully",
@@ -196,10 +180,10 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
         });
         
         clearAllFields();
-      } catch (error) {
+      } catch (error: any) {
         toast({
           title: "Save failed",
-          description: "Failed to save receipt. Please try again.",
+          description: error?.message || "Failed to save receipt. Please try again.",
           variant: "destructive",
         });
         console.error('Save error:', error);
