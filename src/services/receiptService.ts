@@ -28,6 +28,11 @@ export const receiptService = {
       totalAmount: Number(receipt.total_amount),
       date: receipt.date,
       time: receipt.time,
+      customer_id: receipt.customer_id,
+      supplier_id: receipt.supplier_id,
+      paid_amount: Number(receipt.paid_amount || 0),
+      due_amount: Number(receipt.due_amount || 0),
+      due_date: receipt.due_date,
       items: receipt.receipt_items.map((item: any) => ({
         id: item.id,
         itemName: item.item_name,
