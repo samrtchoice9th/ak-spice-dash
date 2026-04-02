@@ -54,16 +54,6 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const silentRefreshReceipts = useCallback(async () => {
-    if (!user) return;
-    try {
-      const fetchedReceipts = await receiptService.getAllReceipts();
-      setReceipts(fetchedReceipts);
-    } catch (error) {
-      console.error('Failed to fetch receipts:', error);
-    }
-  }, [user]);
-
   const refreshReceipts = useCallback(async () => {
     if (!user) {
       setLoading(false);
@@ -98,10 +88,8 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
   const updateReceipt = async (id: string, receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
     try {
       await receiptService.updateReceipt(id, receiptData);
-      setReceipts(prev => prev.map(r => 
-        r.id === id ? { ...r, type: receiptData.type, items: receiptData.items, totalAmount: receiptData.totalAmount } : r
-      ));
-      silentRefreshReceipts();
+      // Edge function handles stock reversal + update atomically
+      await refreshReceipts();
     } catch (error) {
       console.error('Failed to update receipt:', error);
       throw error;
@@ -111,6 +99,7 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
   const deleteReceipt = async (id: string) => {
     try {
       await receiptService.deleteReceipt(id);
+      // Edge function handles stock reversal atomically
       setReceipts(prev => prev.filter(receipt => receipt.id !== id));
     } catch (error) {
       console.error('Failed to delete receipt:', error);

@@ -54,6 +54,7 @@ export type Database = {
       }
       products: {
         Row: {
+          avg_cost: number
           created_at: string
           current_stock: number
           id: string
@@ -64,6 +65,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          avg_cost?: number
           created_at?: string
           current_stock?: number
           id?: string
@@ -74,6 +76,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          avg_cost?: number
           created_at?: string
           current_stock?: number
           id?: string

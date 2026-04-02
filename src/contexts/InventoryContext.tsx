@@ -1,6 +1,7 @@
 
-import React, {  createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useReceipts } from './ReceiptsContext';
+import { useProducts } from './ProductsContext';
 
 export interface InventoryItem {
   itemName: string;
@@ -33,8 +34,17 @@ interface InventoryProviderProps {
 
 export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }) => {
   const { receipts } = useReceipts();
+  const { products } = useProducts();
 
   const calculateInventory = (): InventoryItem[] => {
+    // Build a map from product name -> avg_cost from products table
+    const productAvgCostMap = new Map<string, number>();
+    const productStockMap = new Map<string, number>();
+    for (const p of products) {
+      productAvgCostMap.set(p.name, (p as any).avg_cost ?? 0);
+      productStockMap.set(p.name, p.current_stock);
+    }
+
     const itemMap = new Map<string, InventoryItem>();
 
     receipts.forEach(receipt => {
@@ -52,16 +62,21 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
         if (receipt.type === 'purchase' || receipt.type === 'increase') {
           existingItem.totalPurchased += item.qty;
           existingItem.totalPurchaseValue += item.total;
-          existingItem.averagePurchasePrice = existingItem.totalPurchaseValue / existingItem.totalPurchased;
         } else if (receipt.type === 'sales' || receipt.type === 'reduce' || receipt.type === 'adjustment') {
           existingItem.totalSold += item.qty;
           existingItem.totalSalesValue += item.total;
         }
 
-        existingItem.currentStock = existingItem.totalPurchased - existingItem.totalSold;
         itemMap.set(item.itemName, existingItem);
       });
     });
+
+    // Use products table for stock and avg_cost (source of truth)
+    for (const [name, item] of itemMap) {
+      item.currentStock = productStockMap.get(name) ?? (item.totalPurchased - item.totalSold);
+      item.averagePurchasePrice = productAvgCostMap.get(name) ?? 
+        (item.totalPurchased > 0 ? item.totalPurchaseValue / item.totalPurchased : 0);
+    }
 
     return Array.from(itemMap.values()).sort((a, b) => a.itemName.localeCompare(b.itemName));
   };

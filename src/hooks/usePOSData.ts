@@ -71,7 +71,7 @@ export const usePOSData = (type: POSType) => {
 
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const { addReceipt } = useReceipts();
-  const { updateStock } = useProducts();
+  const { refreshProducts } = useProducts();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -213,9 +213,8 @@ export const usePOSData = (type: POSType) => {
         due_date: dueAmount > 0 ? dueDate || null : null,
       });
 
-      for (const item of validItems) {
-        await updateStock(item.name, item.qty, type);
-      }
+      // Refresh products to get updated stock/avg_cost from edge function
+      await refreshProducts();
 
       setLastSavedRows(validItems);
       clearDraft(type);
@@ -231,17 +230,17 @@ export const usePOSData = (type: POSType) => {
       setTimeout(() => {
         inputRefs.current[`${freshRow.id}-name`]?.focus();
       }, 100);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Save failed",
-        description: "Failed to save. Please try again.",
+        description: error?.message || "Failed to save. Please try again.",
         variant: "destructive",
       });
       console.error('Save error:', error);
     } finally {
       setIsSaving(false);
     }
-  }, [rows, validate, addReceipt, updateStock, toast, type, selectedContactId, paidAmount, dueDate]);
+  }, [rows, validate, addReceipt, refreshProducts, toast, type, selectedContactId, paidAmount, dueDate]);
 
   const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
   const distinctItems = rows.filter(r => r.name.trim() !== '').length;

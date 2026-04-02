@@ -11,7 +11,12 @@ export const productSchema = z.object({
     .max(999999, { message: "Stock value too large" }),
   price: z.number()
     .min(0, { message: "Price cannot be negative" })
-    .max(999999, { message: "Price value too large" })
+    .max(999999, { message: "Price value too large" }),
+  avg_cost: z.number()
+    .min(0, { message: "Avg cost cannot be negative" })
+    .max(999999, { message: "Avg cost value too large" })
+    .optional()
+    .default(0)
 });
 
 export const productUpdateSchema = productSchema.partial();

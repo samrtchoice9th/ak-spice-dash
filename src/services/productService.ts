@@ -6,6 +6,7 @@ export interface Product {
   id: string;
   name: string;
   current_stock: number;
+  avg_cost: number;
   price: number;
   created_at: string;
   updated_at: string;

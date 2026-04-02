@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useReceipts } from '@/contexts/ReceiptsContext';
+import { useProducts } from '@/contexts/ProductsContext';
 import { ReceiptSummaryCards } from '@/components/ReceiptSummaryCards';
 import { ReceiptsTable } from '@/components/ReceiptsTable';
 import { EditReceiptDialog } from '@/components/EditReceiptDialog';
@@ -9,6 +10,7 @@ import { Receipt as ReceiptType } from '@/contexts/ReceiptsContext';
 
 const ReceiptPage = () => {
   const { receipts, loading, updateReceipt } = useReceipts();
+  const { refreshProducts } = useProducts();
   const [editingReceipt, setEditingReceipt] = useState<ReceiptType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { checkPrinterAndPrint, printToRawBT, PrintPreviewComponent } = useReceiptPrintHandler();
@@ -21,7 +23,7 @@ const ReceiptPage = () => {
   const handleSaveReceipt = async (id: string, receiptData: any) => {
     try {
       await updateReceipt(id, receiptData);
-      // Clear editingReceipt immediately to prevent stale data
+      await refreshProducts();
       setEditingReceipt(null);
       setIsEditDialogOpen(false);
     } catch (error) {

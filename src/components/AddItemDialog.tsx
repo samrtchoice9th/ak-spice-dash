@@ -38,7 +38,8 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
       const productData = {
         name: itemName,
         current_stock: parseFloat(initialStock) || 0,
-        price: parseFloat(price) || 0
+        price: parseFloat(price) || 0,
+        avg_cost: 0
       };
       
       const validatedData = productSchema.parse(productData);
