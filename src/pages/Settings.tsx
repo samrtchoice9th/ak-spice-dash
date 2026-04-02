@@ -37,7 +37,7 @@ const Settings = () => {
   const { products, updateProduct, deleteProduct, loading } = useProducts();
   const { inventory } = useInventory();
   const { toast } = useToast();
-  const { shop, shopMembers, refreshShop } = useShop();
+  // Shop context removed - single shop mode
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editName, setEditName] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
