@@ -1,87 +1,92 @@
 
 
-# Sales POS UI + Logic Upgrade
+# Purchase Page POS Upgrade + Mobile-First UI for All Pages
 
 ## Overview
-Replace the current Sales page (which uses the generic `DataTable` component) with a dedicated, fast POS-style interface. New sales-specific components with memoized rows, async item search, sticky total bar, localStorage draft, validation, and a post-save print modal.
+Two tasks: (1) Rewrite the Purchase page to match the Sales POS-style UI (memoized rows, item search, sticky total bar, validation, localStorage draft, success modal). (2) Apply mobile-first improvements across all pages.
 
-## New Files
+## 1. Purchase Page -- Match Sales POS Style
 
-### `src/hooks/useSalesData.ts` -- Sales state management
-- Structured row state: `{ id, item_id, name, qty, price, total }`
-- `addRow()`, `deleteRow(id)`, `duplicateRow(id)`, `updateRow(id, field, value)`
-- Auto-calc `total = qty * price` on qty/price change
-- `grandTotal` via reduce, `distinctItems` count
-- Keyboard handler: Enter moves itemName->qty->price->next row (adds row if last)
-- Validation: returns `errors` map (row ID -> field -> message). Blocks save if name empty, qty <= 0, or price <= 0
-- localStorage draft: save to `pos-sales-draft` on every row change, restore on mount, clear on save
-- Save: reuses `addReceipt` + `updateStock` from existing contexts, same logic as current `useTableData`
+### New files
+- **`src/hooks/usePurchaseData.ts`** -- Clone of `useSalesData.ts` with `type: 'purchase'`, draft key `pos-purchase-draft`, and stock update using `'purchase'` type
+- **`src/components/purchase/PurchaseRow.tsx`** -- Reuses `SalesRowComponent` pattern (React.memo, item search, qty stepper, price, total, delete/duplicate). Can literally reuse `SalesRowComponent` by making it generic, OR create a thin wrapper. Simplest: reuse `SalesRowComponent` directly since the UI is identical.
+- **`src/components/purchase/SaveSuccessModal.tsx`** -- Same as sales version but says "Purchase saved successfully"
 
-### `src/components/sales/ItemSearch.tsx` -- Async autocomplete
-- Uses `useProducts()` context (already loaded from Supabase)
-- 300ms debounced filter on product list
-- Dropdown shows item name + price per item
-- On select: sets name, price from product, qty = 1, returns focus ref key for qty
-- Arrow key + Enter navigation in dropdown
-- Replaces `ItemSearchDropdown` for sales only
+### Rewritten `src/pages/Purchase.tsx`
+- Uses `usePurchaseData` hook (same interface as `useSalesData`)
+- Renders `SalesRowComponent` rows (same component reused)
+- `TotalBar` at bottom with "Purchase" context
+- `SaveSuccessModal` after save
+- No longer uses `DataTable` component
 
-### `src/components/sales/SalesRow.tsx` -- Memoized row component
-- Wrapped in `React.memo`, only re-renders when its row data or errors change
-- Desktop: table row with Item Search | Qty (with +/- stepper buttons) | Price | Total | Actions (delete/duplicate)
-- Mobile: card layout with larger touch-friendly inputs
-- Qty input: allows decimals (step=0.01), +/- buttons, red border + inline error on validation fail
-- Active row highlight: light blue background on `focus-within`
-- Delete and duplicate icon buttons per row
+### Implementation approach
+Rather than duplicating all sales components, make `useSalesData` accept a `type` parameter:
+- Rename to a generic hook or add `type` param: `usePOSData(type: 'sales' | 'purchase')`
+- Draft key changes based on type
+- Stock update type changes based on type
+- Everything else identical
 
-### `src/components/sales/TotalBar.tsx` -- Sticky bottom bar
-- `fixed bottom-0` with z-index, always visible
-- Shows: items count (left), grand total in large font (center), Save button (right)
-- Save button disabled during save or when validation errors exist
+This avoids code duplication. Files changed:
+- **Rename `useSalesData.ts` → `usePOSData.ts`** with a `type` parameter
+- **Update `Sales.tsx`** to call `usePOSData('sales')`
+- **Rewrite `Purchase.tsx`** to use `usePOSData('purchase')` + same SalesRow/TotalBar components
+- **Create `src/components/purchase/PurchaseSuccessModal.tsx`** or make `SaveSuccessModal` accept a `type` prop for the title text
 
-### `src/components/sales/SaveSuccessModal.tsx` -- Post-save modal
-- After successful save, shows dialog: "Sale saved successfully!"
-- Two buttons: "Print Receipt" (triggers existing thermal print via `printToRawBT`) and "Close"
-- No print button in main UI -- print only offered after save
+## 2. Mobile-First UI Updates (All Pages)
 
-### `src/pages/Sales.tsx` -- Rewritten page
-- Uses `useSalesData` hook
-- Renders list of `SalesRow` components with ref-based keyboard navigation
-- `TotalBar` at bottom
-- `SaveSuccessModal` shown after save
-- `pb-24` padding to clear sticky bar
-- No `DataTable` usage
+### `src/App.tsx` -- Layout
+- Add `px-4 pt-2` padding to `<main>` on mobile for consistent spacing
+- Ensure content doesn't overlap with TopNavigation
 
-## Unchanged Files
-- `Purchase.tsx` continues using `DataTable` (no changes)
-- `StockAdjustment.tsx` unchanged
-- All contexts, services, print utilities unchanged
-- `DataTable.tsx`, `TableRow.tsx`, `ActionButtons.tsx` kept for Purchase/Adjustment use
+### `src/pages/Dashboard.tsx`
+- Stack stat cards in single column on mobile (already `grid-cols-1` but add tighter spacing)
+- Reduce heading size on mobile
+- Make quick actions full width
 
-## Technical Details
+### `src/pages/Report.tsx`
+- Stack header + filter vertically on mobile (currently `flex justify-between` breaks on small screens)
+- Make date filter full width on mobile
+- Table cells: smaller padding, truncate long text
+- Summary cards: single column on mobile
 
-**Performance**: `React.memo` on `SalesRow` with stable `useCallback` handlers. Debounced search avoids filtering on every keystroke.
+### `src/pages/Inventory.tsx`
+- Already has responsive classes -- minor tweaks to padding
+- Hide less important columns on mobile (already done with `hidden sm:table-cell`)
 
-**Validation schema** (inline, not zod -- keeps it lightweight for per-keystroke checks):
-```text
-name: required (non-empty after trim)
-qty: must be > 0
-price: must be > 0
-```
-Red border + small error text below invalid fields. Save button checks all rows.
+### `src/pages/ReceiptPage.tsx`
+- Already has `p-4 sm:p-6` -- good
+- Reduce title size on mobile
 
-**localStorage draft format**:
-```json
-{ "rows": [...], "timestamp": 1234567890 }
-```
-Restored on mount if < 24 hours old. Cleared on successful save.
+### `src/pages/Settings.tsx`
+- Tab buttons: full width on mobile, stack vertically if needed
+- Table: card layout on mobile instead of table rows
 
-**Qty stepper**: [-] button decrements by 0.25, [+] increments by 0.25. Manual input allows any decimal.
+### `src/components/TopNavigation.tsx`
+- Already mobile-only (`xl:hidden`) -- good as-is
+
+### General mobile patterns to apply
+- All page titles: `text-lg` on mobile, `text-2xl` on desktop
+- Consistent `px-4` padding on mobile across all pages
+- Touch targets minimum 44px
+- No horizontal scroll on any page
 
 ## Execution Order
-1. Create `useSalesData` hook
-2. Create `ItemSearch` component
-3. Create `SalesRow` component
-4. Create `TotalBar` component
-5. Create `SaveSuccessModal` component
-6. Rewrite `Sales.tsx`
+1. Create `usePOSData.ts` (generalized from `useSalesData`)
+2. Update `Sales.tsx` to use `usePOSData('sales')`
+3. Make `SaveSuccessModal` accept type prop
+4. Rewrite `Purchase.tsx` with POS style
+5. Mobile-first updates to Dashboard, Report, Inventory, ReceiptPage, Settings, App layout
+
+## Files Changed Summary
+| File | Action |
+|------|--------|
+| `src/hooks/usePOSData.ts` | New (generalized from useSalesData) |
+| `src/hooks/useSalesData.ts` | Delete (replaced by usePOSData) |
+| `src/pages/Sales.tsx` | Update import to usePOSData |
+| `src/pages/Purchase.tsx` | Rewrite with POS components |
+| `src/components/sales/SaveSuccessModal.tsx` | Add `type` prop |
+| `src/pages/Dashboard.tsx` | Mobile spacing/sizing |
+| `src/pages/Report.tsx` | Mobile-first layout |
+| `src/pages/Settings.tsx` | Mobile card layout |
+| `src/App.tsx` | Main content padding |
 
