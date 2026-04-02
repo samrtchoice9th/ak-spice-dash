@@ -173,11 +173,14 @@ async function applyStockEffect(
   if (error) throw new Error(`Failed to update stock for ${item.itemName}: ${error.message}`);
 }
 
-async function reverseStockEffect(db: any, type: string, item: ReceiptItem) {
+async function reverseStockEffect(db: any, type: string, item: ReceiptItem, shopId: string) {
+  if (!shopId) throw new Error("shop_id is required for stock reversal");
+
   const { data: product } = await db
     .from("products")
     .select("id, current_stock, avg_cost")
     .eq("name", item.itemName)
+    .eq("shop_id", shopId)
     .maybeSingle();
 
   if (!product) return; // product was deleted, nothing to reverse
