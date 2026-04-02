@@ -99,10 +99,13 @@ async function getOrCreateProduct(
   shopId: string | null,
   userId: string
 ) {
+  if (!shopId) throw new Error("shop_id is required for all operations");
+
   const { data: product } = await db
     .from("products")
     .select("id, current_stock, avg_cost, price")
     .eq("name", itemName)
+    .eq("shop_id", shopId)
     .maybeSingle();
 
   if (product) return product;
