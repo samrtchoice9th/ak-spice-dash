@@ -1,138 +1,96 @@
-# Customer & Supplier Module — Full Implementation
+
+
+# Stock + Receipt + Average Cost — Pro Version
+
+## Current Problems
+
+1. **Dual stock tracking**: `products.current_stock` is updated on save, but `InventoryContext` recalculates from receipts. These can diverge.
+2. **No avg_cost column**: Average cost is calculated on-the-fly in `InventoryContext` but not persisted in `products`.
+3. **Receipt edit does NOT adjust stock**: `EditReceiptDialog.handleSave` updates receipt data but never reverses old stock or applies new stock changes.
+4. **Receipt delete does NOT adjust stock**: `ReceiptsContext.deleteReceipt` deletes from DB but never restores stock.
+5. **No transaction safety**: Stock updates happen one-by-one in a loop after receipt creation; if one fails, data is inconsistent.
+
+## Solution: Server-Side Stock Management via Edge Function
+
+Move all stock logic into a Supabase Edge Function that runs in a transaction. The client calls one endpoint; the server handles receipt + stock atomically.
 
 ## Database Changes (Migration)
 
-### New Tables
+Add `avg_cost` column to `products`:
+```sql
+ALTER TABLE products ADD COLUMN IF NOT EXISTS avg_cost numeric NOT NULL DEFAULT 0;
+```
 
-`customers` — shop-scoped (then only one shop not multi shop)
+## New Edge Function: `manage-receipt`
 
-- `id` uuid PK, `shop_id` uuid, `name` text NOT NULL, `phone` text, `whatsapp_number` text, `address` text, `created_at` timestamptz DEFAULT now()
-- Unique constraint on `(shop_id, phone)` to prevent duplicates
-- RLS: same pattern as products — `shop_id = get_user_shop_id(auth.uid()) OR has_role('super_admin')`
+**`supabase/functions/manage-receipt/index.ts`**
 
-`**suppliers**` — identical structure to customers
+Handles three actions: `create`, `update`, `delete`.
 
-- Same columns, same RLS policies
+**Create logic:**
+1. Insert receipt + receipt_items
+2. For each item:
+   - If purchase/increase: apply weighted avg cost formula, add to stock
+   - If sales/reduce: subtract from stock (no avg_cost change)
+   - If product doesn't exist: create it
 
-### Modify `receipts` table
+**Update logic (the critical fix):**
+1. Fetch old receipt + items
+2. Reverse old stock effects (undo old items)
+3. Delete old receipt_items, insert new ones
+4. Apply new stock effects (apply new items)
+5. Recalculate avg_cost for affected products
 
-- Add `customer_id` uuid nullable (FK to customers)
-- Add `supplier_id` uuid nullable (FK to suppliers)
-- Add `paid_amount` numeric DEFAULT 0
-- Add `due_amount` numeric DEFAULT 0
-- Add `due_date` text nullable
+**Delete logic:**
+1. Fetch receipt + items
+2. Reverse stock effects
+3. Delete receipt (cascades to items)
 
-## New Files
+**Average cost formula (purchase only):**
+```
+new_avg = ((old_stock * old_avg) + (qty * price)) / (old_stock + qty)
+```
 
-### Services
+**Reversal formula (undo a purchase):**
+```
+If (old_stock - qty) > 0:
+  reversed_avg = ((old_stock * old_avg) - (qty * price)) / (old_stock - qty)
+Else:
+  reversed_avg = 0
+```
 
+Sales never change avg_cost.
 
-| File                              | Purpose                  |
-| --------------------------------- | ------------------------ |
-| `src/services/customerService.ts` | CRUD for customers table |
-| `src/services/supplierService.ts` | CRUD for suppliers table |
+## Files Changed
 
+| File | Change |
+|------|--------|
+| **Migration** | Add `avg_cost` to products |
+| `supabase/functions/manage-receipt/index.ts` | New edge function with transactional stock logic |
+| `src/services/receiptService.ts` | Call edge function instead of direct Supabase inserts |
+| `src/hooks/usePOSData.ts` | Remove client-side `updateStock` loop (edge function handles it) |
+| `src/contexts/ReceiptsContext.tsx` | `updateReceipt` and `deleteReceipt` call edge function; refresh products after |
+| `src/contexts/ProductsContext.tsx` | Export `refreshProducts` for use after receipt operations |
+| `src/components/EditReceiptDialog.tsx` | Pass old receipt items to `onSave` so service can reverse stock |
+| `src/contexts/InventoryContext.tsx` | Read `avg_cost` from products table instead of recalculating; keep receipt-based stock as cross-check |
+| `src/pages/Inventory.tsx` | Display avg_cost from products |
 
-### Contexts
+## Key Behavioral Changes
 
-
-| File                                | Purpose                   |
-| ----------------------------------- | ------------------------- |
-| `src/contexts/CustomersContext.tsx` | Customer state + provider |
-| `src/contexts/SuppliersContext.tsx` | Supplier state + provider |
-
-
-### Pages
-
-
-| File                           | Purpose                                                        |
-| ------------------------------ | -------------------------------------------------------------- |
-| `src/pages/Customers.tsx`      | Customer list with due amounts, search, add/edit dialog        |
-| `src/pages/CustomerDetail.tsx` | Single customer: info, total purchases, due, last transactions |
-| `src/pages/Suppliers.tsx`      | Supplier list (same pattern as customers)                      |
-| `src/pages/SupplierDetail.tsx` | Single supplier detail                                         |
-
-
-### Components
-
-
-| File                                        | Purpose                                                        |
-| ------------------------------------------- | -------------------------------------------------------------- |
-| `src/components/customers/CustomerForm.tsx` | Add/Edit form with validation (name required, WhatsApp format) |
-| `src/components/customers/CustomerList.tsx` | List with due highlighting (red=overdue, yellow=upcoming)      |
-| `src/components/customers/DueAlert.tsx`     | Due/overdue badge component                                    |
-| `src/components/suppliers/SupplierForm.tsx` | Add/Edit form                                                  |
-| `src/components/sales/CustomerSelect.tsx`   | Customer picker in Sales POS (optional per sale)               |
-| `src/components/sales/PaymentSection.tsx`   | Paid/due amount inputs shown after customer selected           |
-| `src/components/WhatsAppButton.tsx`         | Reusable "Send via WhatsApp" button                            |
-| `src/components/ReceiptPDF.tsx`             | PDF receipt generator using browser print/download             |
-
-
-## Feature Details
-
-### Due System
-
-- When saving a sale with a customer: `due_amount = totalAmount - paid_amount`
-- If `paid_amount < totalAmount`, status is "Due"
-- `due_date` is optional, set by user
-- Customer detail page aggregates total due from all their receipts
-- Dashboard shows overdue count if any exist
-
-### WhatsApp Integration (wa.me links, no API needed)
-
-- Text-based receipt message (no PDF hosting required):
-  ```
-  *AK SPICE*
-  Date: 2026-04-02
-  ---------------
-  Item 1 x2 = Rs.100
-  Item 2 x1 = Rs.50
-  ---------------
-  Total: Rs.150
-  Paid: Rs.100
-  Due: Rs.50
-  ```
-- "Send via WhatsApp" opens `https://wa.me/{number}?text={encoded_message}`
-- Available in: SaveSuccessModal, CustomerDetail page, SupplierDetail page
-
-### PDF Receipt
-
-- Generate using browser `window.print()` with a hidden print-optimized div
-- Shows: shop name, date, items table, totals, customer name
-- "Download PDF" button in SaveSuccessModal and CustomerDetail
-
-### Due Alerts
-
-- Dashboard: card showing "X overdue payments" with total amount
-- Customer list: red highlight for overdue, yellow for due within 3 days
-- Customer detail: warning banner if overdue
-
-## Modified Files
-
-
-| File                                        | Change                                                                     |
-| ------------------------------------------- | -------------------------------------------------------------------------- |
-| `src/App.tsx`                               | Add routes for customers, suppliers, detail pages; wrap with new providers |
-| `src/config/menuItems.ts`                   | Add Customers and Suppliers menu items (admin role)                        |
-| `src/hooks/usePOSData.ts`                   | Add customer_id, paid_amount, due_amount to save logic                     |
-| `src/pages/Sales.tsx`                       | Add CustomerSelect and PaymentSection above TotalBar                       |
-| `src/pages/Purchase.tsx`                    | Add SupplierSelect above TotalBar                                          |
-| `src/components/sales/SaveSuccessModal.tsx` | Add "Send via WhatsApp" and "Download PDF" buttons                         |
-| `src/components/sales/TotalBar.tsx`         | Show due amount when customer selected                                     |
-| `src/services/receiptService.ts`            | Include customer_id, supplier_id, paid/due amounts in create/update        |
-| `src/contexts/ReceiptsContext.tsx`          | Add customer_id, supplier_id, paid/due to Receipt type                     |
-| `src/pages/Dashboard.tsx`                   | Add overdue alerts card                                                    |
-
+- **Receipt edit**: Fully reversible. Old items' stock effect is undone, new items applied. Avg cost recalculated.
+- **Receipt delete**: Stock restored. Avg cost recalculated.
+- **No edit time restriction**: Already removed (no 1-day limit exists in current code).
+- **Negative stock prevention**: Edge function checks `new_stock >= 0` for sales; returns error if insufficient.
+- **Reprint**: Already works (no changes needed).
+- **Atomic operations**: All DB changes in one edge function call with transaction.
 
 ## Execution Order
 
-1. Database migration (new tables + receipts columns)
-2. Customer/Supplier services and contexts
-3. Customer/Supplier list pages and forms
-4. Customer/Supplier detail pages
-5. CustomerSelect + PaymentSection in Sales/Purchase POS
-6. Due tracking logic and alerts
-7. WhatsApp text receipt integration
-8. PDF receipt (browser print)
-9. Dashboard overdue alerts
-10. Menu items and routing
+1. Database migration (add `avg_cost`)
+2. Create `manage-receipt` edge function
+3. Update `receiptService.ts` to call edge function
+4. Update `usePOSData.ts` to remove client-side stock loop
+5. Update `ReceiptsContext` for edit/delete with stock reversal
+6. Update `InventoryContext` to use products' `avg_cost`
+7. Update `EditReceiptDialog` to pass old items for reversal
+
