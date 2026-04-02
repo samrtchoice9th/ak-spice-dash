@@ -9,7 +9,7 @@ import { useReceiptPrintHandler } from '@/components/ReceiptPrintHandler';
 import { Receipt as ReceiptType } from '@/contexts/ReceiptsContext';
 
 const ReceiptPage = () => {
-  const { receipts, loading, updateReceipt, deleteReceipt } = useReceipts();
+  const { receipts, loading, updateReceipt } = useReceipts();
   const { refreshProducts } = useProducts();
   const [editingReceipt, setEditingReceipt] = useState<ReceiptType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
