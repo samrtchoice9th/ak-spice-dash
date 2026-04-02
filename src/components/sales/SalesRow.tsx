@@ -70,12 +70,12 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-[2fr_1fr_1fr] gap-2">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Qty</label>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => handleQtyStep(-0.25)}>
-                <Minus className="h-4 w-4" />
+              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleQtyStep(-0.25)}>
+                <Minus className="h-3 w-3" />
               </Button>
               <Input
                 ref={el => { inputRefs.current[`${row.id}-qty`] = el; }}
@@ -85,10 +85,10 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
                 value={row.qty || ''}
                 onChange={e => onUpdate(row.id, 'qty', parseFloat(e.target.value) || 0)}
                 onKeyDown={e => onKeyDown(e, row.id, 'qty')}
-                className={cn("h-10 text-center", rowErrors?.qty && "border-destructive")}
+                className={cn("h-8 text-center min-w-0", rowErrors?.qty && "border-destructive")}
               />
-              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => handleQtyStep(0.25)}>
-                <Plus className="h-4 w-4" />
+              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleQtyStep(0.25)}>
+                <Plus className="h-3 w-3" />
               </Button>
             </div>
             {rowErrors?.qty && <span className="text-xs text-destructive">{rowErrors.qty}</span>}
