@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { receiptService } from '@/services/receiptService';
+import { useProducts } from './ProductsContext';
 
 export interface ReceiptItem {
   id: string;
@@ -54,15 +55,14 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const silentRefreshReceipts = useCallback(async () => {
-    if (!user) return;
-    try {
-      const fetchedReceipts = await receiptService.getAllReceipts();
-      setReceipts(fetchedReceipts);
-    } catch (error) {
-      console.error('Failed to fetch receipts:', error);
-    }
-  }, [user]);
+  // Try to get refreshProducts if ProductsContext is available
+  let refreshProductsFn: (() => Promise<void>) | null = null;
+  try {
+    const productsCtx = useProducts();
+    refreshProductsFn = productsCtx.refreshProducts;
+  } catch {
+    // ProductsContext not available (shouldn't happen in normal app flow)
+  }
 
   const refreshReceipts = useCallback(async () => {
     if (!user) {
@@ -98,10 +98,9 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
   const updateReceipt = async (id: string, receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
     try {
       await receiptService.updateReceipt(id, receiptData);
-      setReceipts(prev => prev.map(r => 
-        r.id === id ? { ...r, type: receiptData.type, items: receiptData.items, totalAmount: receiptData.totalAmount } : r
-      ));
-      silentRefreshReceipts();
+      // Refresh both receipts and products since edge function updated stock
+      await refreshReceipts();
+      if (refreshProductsFn) await refreshProductsFn();
     } catch (error) {
       console.error('Failed to update receipt:', error);
       throw error;
@@ -112,6 +111,8 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
     try {
       await receiptService.deleteReceipt(id);
       setReceipts(prev => prev.filter(receipt => receipt.id !== id));
+      // Refresh products since edge function reversed stock
+      if (refreshProductsFn) await refreshProductsFn();
     } catch (error) {
       console.error('Failed to delete receipt:', error);
       throw error;
