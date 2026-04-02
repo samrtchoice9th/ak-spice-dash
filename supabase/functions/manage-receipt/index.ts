@@ -343,7 +343,7 @@ async function handleUpdate(db: any, body: RequestBody, shopId: string | null) {
 
   // 2. Reverse old stock effects
   for (const item of oldItems) {
-    await reverseStockEffect(db, oldReceipt.type, item);
+    await reverseStockEffect(db, oldReceipt.type, item, shopId);
   }
 
   // 3. Update receipt
