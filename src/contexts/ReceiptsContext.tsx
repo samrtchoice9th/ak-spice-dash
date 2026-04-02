@@ -19,12 +19,17 @@ export interface Receipt {
   totalAmount: number;
   date: string;
   time: string;
+  customer_id?: string | null;
+  supplier_id?: string | null;
+  paid_amount?: number;
+  due_amount?: number;
+  due_date?: string | null;
 }
 
 interface ReceiptsContextType {
   receipts: Receipt[];
   loading: boolean;
-  addReceipt: (receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<void>;
+  addReceipt: (receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<Receipt>;
   updateReceipt: (id: string, receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<void>;
   deleteReceipt: (id: string) => Promise<void>;
   refreshReceipts: () => Promise<void>;
@@ -79,10 +84,11 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
     refreshReceipts();
   }, [refreshReceipts]);
 
-  const addReceipt = async (receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
+  const addReceipt = async (receiptData: Omit<Receipt, 'id' | 'date' | 'time'>): Promise<Receipt> => {
     try {
       const newReceipt = await receiptService.createReceipt(receiptData);
       setReceipts(prev => [newReceipt, ...prev]);
+      return newReceipt;
     } catch (error) {
       console.error('Failed to save receipt:', error);
       throw error;

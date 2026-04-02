@@ -28,6 +28,11 @@ export const receiptService = {
       totalAmount: Number(receipt.total_amount),
       date: receipt.date,
       time: receipt.time,
+      customer_id: receipt.customer_id,
+      supplier_id: receipt.supplier_id,
+      paid_amount: Number(receipt.paid_amount || 0),
+      due_amount: Number(receipt.due_amount || 0),
+      due_date: receipt.due_date,
       items: receipt.receipt_items.map((item: any) => ({
         id: item.id,
         itemName: item.item_name,
@@ -68,6 +73,11 @@ export const receiptService = {
         time,
         user_id: user.id,
         shop_id: membership?.shop_id || null,
+        customer_id: (receiptData as any).customer_id || null,
+        supplier_id: (receiptData as any).supplier_id || null,
+        paid_amount: (receiptData as any).paid_amount || 0,
+        due_amount: (receiptData as any).due_amount || 0,
+        due_date: (receiptData as any).due_date || null,
       })
       .select()
       .single();
@@ -102,6 +112,11 @@ export const receiptService = {
       totalAmount: validatedData.totalAmount,
       date,
       time,
+      customer_id: receiptResult.customer_id,
+      supplier_id: receiptResult.supplier_id,
+      paid_amount: Number(receiptResult.paid_amount || 0),
+      due_amount: Number(receiptResult.due_amount || 0),
+      due_date: receiptResult.due_date,
       items: validatedData.items.map((item, index) => ({
         ...item,
         id: itemsResult[index].id
