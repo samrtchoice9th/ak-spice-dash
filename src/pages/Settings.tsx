@@ -297,17 +297,6 @@ const Settings = () => {
           <Printer className="inline w-4 h-4 mr-2" />
           Printer
         </button>
-        <button
-          onClick={() => setActiveTab('shop')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'shop'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          <Store className="inline w-4 h-4 mr-2" />
-          Shop
-        </button>
       </div>
 
       {/* Items Management Tab */}
