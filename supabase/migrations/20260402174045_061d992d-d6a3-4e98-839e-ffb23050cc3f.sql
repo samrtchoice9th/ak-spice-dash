@@ -1,0 +1,1 @@
+ALTER TABLE products ADD COLUMN IF NOT EXISTS avg_cost numeric NOT NULL DEFAULT 0;
