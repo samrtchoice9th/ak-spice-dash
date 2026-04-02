@@ -1,68 +1,87 @@
 
 
-# Clean Rebuild: Single Shop, Simplified Roles
+# Sales POS UI + Logic Upgrade
 
 ## Overview
-Strip out all multi-shop complexity (ShopContext, ShopProvider, switchShop, shop membership queries, SuperAdmin page). Replace with a simple 3-role system where access is controlled purely by `user_roles`.
+Replace the current Sales page (which uses the generic `DataTable` component) with a dedicated, fast POS-style interface. New sales-specific components with memoized rows, async item search, sticky total bar, localStorage draft, validation, and a post-save print modal.
 
-## New Role Definitions
+## New Files
 
-| Role | Pages |
-|------|-------|
-| `super_admin` | All pages (Dashboard, Sales, Purchase, Stock Adjustment, Inventory, Receipt, Report, Settings) |
-| `admin` | Sales, Purchase, Receipt, Report |
-| `user` | Sales, Purchase |
+### `src/hooks/useSalesData.ts` -- Sales state management
+- Structured row state: `{ id, item_id, name, qty, price, total }`
+- `addRow()`, `deleteRow(id)`, `duplicateRow(id)`, `updateRow(id, field, value)`
+- Auto-calc `total = qty * price` on qty/price change
+- `grandTotal` via reduce, `distinctItems` count
+- Keyboard handler: Enter moves itemName->qty->price->next row (adds row if last)
+- Validation: returns `errors` map (row ID -> field -> message). Blocks save if name empty, qty <= 0, or price <= 0
+- localStorage draft: save to `pos-sales-draft` on every row change, restore on mount, clear on save
+- Save: reuses `addReceipt` + `updateStock` from existing contexts, same logic as current `useTableData`
 
-## Changes
+### `src/components/sales/ItemSearch.tsx` -- Async autocomplete
+- Uses `useProducts()` context (already loaded from Supabase)
+- 300ms debounced filter on product list
+- Dropdown shows item name + price per item
+- On select: sets name, price from product, qty = 1, returns focus ref key for qty
+- Arrow key + Enter navigation in dropdown
+- Replaces `ItemSearchDropdown` for sales only
 
-### 1. Remove multi-shop files and references
-- **Delete** `src/contexts/ShopContext.tsx`
-- **Delete** `src/pages/SuperAdmin.tsx`
-- **Delete** `src/components/ShopDetailView.tsx`
-- **Delete** `src/components/PendingApprovalScreen.tsx`
-- Remove all `ShopProvider`, `useShop`, `switchShop`, `exitShop`, `isViewingAsAdmin` usage from:
-  - `src/App.tsx`
-  - `src/components/Sidebar.tsx`
-  - `src/components/DesktopSidebar.tsx`
-  - `src/components/TopNavigation.tsx`
-  - `src/components/MobileSidebar.tsx`
+### `src/components/sales/SalesRow.tsx` -- Memoized row component
+- Wrapped in `React.memo`, only re-renders when its row data or errors change
+- Desktop: table row with Item Search | Qty (with +/- stepper buttons) | Price | Total | Actions (delete/duplicate)
+- Mobile: card layout with larger touch-friendly inputs
+- Qty input: allows decimals (step=0.01), +/- buttons, red border + inline error on validation fail
+- Active row highlight: light blue background on `focus-within`
+- Delete and duplicate icon buttons per row
 
-### 2. Simplify `useUserRole.ts`
-- Remove `shop_owner` and `staff` roles
-- Only 3 roles: `super_admin`, `admin`, `user`
+### `src/components/sales/TotalBar.tsx` -- Sticky bottom bar
+- `fixed bottom-0` with z-index, always visible
+- Shows: items count (left), grand total in large font (center), Save button (right)
+- Save button disabled during save or when validation errors exist
+
+### `src/components/sales/SaveSuccessModal.tsx` -- Post-save modal
+- After successful save, shows dialog: "Sale saved successfully!"
+- Two buttons: "Print Receipt" (triggers existing thermal print via `printToRawBT`) and "Close"
+- No print button in main UI -- print only offered after save
+
+### `src/pages/Sales.tsx` -- Rewritten page
+- Uses `useSalesData` hook
+- Renders list of `SalesRow` components with ref-based keyboard navigation
+- `TotalBar` at bottom
+- `SaveSuccessModal` shown after save
+- `pb-24` padding to clear sticky bar
+- No `DataTable` usage
+
+## Unchanged Files
+- `Purchase.tsx` continues using `DataTable` (no changes)
+- `StockAdjustment.tsx` unchanged
+- All contexts, services, print utilities unchanged
+- `DataTable.tsx`, `TableRow.tsx`, `ActionButtons.tsx` kept for Purchase/Adjustment use
+
+## Technical Details
+
+**Performance**: `React.memo` on `SalesRow` with stable `useCallback` handlers. Debounced search avoids filtering on every keystroke.
+
+**Validation schema** (inline, not zod -- keeps it lightweight for per-keystroke checks):
+```text
+name: required (non-empty after trim)
+qty: must be > 0
+price: must be > 0
 ```
-isSuperAdmin: role === 'super_admin'
-isAdmin: role === 'super_admin' || role === 'admin'
+Red border + small error text below invalid fields. Save button checks all rows.
+
+**localStorage draft format**:
+```json
+{ "rows": [...], "timestamp": 1234567890 }
 ```
+Restored on mount if < 24 hours old. Cleared on successful save.
 
-### 3. Update `menuItems.ts` with new access rules
-Replace `superAdminOnly` / `adminOnly` / `staffVisible` with a single `minRole` field:
-- Dashboard → `super_admin`
-- Sales → `user`
-- Purchase → `user`
-- Stock Adjustment → `super_admin`
-- Inventory → `super_admin`
-- Receipt → `admin`
-- Report → `admin`
-- Settings → `super_admin`
+**Qty stepper**: [-] button decrements by 0.25, [+] increments by 0.25. Manual input allows any decimal.
 
-Remove the Super Admin menu item entirely.
-
-### 4. Update `RoleProtectedRoute.tsx`
-Simplify to check against the 3 roles. Routes accessible to `user` need no wrapper. Routes for `admin` check `isAdmin`. Routes for `super_admin` check `isSuperAdmin`.
-
-### 5. Simplify `App.tsx`
-- Remove `ShopProvider` wrapper
-- Remove `AppContent` component (no shop loading logic needed)
-- Inline the layout directly
-- Remove super admin redirect logic
-- Apply correct `RoleProtectedRoute` wrappers per the role table above
-
-### 6. Clean up services
-- Remove `shopId` parameters from `productService.ts` and `receiptService.ts`
-- Remove shop_members queries from services (data scoped by RLS using `user_id` or kept as-is)
-
-### 7. Simplify Sidebar/Navigation
-- Remove shop name display, "Back to Admin" buttons
-- Show app name or a simple title instead
+## Execution Order
+1. Create `useSalesData` hook
+2. Create `ItemSearch` component
+3. Create `SalesRow` component
+4. Create `TotalBar` component
+5. Create `SaveSuccessModal` component
+6. Rewrite `Sales.tsx`
 
