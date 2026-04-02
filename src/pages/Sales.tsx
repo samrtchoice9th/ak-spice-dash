@@ -14,7 +14,7 @@ const Sales = () => {
     lastSavedRows, grandTotal, distinctItems, inputRefs,
     updateRow, addRow, deleteRow, duplicateRow, handleKeyDown, handleSave,
     paidAmount, setPaidAmount, dueDate, setDueDate,
-    selectedContactId, setSelectedContactId,
+    setSelectedContactId,
   } = usePOSData('sales');
 
   const isMobile = useIsMobile();

@@ -49,7 +49,7 @@ const App = () => (
                       <SuppliersProvider>
                         <InventoryProvider>
                           <SidebarProvider>
-                            <div className="flex min-h-screen bg-gray-50 w-full">
+                            <div className="flex min-h-screen bg-background w-full">
                               <Sidebar />
                               <div className="flex-1 flex flex-col xl:ml-0">
                                 <TopNavigation />
