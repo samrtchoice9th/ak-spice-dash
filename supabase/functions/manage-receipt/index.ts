@@ -401,6 +401,9 @@ async function handleDelete(db: any, body: RequestBody) {
     return jsonResponse({ error: "Receipt not found" }, 404);
   }
 
+  const shopId = receipt.shop_id;
+  if (!shopId) return jsonResponse({ error: "Receipt has no shop_id" }, 400);
+
   const oldItems: ReceiptItem[] = receipt.receipt_items.map((ri: any) => ({
     itemName: ri.item_name,
     qty: Number(ri.qty),
@@ -410,7 +413,7 @@ async function handleDelete(db: any, body: RequestBody) {
 
   // 2. Reverse stock effects
   for (const item of oldItems) {
-    await reverseStockEffect(db, receipt.type, item);
+    await reverseStockEffect(db, receipt.type, item, shopId);
   }
 
   // 3. Delete receipt items then receipt
