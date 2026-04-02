@@ -70,7 +70,7 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-[2fr_1fr_1fr] gap-2">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Qty</label>
             <div className="flex items-center gap-1">
