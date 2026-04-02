@@ -52,65 +52,7 @@ const Settings = () => {
   const [showBluetoothDialog, setShowBluetoothDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const handleInviteStaff = async () => {
-    if (!inviteEmail.trim() || !shop) return;
-    
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(inviteEmail.trim()) || inviteEmail.trim().length > 255) {
-      toast({ title: 'Invalid Email', description: 'Please enter a valid email address', variant: 'destructive' });
-      return;
-    }
-    
-    setInviting(true);
-    try {
-      const { error } = await supabase
-        .from('shop_invitations')
-        .insert({ shop_id: shop.id, email: inviteEmail.trim(), role: 'staff' });
-
-      if (error) throw error;
-
-      toast({ title: 'Invitation Sent', description: `Staff invitation sent to ${inviteEmail}` });
-      setInviteEmail('');
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'Failed to send invitation', variant: 'destructive' });
-    } finally {
-      setInviting(false);
-    }
-  };
-
-  const handleUpdateShopName = async () => {
-    if (!shopName.trim() || !shop) return;
-    if (shopName.trim().length > 100) {
-      toast({ title: 'Error', description: 'Shop name must be less than 100 characters', variant: 'destructive' });
-      return;
-    }
-    const { error } = await supabase
-      .from('shops')
-      .update({ name: shopName.trim() })
-      .eq('id', shop.id);
-
-    if (error) {
-      toast({ title: 'Error', description: 'Failed to update shop name', variant: 'destructive' });
-    } else {
-      toast({ title: 'Updated', description: 'Shop name updated' });
-      refreshShop();
-    }
-  };
-
-  const handleRemoveMember = async (memberId: string) => {
-    const { error } = await supabase
-      .from('shop_members')
-      .delete()
-      .eq('id', memberId);
-
-    if (error) {
-      toast({ title: 'Error', description: 'Failed to remove member', variant: 'destructive' });
-    } else {
-      toast({ title: 'Removed', description: 'Member removed from shop' });
-      refreshShop();
-    }
-  };
+  // Shop management functions removed - single shop mode
 
   const handleEditProduct = async () => {
     if (editingProduct && editName.trim()) {
