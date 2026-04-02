@@ -29,7 +29,7 @@ export interface Receipt {
 interface ReceiptsContextType {
   receipts: Receipt[];
   loading: boolean;
-  addReceipt: (receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<void>;
+  addReceipt: (receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<Receipt>;
   updateReceipt: (id: string, receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<void>;
   deleteReceipt: (id: string) => Promise<void>;
   refreshReceipts: () => Promise<void>;
