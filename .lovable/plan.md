@@ -1,33 +1,53 @@
 
 
-# Secure user_roles Table — Add INSERT/UPDATE/DELETE Policies
+# Sales/Purchase Item Search & Stock Adjustment — Code Review
 
-## Problem
-The `user_roles` table currently only has a SELECT policy (own role) and an ALL policy (super_admin). Any authenticated user could potentially insert a row granting themselves `super_admin`.
+## Findings
 
-## Migration
+### Sales & Purchase `ItemSearch.tsx` — Working correctly
+- Debounced (300ms) async search from `ProductsContext`
+- Shows item name + price in dropdown
+- Auto-fills name, price, qty on select, then focuses qty field
+- Keyboard navigation (ArrowUp/Down/Enter) works
+- Outside click closes dropdown
+- No bugs found
 
-Add three policies to lock down write access:
+### Stock Adjustment — Two issues found
 
-```sql
--- INSERT: Only super_admin can assign roles
-CREATE POLICY "Only super_admin can assign roles"
-ON user_roles FOR INSERT TO authenticated
-WITH CHECK (has_role(auth.uid(), 'super_admin'::app_role));
+**Issue 1: `useItemDropdown.ts` — Infinite re-render risk (Performance bug)**
 
--- UPDATE: Only super_admin can update roles
-CREATE POLICY "Only super_admin can update roles"
-ON user_roles FOR UPDATE TO authenticated
-USING (has_role(auth.uid(), 'super_admin'::app_role))
-WITH CHECK (has_role(auth.uid(), 'super_admin'::app_role));
+Line 12: `const itemNames = products.map(product => product.name)` creates a new array on every render. This array is in the `useEffect` dependency on line 20, causing the filter to re-run on every single render — not just when `value` changes. With many products, this causes unnecessary CPU work and potential lag.
 
--- DELETE: Only super_admin can delete roles
-CREATE POLICY "Only super_admin can delete roles"
-ON user_roles FOR DELETE TO authenticated
-USING (has_role(auth.uid(), 'super_admin'::app_role));
+**Fix**: Memoize `itemNames` with `useMemo`.
+
+**Issue 2: Stock Adjustment dropdown shows ALL items when field is empty**
+
+Unlike `ItemSearch` (Sales/Purchase) which hides the dropdown when the input is empty, `useItemDropdown` filters with `"".includes("")` which returns `true` — so opening the dropdown shows the entire product list unfiltered. For large inventories this is slow and overwhelming.
+
+**Fix**: Return empty list when value is empty, matching the Sales/Purchase behavior.
+
+## Changes
+
+| File | Change |
+|------|--------|
+| `src/hooks/useItemDropdown.ts` | Memoize `itemNames`, skip filter when value is empty |
+
+## Technical Detail
+
+```typescript
+// Before (line 12-20):
+const itemNames = products.map(product => product.name); // new array every render
+useEffect(() => { ... }, [value, itemNames]); // runs every render
+
+// After:
+const itemNames = useMemo(() => products.map(p => p.name), [products]);
+useEffect(() => {
+  if (!value.trim()) { setFilteredItems([]); setIsOpen(false); return; }
+  const filtered = itemNames.filter(item => item.toLowerCase().includes(value.toLowerCase()));
+  setFilteredItems(filtered);
+  setSelectedIndex(-1);
+}, [value, itemNames]);
 ```
 
-**Note**: The existing `handle_new_user_role()` trigger runs as `SECURITY DEFINER`, so it bypasses RLS and will continue to assign roles on signup without issue.
-
-No code changes needed — migration only.
+Two small fixes, one file changed.
 
