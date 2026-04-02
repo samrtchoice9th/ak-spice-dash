@@ -45,7 +45,7 @@ const App = () => (
                           <Sidebar />
                           <div className="flex-1 flex flex-col xl:ml-0">
                             <TopNavigation />
-                            <main className="flex-1">
+                            <main className="flex-1 px-2 sm:px-4 pt-2">
                               <Routes>
                                 <Route path="/" element={<RoleProtectedRoute requiredRole="super_admin"><Dashboard /></RoleProtectedRoute>} />
                                 <Route path="/sales" element={<Sales />} />
