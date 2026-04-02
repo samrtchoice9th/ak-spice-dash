@@ -84,10 +84,11 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
     refreshReceipts();
   }, [refreshReceipts]);
 
-  const addReceipt = async (receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
+  const addReceipt = async (receiptData: Omit<Receipt, 'id' | 'date' | 'time'>): Promise<Receipt> => {
     try {
       const newReceipt = await receiptService.createReceipt(receiptData);
       setReceipts(prev => [newReceipt, ...prev]);
+      return newReceipt;
     } catch (error) {
       console.error('Failed to save receipt:', error);
       throw error;
