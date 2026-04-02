@@ -65,6 +65,9 @@ export const usePOSData = (type: POSType) => {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastSavedRows, setLastSavedRows] = useState<POSRow[]>([]);
+  const [paidAmount, setPaidAmount] = useState(0);
+  const [dueDate, setDueDate] = useState('');
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const { addReceipt } = useReceipts();
