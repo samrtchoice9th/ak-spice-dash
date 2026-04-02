@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          phone: string | null
+          shop_id: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          phone?: string | null
+          shop_id?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          shop_id?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           created_at: string
@@ -99,10 +137,15 @@ export type Database = {
       receipts: {
         Row: {
           created_at: string
+          customer_id: string | null
           date: string
+          due_amount: number
+          due_date: string | null
           id: string
           note: string | null
+          paid_amount: number
           shop_id: string | null
+          supplier_id: string | null
           time: string
           total_amount: number
           type: string
@@ -111,10 +154,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_id?: string | null
           date: string
+          due_amount?: number
+          due_date?: string | null
           id?: string
           note?: string | null
+          paid_amount?: number
           shop_id?: string | null
+          supplier_id?: string | null
           time: string
           total_amount: number
           type: string
@@ -123,10 +171,15 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_id?: string | null
           date?: string
+          due_amount?: number
+          due_date?: string | null
           id?: string
           note?: string | null
+          paid_amount?: number
           shop_id?: string | null
+          supplier_id?: string | null
           time?: string
           total_amount?: number
           type?: string
@@ -135,10 +188,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "receipts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "receipts_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -239,6 +306,44 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          phone: string | null
+          shop_id: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          phone?: string | null
+          shop_id?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          shop_id?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
