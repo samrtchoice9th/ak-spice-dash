@@ -13,6 +13,7 @@ const ReceiptPage = () => {
   const { refreshProducts } = useProducts();
   const [editingReceipt, setEditingReceipt] = useState<ReceiptType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const { checkPrinterAndPrint, printToRawBT, PrintPreviewComponent } = useReceiptPrintHandler();
 
   const handleEditReceipt = (receipt: ReceiptType) => {
     setEditingReceipt(receipt);
