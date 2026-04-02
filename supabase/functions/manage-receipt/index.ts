@@ -228,6 +228,7 @@ async function handleCreate(
 ) {
   const { type, items, totalAmount, customer_id, supplier_id, paid_amount, due_amount, due_date } = body;
 
+  if (!shopId) return jsonResponse({ error: "shop_id is required" }, 400);
   if (!type || !items || items.length === 0) {
     return jsonResponse({ error: "type and items are required" }, 400);
   }
