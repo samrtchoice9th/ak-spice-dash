@@ -1,13 +1,6 @@
-
 import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Package, 
-  PackageMinus,
-  Warehouse, 
-  Receipt,
-  BarChart3,
-  Settings,
+  LayoutDashboard, ShoppingCart, Package, PackageMinus,
+  Warehouse, Receipt, BarChart3, Settings, Users, Truck,
   LucideIcon
 } from 'lucide-react';
 
@@ -24,6 +17,8 @@ export const allMenuItems: MenuItem[] = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard, minRole: 'super_admin' },
   { name: 'Sales', path: '/sales', icon: ShoppingCart, minRole: 'user' },
   { name: 'Purchase', path: '/purchase', icon: Package, minRole: 'user' },
+  { name: 'Customers', path: '/customers', icon: Users, minRole: 'admin' },
+  { name: 'Suppliers', path: '/suppliers', icon: Truck, minRole: 'admin' },
   { name: 'Stock Adjustment', path: '/stock-adjustment', icon: PackageMinus, minRole: 'super_admin' },
   { name: 'Inventory', path: '/inventory', icon: Warehouse, minRole: 'super_admin' },
   { name: 'Receipt', path: '/receipt', icon: Receipt, minRole: 'admin' },

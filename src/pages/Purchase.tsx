@@ -1,23 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePOSData } from '@/hooks/usePOSData';
 import { SalesRowComponent } from '@/components/sales/SalesRow';
 import { TotalBar } from '@/components/sales/TotalBar';
 import { SaveSuccessModal } from '@/components/sales/SaveSuccessModal';
+import { SupplierSelect } from '@/components/sales/SupplierSelect';
+import { PaymentSection } from '@/components/sales/PaymentSection';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Supplier } from '@/services/supplierService';
 
 const Purchase = () => {
   const {
     rows, errors, isSaving, showSuccess, setShowSuccess,
     lastSavedRows, grandTotal, distinctItems, inputRefs,
     updateRow, addRow, deleteRow, duplicateRow, handleKeyDown, handleSave,
+    paidAmount, setPaidAmount, dueDate, setDueDate,
+    selectedContactId, setSelectedContactId,
   } = usePOSData('purchase');
 
   const isMobile = useIsMobile();
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+
+  const handleSupplierSelect = (s: Supplier | null) => {
+    setSelectedSupplier(s);
+    setSelectedContactId(s?.id || null);
+    if (!s) { setPaidAmount(0); setDueDate(''); }
+  };
 
   return (
     <div className="pb-24">
       <div className="mb-3">
         <h1 className="text-lg sm:text-xl font-bold text-foreground">Purchase</h1>
+      </div>
+
+      <div className="mb-3">
+        <SupplierSelect selectedSupplier={selectedSupplier} onSelect={handleSupplierSelect} />
       </div>
 
       {isMobile ? (
@@ -51,12 +67,29 @@ const Purchase = () => {
         </div>
       )}
 
+      {selectedSupplier && (
+        <div className="mt-3">
+          <PaymentSection
+            grandTotal={grandTotal}
+            paidAmount={paidAmount}
+            onPaidAmountChange={setPaidAmount}
+            dueDate={dueDate}
+            onDueDateChange={setDueDate}
+          />
+        </div>
+      )}
+
       <TotalBar distinctItems={distinctItems} grandTotal={grandTotal}
         isSaving={isSaving} hasErrors={Object.keys(errors).length > 0}
         onSave={handleSave} onAddRow={addRow} />
 
       <SaveSuccessModal open={showSuccess} onClose={() => setShowSuccess(false)}
-        savedRows={lastSavedRows} type="purchase" />
+        savedRows={lastSavedRows} type="purchase"
+        customerName={selectedSupplier?.name}
+        customerWhatsApp={selectedSupplier?.whatsapp_number}
+        paidAmount={paidAmount}
+        dueAmount={Math.max(0, grandTotal - paidAmount)}
+      />
     </div>
   );
 };
