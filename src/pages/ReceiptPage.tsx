@@ -23,7 +23,7 @@ const ReceiptPage = () => {
   const handleSaveReceipt = async (id: string, receiptData: any) => {
     try {
       await updateReceipt(id, receiptData);
-      // Clear editingReceipt immediately to prevent stale data
+      await refreshProducts();
       setEditingReceipt(null);
       setIsEditDialogOpen(false);
     } catch (error) {
