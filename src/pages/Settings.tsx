@@ -47,7 +47,7 @@ const Settings = () => {
   const [selectedDevice, setSelectedDevice] = useState<any>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [showBluetoothDialog, setShowBluetoothDialog] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  
 
   // Shop management functions removed - single shop mode
 
