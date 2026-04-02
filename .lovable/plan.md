@@ -1,24 +1,21 @@
 
 
-# Fix: Item Search Dropdown Hidden Behind Other Rows
+# Fix: Qty Input Not Visible on Mobile
 
 ## Problem
-The search dropdown (z-50) gets clipped/hidden behind subsequent table rows. The `<tr>` elements with `focus-within:bg-accent/30` and the table's `overflow-hidden` on the wrapper create stacking contexts that prevent the dropdown from rendering above sibling rows.
+On mobile (390px viewport), the bottom section uses `grid grid-cols-3` which gives each column ~120px. The Qty column contains two 40px buttons + an input in a flex row — that's 80px of buttons leaving only ~40px for the input, which gets crushed to near-zero width. The qty value becomes invisible.
 
-## Root Cause
-In `Sales.tsx` and `Purchase.tsx`, the desktop table wrapper has `overflow-hidden`:
-```html
-<div className="border rounded-lg overflow-hidden bg-card">
-```
-This clips the absolutely-positioned dropdown inside any `<td>`.
+## Fix — `src/components/sales/SalesRow.tsx`
 
-## Fix (2 changes)
+Change the mobile layout from `grid-cols-3` with equal columns to a layout that gives Qty more space:
 
-### 1. `src/pages/Sales.tsx` — Remove `overflow-hidden` from table wrapper
-Change `overflow-hidden` to `overflow-visible` so the dropdown can escape the table bounds.
+**Option**: Use `grid-cols-[1fr_auto_auto]` so Qty gets the flexible space while Price and Total get auto-sized columns. Additionally, reduce the stepper buttons from `h-10 w-10` to `h-8 w-8` on mobile to save horizontal space.
 
-### 2. `src/pages/Purchase.tsx` — Same change
-Apply identical fix.
+### Changes in the mobile section (lines 73-110):
 
-Both files: change `"border rounded-lg overflow-hidden bg-card"` to `"border rounded-lg overflow-visible bg-card"`.
+1. **Line 73**: Change `grid grid-cols-3 gap-2` → `grid grid-cols-[2fr_1fr_1fr] gap-2` so Qty gets double the space
+2. **Lines 77, 90**: Reduce stepper buttons from `h-10 w-10` to `h-8 w-8`
+3. **Line 88**: Reduce qty input width with `min-w-0` to allow proper flex shrinking
+
+This gives Qty ~50% of the row width (~180px on 390px screen), enough for both buttons + input.
 
