@@ -74,8 +74,8 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Qty</label>
             <div className="flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => handleQtyStep(-0.25)}>
-                <Minus className="h-4 w-4" />
+              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleQtyStep(-0.25)}>
+                <Minus className="h-3 w-3" />
               </Button>
               <Input
                 ref={el => { inputRefs.current[`${row.id}-qty`] = el; }}
