@@ -87,8 +87,8 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
                 onKeyDown={e => onKeyDown(e, row.id, 'qty')}
                 className={cn("h-8 text-center min-w-0", rowErrors?.qty && "border-destructive")}
               />
-              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => handleQtyStep(0.25)}>
-                <Plus className="h-4 w-4" />
+              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleQtyStep(0.25)}>
+                <Plus className="h-3 w-3" />
               </Button>
             </div>
             {rowErrors?.qty && <span className="text-xs text-destructive">{rowErrors.qty}</span>}
