@@ -63,6 +63,7 @@ const ReceiptPage = () => {
         onEdit={handleEditReceipt}
         onPrint={checkPrinterAndPrint}
         onRawBTPrint={printToRawBT}
+        onDelete={handleDeleteReceipt}
       />
 
       <EditReceiptDialog
