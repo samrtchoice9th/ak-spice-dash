@@ -1,25 +1,34 @@
 
 
-# Fix: Dropdown Reopens After Item Selection
+# Fix PWA Configuration
 
-## Root Cause
+## Problems Found
 
-When the user selects an item from the dropdown:
-1. `selectItem()` calls `setIsOpen(false)` — dropdown closes
-2. `onSelect()` updates the parent's `value` to the selected product name (e.g., "COCO SEEDS")
-3. The `useEffect` on `value` triggers a 300ms debounce
-4. After 300ms, the filter runs — "COCO SEEDS" matches itself in the product list
-5. `setIsOpen(true)` fires — **dropdown reopens**
+1. **Service worker registers in Lovable preview iframe** — causes stale cached content in the editor, changes don't appear
+2. **No `devOptions: { enabled: false }`** — SW is active during development
+3. **Missing `navigateFallbackDenylist` for `/~oauth`** — OAuth redirects can get intercepted by the service worker
+4. **No iframe/preview guard in `main.tsx`** — SW registers unconditionally
 
-This is why the dropdown reappears showing the selected item after selection.
+## Changes
 
-## Fix — `src/components/sales/ItemSearch.tsx`
+### 1. `vite.config.ts` — Add safety options to VitePWA
 
-Add a ref flag `justSelected` that suppresses the debounced reopening after a selection:
+- Add `devOptions: { enabled: false }` so SW only works in production builds
+- Add `navigateFallbackDenylist: [/^\/~oauth/]` to workbox config
 
-1. Add `const justSelectedRef = useRef(false);`
-2. In `selectItem`: set `justSelectedRef.current = true` before closing
-3. In the debounce callback: if `justSelectedRef.current` is true, reset it and skip setting `isOpen(true)`
+### 2. `src/main.tsx` — Guard SW registration
 
-This is a 3-line addition to one file.
+Before `registerSW()`, add checks to:
+- Skip registration if running inside an iframe (Lovable editor)
+- Skip registration if on a preview hostname (`id-preview--` or `lovableproject.com`)
+- Unregister any existing SWs in those contexts to clean up stale caches
+
+This ensures PWA works correctly on the **published** app while not interfering with development in the Lovable editor.
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `vite.config.ts` | Add `devOptions`, `navigateFallbackDenylist` |
+| `src/main.tsx` | Add iframe/preview guard around `registerSW()` |
 
