@@ -1,34 +1,87 @@
 
 
-# Fix PWA Configuration
+# Customer/Supplier Partial Payment System
 
-## Problems Found
+## What Already Works
+- Receipts already store `paid_amount`, `due_amount`, `due_date`, `customer_id`, `supplier_id`
+- Sales/Purchase pages already have the PaymentSection for initial partial payment
+- CustomerDetail/SupplierDetail already show total due, overdue alerts, transaction history, WhatsApp reminders
+- DueAlert component already color-codes red (overdue), yellow (upcoming), orange (partial)
 
-1. **Service worker registers in Lovable preview iframe** — causes stale cached content in the editor, changes don't appear
-2. **No `devOptions: { enabled: false }`** — SW is active during development
-3. **Missing `navigateFallbackDenylist` for `/~oauth`** — OAuth redirects can get intercepted by the service worker
-4. **No iframe/preview guard in `main.tsx`** — SW registers unconditionally
+## What's New — Balance Payment After Initial Sale
 
-## Changes
+The missing piece: when a customer has a due balance from a previous sale, there's no way to record a later payment to reduce that due.
 
-### 1. `vite.config.ts` — Add safety options to VitePWA
+### 1. Database Migration — Create `payments` table
 
-- Add `devOptions: { enabled: false }` so SW only works in production builds
-- Add `navigateFallbackDenylist: [/^\/~oauth/]` to workbox config
+```sql
+CREATE TABLE public.payments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  receipt_id uuid REFERENCES receipts(id) ON DELETE CASCADE,
+  customer_id uuid,
+  supplier_id uuid,
+  amount numeric NOT NULL CHECK (amount > 0),
+  payment_type text NOT NULL CHECK (payment_type IN ('in', 'out')),
+  payment_method text NOT NULL DEFAULT 'cash' CHECK (payment_method IN ('cash', 'bank', 'other')),
+  note text,
+  shop_id uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 
-### 2. `src/main.tsx` — Guard SW registration
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+-- RLS policies scoped by shop_id (same pattern as other tables)
+```
 
-Before `registerSW()`, add checks to:
-- Skip registration if running inside an iframe (Lovable editor)
-- Skip registration if on a preview hostname (`id-preview--` or `lovableproject.com`)
-- Unregister any existing SWs in those contexts to clean up stale caches
+### 2. Edge Function Update — `manage-receipt/index.ts`
 
-This ensures PWA works correctly on the **published** app while not interfering with development in the Lovable editor.
+Add a new action `"pay_due"` that:
+- Accepts `receipt_id`, `amount`, `payment_method`
+- Validates amount does not exceed current `due_amount`
+- Inserts into `payments` table
+- Updates `receipts.paid_amount` += amount, `receipts.due_amount` -= amount
+- Returns updated receipt
+
+### 3. New Component — `PayDueDialog.tsx`
+
+A dialog with:
+- Amount input (validated: > 0, <= due amount)
+- Payment method select (Cash / Bank / Other)
+- Optional note field
+- Shows current due amount prominently
+
+### 4. CustomerDetail.tsx & SupplierDetail.tsx Updates
+
+- Add "Pay Due" button next to each receipt that has due > 0
+- Add summary cards: Total Purchases, Total Paid, Total Due
+- Show payment history per receipt (fetch from `payments` table)
+- Color coding: Red = overdue, Yellow = partial, Green = fully paid (already exists via DueAlert)
+
+### 5. Receipt Service Update — `receiptService.ts`
+
+Add `payDue(receiptId, amount, paymentMethod, note?)` method that calls the edge function.
+
+### 6. Validation Rules
+- `paid_amount` cannot exceed `total_amount`
+- Payment amount cannot exceed `due_amount`
+- No negative values
+- Receipt total is never edited after payment starts (enforced by using payments table)
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `vite.config.ts` | Add `devOptions`, `navigateFallbackDenylist` |
-| `src/main.tsx` | Add iframe/preview guard around `registerSW()` |
+| Migration SQL | Create `payments` table with RLS |
+| `supabase/functions/manage-receipt/index.ts` | Add `pay_due` action |
+| `src/components/customers/PayDueDialog.tsx` | New — payment form dialog |
+| `src/services/receiptService.ts` | Add `payDue()` method |
+| `src/pages/CustomerDetail.tsx` | Add Pay Due button per receipt, summary cards |
+| `src/pages/SupplierDetail.tsx` | Same as CustomerDetail |
+| `src/contexts/ReceiptsContext.tsx` | Add `payDue` to context |
+
+## Execution Order
+1. Migration (payments table)
+2. Edge function update
+3. PayDueDialog component
+4. receiptService + ReceiptsContext update
+5. CustomerDetail + SupplierDetail UI updates
 
