@@ -3,27 +3,30 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCustomers } from '@/contexts/CustomersContext';
 import { useReceipts } from '@/contexts/ReceiptsContext';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, AlertTriangle, CreditCard } from 'lucide-react';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { DueAlert } from '@/components/customers/DueAlert';
+import { PayDueDialog } from '@/components/customers/PayDueDialog';
 import { useToast } from '@/hooks/use-toast';
 
 const CustomerDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { customers, updateCustomer, deleteCustomer } = useCustomers();
-  const { receipts } = useReceipts();
+  const { receipts, payDue } = useReceipts();
   const { toast } = useToast();
   const [showEdit, setShowEdit] = useState(false);
+  const [payingReceipt, setPayingReceipt] = useState<{ id: string; due: number; date: string } | null>(null);
 
   const customer = customers.find(c => c.id === id);
 
-  const { customerReceipts, totalPurchases, totalDue } = useMemo(() => {
+  const { customerReceipts, totalPurchases, totalPaid, totalDue } = useMemo(() => {
     const cr = receipts.filter(r => r.customer_id === id);
     const tp = cr.reduce((sum, r) => sum + r.totalAmount, 0);
+    const tPaid = cr.reduce((sum, r) => sum + (r.paid_amount || 0), 0);
     const td = cr.reduce((sum, r) => sum + (r.due_amount || 0), 0);
-    return { customerReceipts: cr, totalPurchases: tp, totalDue: td };
+    return { customerReceipts: cr, totalPurchases: tp, totalPaid: tPaid, totalDue: td };
   }, [receipts, id]);
 
   const overdueReceipts = useMemo(() =>
@@ -69,7 +72,7 @@ const CustomerDetail = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
         <div className="p-3 rounded-lg border bg-card">
           <p className="text-xs text-muted-foreground">Phone</p>
           <p className="text-sm font-medium">{customer.phone || '—'}</p>
@@ -79,12 +82,12 @@ const CustomerDetail = () => {
           <p className="text-sm font-medium">{customer.whatsapp_number || '—'}</p>
         </div>
         <div className="p-3 rounded-lg border bg-card">
-          <p className="text-xs text-muted-foreground">Address</p>
-          <p className="text-sm font-medium">{customer.address || '—'}</p>
-        </div>
-        <div className="p-3 rounded-lg border bg-card">
           <p className="text-xs text-muted-foreground">Total Purchases</p>
           <p className="text-sm font-bold">Rs. {totalPurchases.toFixed(2)}</p>
+        </div>
+        <div className="p-3 rounded-lg border bg-card">
+          <p className="text-xs text-muted-foreground">Total Paid</p>
+          <p className="text-sm font-bold text-primary">Rs. {totalPaid.toFixed(2)}</p>
         </div>
       </div>
 
@@ -95,21 +98,35 @@ const CustomerDetail = () => {
         )}
       </div>
 
-      <h2 className="font-semibold text-foreground mb-2">Recent Transactions</h2>
+      <h2 className="font-semibold text-foreground mb-2">Transactions</h2>
       {customerReceipts.length === 0 ? (
         <p className="text-sm text-muted-foreground">No transactions yet</p>
       ) : (
         <div className="space-y-2">
-          {customerReceipts.slice(0, 10).map(r => (
+          {customerReceipts.map(r => (
             <div key={r.id} className="p-3 rounded-lg border bg-card">
               <div className="flex justify-between items-center">
                 <div>
                   <span className="text-xs text-muted-foreground">{r.date} • {r.type}</span>
                   <p className="text-sm font-medium">Rs. {r.totalAmount.toFixed(2)}</p>
+                  {(r.paid_amount || 0) > 0 && (
+                    <p className="text-xs text-muted-foreground">Paid: Rs.{(r.paid_amount || 0).toFixed(2)}</p>
+                  )}
                 </div>
-                <div className="text-right">
+                <div className="text-right flex flex-col items-end gap-1">
                   {r.due_amount && r.due_amount > 0 ? (
-                    <DueAlert dueAmount={r.due_amount} dueDate={r.due_date} />
+                    <>
+                      <DueAlert dueAmount={r.due_amount} dueDate={r.due_date} />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs h-7"
+                        onClick={() => setPayingReceipt({ id: r.id, due: r.due_amount!, date: r.date })}
+                      >
+                        <CreditCard className="h-3 w-3 mr-1" />
+                        Pay Due
+                      </Button>
+                    </>
                   ) : (
                     <span className="text-xs text-primary font-medium">Paid</span>
                   )}
@@ -132,6 +149,17 @@ const CustomerDetail = () => {
         }}
         onSave={async (data) => { await updateCustomer(customer.id, data); }}
       />
+
+      {payingReceipt && (
+        <PayDueDialog
+          open={!!payingReceipt}
+          onClose={() => setPayingReceipt(null)}
+          receiptId={payingReceipt.id}
+          dueAmount={payingReceipt.due}
+          receiptDate={payingReceipt.date}
+          onPay={payDue}
+        />
+      )}
     </div>
   );
 };
