@@ -1,79 +1,67 @@
 
 
-# Mobile-First UI/UX Audit & Fix — AK SPICE POS
+# Theme Color Change — Teal Palette
 
-## Audit Findings
+## Color Palette (from uploaded image)
+- **#265073** — Deep navy teal (darkest)
+- **#2D9596** — Teal (primary)
+- **#9AD0C2** — Soft mint (secondary/accent)
+- **#ECF4D6** — Pale lime cream (lightest)
 
-### Already Good
-- Sales/Purchase pages: card-based mobile layout, 44px touch targets, sticky TotalBar, overflow-visible
-- Customers/Suppliers pages: card-based lists, proper spacing, touch-friendly
-- CustomerDetail/SupplierDetail: responsive grid, proper padding
-- TopNavigation: scrollable bottom nav with role-based filtering
-- PaymentSection: responsive grid layout
+## HSL Conversions
+- `#265073` → 207 51% 30% — primary (buttons, headings)
+- `#2D9596` → 180 53% 38% — ring, sidebar primary, active states
+- `#9AD0C2` → 160 38% 71% — accent, secondary
+- `#ECF4D6` → 80 56% 90% — muted, background tints
 
-### Issues Found
+## Changes — `src/index.css`
 
-| # | Page/Component | Problem | Severity |
-|---|----------------|---------|----------|
-| 1 | **ReceiptsTable** | Full `<table>` on mobile — cramped action buttons (4 buttons in a row), no card view | Critical |
-| 2 | **Inventory page** | Full `<table>` on mobile — 8 columns, horizontal scroll required, tiny edit/delete buttons (p-1) | Critical |
-| 3 | **Settings (Items tab)** | Full `<table>` on mobile, tiny action buttons | High |
-| 4 | **StockAdjustment** | Uses old DataTable with full table layout, no mobile card view | High |
-| 5 | **Hardcoded colors** | Dashboard, DashboardStats, ReceiptSummaryCards, ReceiptsTable, Inventory, Settings all use `bg-white`, `text-gray-800` instead of `bg-card`, `text-foreground` — breaks dark mode | Medium |
-| 6 | **Receipt page padding** | Uses `p-4 sm:p-6 lg:p-8` — excessive on mobile | Low |
-| 7 | **Inventory action buttons** | `p-1` with 16px icons = ~26px touch target, below 44px minimum | High |
+### Light mode `:root`
+| Variable | New HSL | Mapped from |
+|----------|---------|-------------|
+| `--primary` | `207 51% 30%` | #265073 — buttons, nav active |
+| `--primary-foreground` | `80 56% 90%` | #ECF4D6 — text on primary |
+| `--secondary` | `160 38% 92%` | Lighter #9AD0C2 tint |
+| `--secondary-foreground` | `207 51% 30%` | #265073 |
+| `--accent` | `160 38% 92%` | Light mint |
+| `--accent-foreground` | `207 51% 30%` | #265073 |
+| `--muted` | `80 30% 94%` | Subtle cream |
+| `--muted-foreground` | `207 20% 46%` | Muted teal-gray |
+| `--ring` | `180 53% 38%` | #2D9596 |
+| `--border` | `160 20% 88%` | Soft mint border |
+| `--input` | `160 20% 88%` | Match border |
+| `--sidebar-background` | `207 51% 30%` | Deep navy |
+| `--sidebar-foreground` | `80 56% 90%` | Cream text |
+| `--sidebar-primary` | `180 53% 38%` | Teal highlight |
+| `--sidebar-primary-foreground` | `0 0% 100%` | White |
+| `--sidebar-accent` | `207 40% 25%` | Darker navy |
+| `--sidebar-accent-foreground` | `80 56% 90%` | Cream |
+| `--sidebar-border` | `207 30% 35%` | Navy border |
+| `--sidebar-ring` | `180 53% 38%` | Teal |
 
-## Plan
+### Dark mode `.dark`
+| Variable | New HSL | Notes |
+|----------|---------|-------|
+| `--background` | `207 51% 8%` | Very dark navy |
+| `--foreground` | `80 30% 92%` | Off-white cream |
+| `--card` | `207 45% 12%` | Dark card |
+| `--primary` | `180 53% 38%` | Teal buttons |
+| `--primary-foreground` | `207 51% 8%` | Dark text on teal |
+| `--secondary` | `207 30% 18%` | Dark secondary |
+| `--accent` | `207 30% 18%` | Dark accent |
+| `--muted` | `207 30% 18%` | Dark muted |
+| `--muted-foreground` | `160 20% 60%` | Soft mint text |
+| `--border` | `207 30% 20%` | Dark border |
+| `--ring` | `180 53% 38%` | Teal ring |
+| `--sidebar-background` | `207 51% 6%` | Deepest navy |
+| `--sidebar-primary` | `180 53% 45%` | Brighter teal |
 
-### 1. ReceiptsTable → Mobile Card View
-- Detect `isMobile` via `useIsMobile()`
-- On mobile: render each receipt as a card showing type badge, date, amount, due status
-- Action buttons as icon-only row with `h-10 w-10` (44px) touch targets
-- Keep desktop table unchanged
-
-### 2. Inventory Page → Mobile Card View
-- On mobile: render each item as a card with name, stock, value, status badge
-- Edit/Delete as `h-10 w-10` icon buttons
-- Summary cards: `grid-cols-2` (already done, just fix colors)
-
-### 3. Settings Items Tab → Mobile Card View
-- On mobile: product cards instead of table rows
-- Touch-friendly edit/delete buttons
-
-### 4. StockAdjustment Mobile Layout
-- The page uses the old `DataTable` component which renders a plain table
-- Add mobile detection and card-based row rendering in `TableRowComponent`
-
-### 5. Fix Hardcoded Colors (Theme Tokens)
-- Replace `bg-white` → `bg-card`, `text-gray-800` → `text-foreground`, `text-gray-900` → `text-foreground`, `border-gray-200` → `border-border`, `text-gray-600` → `text-muted-foreground` across:
-  - `DashboardStats.tsx`
-  - `ReceiptSummaryCards.tsx`
-  - `ReceiptsTable.tsx`
-  - `Inventory.tsx`
-  - `Settings.tsx`
-  - `Dashboard.tsx`
-  - `ReceiptPage.tsx`
-  - `DataTableContainer.tsx`
-
-### 6. Increase Touch Targets
-- Inventory: edit/delete buttons → `h-10 w-10` with `p-2`
-- Settings: same treatment
-- ReceiptsTable: action buttons → icon-only `h-10 w-10` on mobile
+### Background/foreground/card/popover remain white/dark as base — only accent colors change.
 
 ## Files Changed
-
 | File | Change |
 |------|--------|
-| `src/components/ReceiptsTable.tsx` | Add mobile card view, fix colors, 44px buttons |
-| `src/pages/Inventory.tsx` | Add mobile card view, fix colors, 44px buttons |
-| `src/pages/Settings.tsx` | Add mobile card view for items tab, fix colors |
-| `src/components/DashboardStats.tsx` | Replace hardcoded colors with theme tokens |
-| `src/components/ReceiptSummaryCards.tsx` | Replace hardcoded colors with theme tokens |
-| `src/pages/Dashboard.tsx` | Fix hardcoded colors |
-| `src/pages/ReceiptPage.tsx` | Fix padding for mobile |
-| `src/components/DataTableContainer.tsx` | Fix hardcoded colors |
-| `src/components/TableRow.tsx` | Add mobile card layout for stock adjustment |
-| `src/components/TableHeader.tsx` | Hide on mobile when card view active |
+| `src/index.css` | Update all CSS custom properties in `:root` and `.dark` |
 
-No backend or database changes required.
+One file, no logic changes. Pure color token update.
 
