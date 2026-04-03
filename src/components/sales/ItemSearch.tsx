@@ -63,6 +63,7 @@ export const ItemSearch: React.FC<ItemSearchProps> = React.memo(({
   }, []);
 
   const selectItem = useCallback((product: typeof products[0]) => {
+    justSelectedRef.current = true;
     onSelect(product.name, product.price);
     setIsOpen(false);
   }, [onSelect]);
