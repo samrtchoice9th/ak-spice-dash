@@ -28,6 +28,7 @@ export const ItemSearch: React.FC<ItemSearchProps> = React.memo(({
   const [highlightIdx, setHighlightIdx] = useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
+  const justSelectedRef = useRef(false);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
