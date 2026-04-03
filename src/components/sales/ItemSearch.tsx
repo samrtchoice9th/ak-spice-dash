@@ -28,6 +28,7 @@ export const ItemSearch: React.FC<ItemSearchProps> = React.memo(({
   const [highlightIdx, setHighlightIdx] = useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
+  const justSelectedRef = useRef(false);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -37,6 +38,10 @@ export const ItemSearch: React.FC<ItemSearchProps> = React.memo(({
       return;
     }
     debounceRef.current = setTimeout(() => {
+      if (justSelectedRef.current) {
+        justSelectedRef.current = false;
+        return;
+      }
       const q = value.toLowerCase();
       const results = products.filter(p => p.name.toLowerCase().includes(q)).slice(0, 10);
       setFiltered(results);
@@ -58,6 +63,7 @@ export const ItemSearch: React.FC<ItemSearchProps> = React.memo(({
   }, []);
 
   const selectItem = useCallback((product: typeof products[0]) => {
+    justSelectedRef.current = true;
     onSelect(product.name, product.price);
     setIsOpen(false);
   }, [onSelect]);
