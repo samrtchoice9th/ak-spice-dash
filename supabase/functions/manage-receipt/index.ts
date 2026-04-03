@@ -241,8 +241,8 @@ async function handleCreate(
   }
 
   const now = new Date();
-  const date = now.toISOString().split("T")[0];
-  const time = now.toLocaleTimeString();
+  const date = now.toLocaleDateString("en-CA", { timeZone: "Asia/Colombo" });
+  const time = now.toLocaleTimeString("en-US", { timeZone: "Asia/Colombo", hour12: true });
 
   // 1. Insert receipt
   const { data: receipt, error: receiptError } = await db
