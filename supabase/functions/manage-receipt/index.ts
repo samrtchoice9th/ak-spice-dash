@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     } else if (action === "pay_due") {
       return await handlePayDue(supabaseAdmin, body, shopId);
     } else if (action === "rename_item") {
-      return await handleRenameItem(supabaseAdmin, body, shopId);
+      return await handleRenameItem(supabaseAdmin, body, shopId, userId);
     } else if (action === "delete_item") {
       return await handleDeleteItem(supabaseAdmin, body, shopId);
     } else {
@@ -554,27 +554,41 @@ async function handlePayDue(db: any, body: RequestBody, shopId: string | null) {
   });
 }
 
-// Issue #2: New action to rename items atomically via edge function
-async function handleRenameItem(db: any, body: RequestBody, shopId: string | null) {
+// Rename item with shop scoping, duplicate check, and audit trail
+async function handleRenameItem(db: any, body: RequestBody, shopId: string | null, userId: string) {
   const { old_name, new_name, new_stock } = body;
 
   if (!shopId) return jsonResponse({ error: "shop_id is required" }, 400);
   if (!old_name?.trim()) return jsonResponse({ error: "old_name is required" }, 400);
   if (!new_name?.trim()) return jsonResponse({ error: "new_name is required" }, 400);
 
-  // Find the product
+  const trimmedNewName = new_name.trim();
+  const trimmedOldName = old_name.trim();
+
+  // Find the product with current stock info
   const { data: product, error: findError } = await db
     .from("products")
-    .select("id")
-    .eq("name", old_name)
+    .select("id, current_stock, avg_cost")
+    .eq("name", trimmedOldName)
     .eq("shop_id", shopId)
     .maybeSingle();
 
   if (findError || !product) return jsonResponse({ error: "Product not found" }, 404);
 
+  // Duplicate name check
+  if (trimmedOldName !== trimmedNewName) {
+    const { data: existing } = await db
+      .from("products")
+      .select("id")
+      .eq("name", trimmedNewName)
+      .eq("shop_id", shopId)
+      .maybeSingle();
+    if (existing) return jsonResponse({ error: `Product "${trimmedNewName}" already exists` }, 400);
+  }
+
   // Update product name and optionally stock
   const updateData: any = {
-    name: new_name.trim(),
+    name: trimmedNewName,
     updated_at: new Date().toISOString(),
   };
   if (new_stock !== undefined && new_stock !== null) {
@@ -588,31 +602,98 @@ async function handleRenameItem(db: any, body: RequestBody, shopId: string | nul
 
   if (updateError) throw new Error(`Failed to update product: ${updateError.message}`);
 
-  // Update all receipt items with old name to new name
-  const { error: itemsError } = await db
-    .from("receipt_items")
-    .update({ item_name: new_name.trim() })
-    .eq("item_name", old_name);
+  // Scope receipt_items rename by shop — get shop receipt IDs first
+  const { data: shopReceipts } = await db
+    .from("receipts")
+    .select("id")
+    .eq("shop_id", shopId);
+  const receiptIds = (shopReceipts || []).map((r: any) => r.id);
 
-  if (itemsError) throw new Error(`Failed to update receipt items: ${itemsError.message}`);
+  if (receiptIds.length > 0 && trimmedOldName !== trimmedNewName) {
+    await db
+      .from("receipt_items")
+      .update({ item_name: trimmedNewName })
+      .eq("item_name", trimmedOldName)
+      .in("receipt_id", receiptIds);
+  }
+
+  // Audit trail: if stock was changed, create an adjustment receipt
+  if (new_stock !== undefined && new_stock !== null && new_stock !== product.current_stock) {
+    const diff = new_stock - product.current_stock;
+    const adjustType = diff > 0 ? "increase" : "reduce";
+    const now = new Date();
+    const date = now.toLocaleDateString("en-CA", { timeZone: "Asia/Colombo" });
+    const time = now.toLocaleTimeString("en-US", { timeZone: "Asia/Colombo", hour12: true });
+    const absQty = Math.abs(diff);
+
+    const { data: adjReceipt } = await db
+      .from("receipts")
+      .insert({
+        type: adjustType,
+        total_amount: absQty * product.avg_cost,
+        date,
+        time,
+        user_id: userId,
+        shop_id: shopId,
+        paid_amount: 0,
+        due_amount: 0,
+        note: "Manual stock adjustment via inventory edit",
+      })
+      .select()
+      .single();
+
+    if (adjReceipt) {
+      await db.from("receipt_items").insert({
+        receipt_id: adjReceipt.id,
+        item_name: trimmedNewName,
+        qty: absQty,
+        price: product.avg_cost,
+        total: absQty * product.avg_cost,
+        reason: "Manual adjustment",
+      });
+    }
+  }
 
   return jsonResponse({ success: true });
 }
 
-// Issue #2: New action to delete an item via edge function
+// Delete item with shop scoping and orphan receipt cleanup
 async function handleDeleteItem(db: any, body: RequestBody, shopId: string | null) {
   const { item_name } = body;
 
   if (!shopId) return jsonResponse({ error: "shop_id is required" }, 400);
   if (!item_name?.trim()) return jsonResponse({ error: "item_name is required" }, 400);
 
-  // Delete all receipt items with this name
-  const { error: itemsError } = await db
-    .from("receipt_items")
-    .delete()
-    .eq("item_name", item_name);
+  // Get shop receipt IDs to scope the delete
+  const { data: shopReceipts } = await db
+    .from("receipts")
+    .select("id")
+    .eq("shop_id", shopId);
+  const receiptIds = (shopReceipts || []).map((r: any) => r.id);
 
-  if (itemsError) throw new Error(`Failed to delete receipt items: ${itemsError.message}`);
+  // Delete receipt items only within this shop's receipts
+  if (receiptIds.length > 0) {
+    const { error: itemsError } = await db
+      .from("receipt_items")
+      .delete()
+      .eq("item_name", item_name)
+      .in("receipt_id", receiptIds);
+
+    if (itemsError) throw new Error(`Failed to delete receipt items: ${itemsError.message}`);
+
+    // Clean up orphan receipts (receipts that now have zero items)
+    for (const receiptId of receiptIds) {
+      const { count } = await db
+        .from("receipt_items")
+        .select("id", { count: "exact", head: true })
+        .eq("receipt_id", receiptId);
+
+      if (count === 0) {
+        await db.from("payments").delete().eq("receipt_id", receiptId);
+        await db.from("receipts").delete().eq("id", receiptId);
+      }
+    }
+  }
 
   // Delete the product
   const { error: productError } = await db
