@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { DropdownItemsList } from './DropdownItemsList';
 import { useItemDropdown } from '@/hooks/useItemDropdown';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useProducts } from '@/contexts/ProductsContext';
 
 interface ItemSearchDropdownProps {
   value: string;
