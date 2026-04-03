@@ -31,6 +31,11 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
           <ItemSearchDropdown
             value={row.itemName}
             onChange={(value) => onUpdateRow(row.id, 'itemName', value)}
+            onItemSelected={(name, avgCost) => {
+              if (isAdjustment) {
+                onUpdateRow(row.id, 'price', avgCost);
+              }
+            }}
             onKeyDown={(e) => onKeyDown(e, index, 'itemName')}
             inputRef={(ref) => {
               if (inputRefs.current) {
