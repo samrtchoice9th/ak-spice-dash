@@ -38,6 +38,10 @@ export const ItemSearch: React.FC<ItemSearchProps> = React.memo(({
       return;
     }
     debounceRef.current = setTimeout(() => {
+      if (justSelectedRef.current) {
+        justSelectedRef.current = false;
+        return;
+      }
       const q = value.toLowerCase();
       const results = products.filter(p => p.name.toLowerCase().includes(q)).slice(0, 10);
       setFiltered(results);
