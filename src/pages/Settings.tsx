@@ -489,17 +489,13 @@ const Settings = () => {
           </div>
 
           {/* Receipt Preview */}
-          <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+          <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border border-border">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Receipt Preview</h3>
-              <Button
-                onClick={() => setShowReceiptPreview(!showReceiptPreview)}
-                variant="outline"
-              >
+              <h3 className="text-lg font-semibold text-foreground">Receipt Preview</h3>
+              <Button onClick={() => setShowReceiptPreview(!showReceiptPreview)} variant="outline">
                 {showReceiptPreview ? 'Hide Preview' : 'Show Preview'}
               </Button>
             </div>
-            
             {showReceiptPreview && (
               <div className="mt-4">
                 <ReceiptPreview />
