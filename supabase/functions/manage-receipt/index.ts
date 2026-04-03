@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     } else if (action === "pay_due") {
       return await handlePayDue(supabaseAdmin, body, shopId);
     } else if (action === "rename_item") {
-      return await handleRenameItem(supabaseAdmin, body, shopId);
+      return await handleRenameItem(supabaseAdmin, body, shopId, userId);
     } else if (action === "delete_item") {
       return await handleDeleteItem(supabaseAdmin, body, shopId);
     } else {
