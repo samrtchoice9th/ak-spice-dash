@@ -32,6 +32,7 @@ interface ReceiptsContextType {
   addReceipt: (receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<Receipt>;
   updateReceipt: (id: string, receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<void>;
   deleteReceipt: (id: string) => Promise<void>;
+  payDue: (receiptId: string, amount: number, method: string, note?: string) => Promise<void>;
   refreshReceipts: () => Promise<void>;
 }
 
@@ -107,6 +108,16 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
     }
   };
 
+  const payDue = async (receiptId: string, amount: number, method: string, note?: string) => {
+    try {
+      await receiptService.payDue(receiptId, amount, method, note);
+      await refreshReceipts();
+    } catch (error) {
+      console.error('Failed to pay due:', error);
+      throw error;
+    }
+  };
+
   return (
     <ReceiptsContext.Provider value={{ 
       receipts, 
@@ -114,6 +125,7 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
       addReceipt, 
       updateReceipt, 
       deleteReceipt,
+      payDue,
       refreshReceipts 
     }}>
       {children}

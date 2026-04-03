@@ -121,5 +121,28 @@ export const receiptService = {
     if (data?.error) {
       throw new Error(data.error);
     }
+  },
+
+  async payDue(receiptId: string, amount: number, paymentMethod: string, note?: string): Promise<{ paid_amount: number; due_amount: number }> {
+    const { data, error } = await supabase.functions.invoke('manage-receipt', {
+      body: {
+        action: 'pay_due',
+        receipt_id: receiptId,
+        amount,
+        payment_method: paymentMethod,
+        note: note || null,
+      },
+    });
+
+    if (error) {
+      console.error('Error paying due:', error);
+      throw error;
+    }
+
+    if (data?.error) {
+      throw new Error(data.error);
+    }
+
+    return data as { paid_amount: number; due_amount: number };
   }
 };
