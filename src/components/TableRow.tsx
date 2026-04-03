@@ -202,6 +202,20 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
                   />
                 </div>
                 <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Cost (per Kg)</label>
+                  <input
+                    type="number"
+                    value={row.price === 0 ? '' : row.price}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      onUpdateRow(row.id, 'price', value === '' ? 0 : parseFloat(value) || 0);
+                    }}
+                    className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                    placeholder="Cost per Kg"
+                    step="0.01"
+                  />
+                </div>
+                <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">Reason</label>
                   <input
                     type="text"
@@ -210,6 +224,14 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
                     className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
                     placeholder="e.g., Damaged, Expired, Returned"
                   />
+                </div>
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Value:</span>
+                    <div className="px-3 py-2 bg-blue-100 rounded-md text-blue-800 font-bold text-lg">
+                      Rs{calculateRowTotal(row.qty, row.price).toFixed(2)}
+                    </div>
+                  </div>
                 </div>
               </>
             ) : (

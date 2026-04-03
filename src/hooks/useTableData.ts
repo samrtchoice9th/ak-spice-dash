@@ -132,8 +132,8 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
             qty: isAdjustment 
               ? (row.adjustmentType === 'reduce' ? Math.abs(row.qty) : row.qty)
               : row.qty,
-            price: isAdjustment ? 0 : row.price,
-            total: isAdjustment ? 0 : row.qty * row.price,
+            price: row.price,
+            total: row.qty * row.price,
             reason: isAdjustment ? row.reason : undefined
           },
           type: itemType
