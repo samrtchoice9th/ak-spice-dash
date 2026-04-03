@@ -152,7 +152,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
             await addReceipt({
               type: 'increase',
               items: increaseItems.map(i => i.item),
-              totalAmount: 0
+              totalAmount: increaseItems.reduce((sum, i) => sum + i.item.total, 0)
             });
           }
           
