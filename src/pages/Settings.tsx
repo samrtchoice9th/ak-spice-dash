@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useInventory } from '@/contexts/InventoryContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -33,6 +34,7 @@ declare global {
 const Settings = () => {
   const { products, updateProduct, deleteProduct, loading } = useProducts();
   const { inventory } = useInventory();
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   // Shop context removed - single shop mode
   const [editingProduct, setEditingProduct] = useState<any>(null);
@@ -268,17 +270,17 @@ const Settings = () => {
   );
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8">
-      <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-gray-800">Settings</h1>
+    <div className="flex-1 p-3 sm:p-6 lg:p-8">
+      <h1 className="text-lg sm:text-2xl font-bold text-center mb-4 sm:mb-8 text-foreground">Settings</h1>
       
       {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 max-w-lg mx-auto">
+      <div className="flex space-x-1 bg-muted p-1 rounded-lg mb-4 sm:mb-6 max-w-lg mx-auto">
         <button
           onClick={() => setActiveTab('items')}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'items'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-card text-primary shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <SettingsIcon className="inline w-4 h-4 mr-2" />
@@ -288,8 +290,8 @@ const Settings = () => {
           onClick={() => setActiveTab('printer')}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'printer'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-card text-primary shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Printer className="inline w-4 h-4 mr-2" />
@@ -299,78 +301,88 @@ const Settings = () => {
 
       {/* Items Management Tab */}
       {activeTab === 'items' && (
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200">
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Manage Items</h2>
+        <div className="bg-card rounded-lg shadow-lg border border-border">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border flex justify-between items-center">
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Manage Items</h2>
             <Button onClick={() => setShowAddDialog(true)} className="flex items-center space-x-2">
               <Plus size={16} />
-              <span>Add New Item</span>
+              <span className="hidden sm:inline">Add New Item</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
           
           {loading ? (
-            <div className="p-6 text-center">Loading items...</div>
+            <div className="p-6 text-center text-muted-foreground">Loading items...</div>
           ) : products.length === 0 ? (
             <div className="p-6 text-center">
-              <SettingsIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No items found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Start by adding your first item.
-              </p>
+              <SettingsIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium text-foreground">No items found</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Start by adding your first item.</p>
+            </div>
+          ) : isMobile ? (
+            /* Mobile Card View */
+            <div className="divide-y divide-border">
+              {products.map((product) => {
+                const inventoryItem = inventory.find(inv => inv.itemName === product.name);
+                const displayPrice = inventoryItem?.averagePurchasePrice || 0;
+                const displayStock = inventoryItem?.currentStock || 0;
+                return (
+                  <div key={product.id} className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-foreground">{product.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Button onClick={() => startEditing(product)} variant="outline" size="icon" className="h-10 w-10">
+                          <Edit2 size={18} />
+                        </Button>
+                        <Button onClick={() => setDeleteConfirmProduct(product)} variant="outline" size="icon" className="h-10 w-10 text-destructive hover:text-destructive">
+                          <Trash2 size={18} />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 text-sm text-muted-foreground">
+                      <span>Price: <strong className="text-foreground">Rs.{displayPrice.toFixed(2)}</strong></span>
+                      <span>Stock: <strong className="text-foreground">{displayStock.toFixed(2)} kg</strong></span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
+            /* Desktop Table View */
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Item Name
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price (Rs/Kg)
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Stock (Kg)
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                  <tr className="bg-muted/50 border-b border-border">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Item Name</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Price (Rs/Kg)</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Stock (Kg)</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-card divide-y divide-border">
                   {products.map((product) => {
-                    // Find matching inventory item for this product
                     const inventoryItem = inventory.find(inv => inv.itemName === product.name);
                     const displayPrice = inventoryItem?.averagePurchasePrice || 0;
                     const displayStock = inventoryItem?.currentStock || 0;
-                    
                     return (
-                      <tr key={product.id} className="hover:bg-gray-50">
+                      <tr key={product.id} className="hover:bg-muted/30">
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                          <div className="text-sm font-medium text-foreground">{product.name}</div>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">Rs.{displayPrice.toFixed(2)}</div>
+                          <div className="text-sm text-foreground">Rs.{displayPrice.toFixed(2)}</div>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{displayStock.toFixed(2)}</div>
+                          <div className="text-sm text-foreground">{displayStock.toFixed(2)}</div>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                           <div className="flex space-x-2">
-                            <button
-                              onClick={() => startEditing(product)}
-                              className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                              title="Edit item"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirmProduct(product)}
-                              className="p-1 text-red-600 hover:bg-red-100 rounded"
-                              title="Delete item"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <Button onClick={() => startEditing(product)} variant="outline" size="icon" className="h-10 w-10">
+                              <Edit2 size={18} />
+                            </Button>
+                            <Button onClick={() => setDeleteConfirmProduct(product)} variant="outline" size="icon" className="h-10 w-10 text-destructive hover:text-destructive">
+                              <Trash2 size={18} />
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -387,15 +399,15 @@ const Settings = () => {
       {activeTab === 'printer' && (
         <div className="space-y-6">
           {/* Connection Settings */}
-          <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Printer Connection</h3>
+           <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border border-border">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Printer Connection</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <button
                 onClick={() => setPrinterConnection('bluetooth')}
                 className={`flex items-center space-x-3 p-4 border rounded-lg transition-colors ${
                   printerConnection === 'bluetooth'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:border-gray-400'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:border-muted-foreground'
                 }`}
               >
                 <Bluetooth size={20} />
@@ -405,8 +417,8 @@ const Settings = () => {
                 onClick={() => setPrinterConnection('wifi')}
                 className={`flex items-center space-x-3 p-4 border rounded-lg transition-colors ${
                   printerConnection === 'wifi'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:border-gray-400'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:border-muted-foreground'
                 }`}
               >
                 <Wifi size={20} />
@@ -416,8 +428,8 @@ const Settings = () => {
                 onClick={() => setPrinterConnection('wired')}
                 className={`flex items-center space-x-3 p-4 border rounded-lg transition-colors ${
                   printerConnection === 'wired'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:border-gray-400'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border hover:border-muted-foreground'
                 }`}
               >
                 <Cable size={20} />
@@ -427,15 +439,10 @@ const Settings = () => {
 
             {/* Bluetooth Device Selection */}
             {printerConnection === 'bluetooth' && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="mt-6 pt-6 border-t border-border">
                 <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-md font-medium text-gray-900">Bluetooth Printer</h4>
-                  <Button
-                    onClick={() => setShowBluetoothDialog(true)}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-2"
-                  >
+                  <h4 className="text-md font-medium text-foreground">Bluetooth Printer</h4>
+                  <Button onClick={() => setShowBluetoothDialog(true)} variant="outline" size="sm" className="flex items-center space-x-2">
                     <Search size={16} />
                     <span>Find Printer</span>
                   </Button>
@@ -450,20 +457,15 @@ const Settings = () => {
                         <div className="text-sm text-green-700">Connected</div>
                       </div>
                     </div>
-                    <Button
-                      onClick={disconnectDevice}
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 border-red-300 hover:bg-red-50"
-                    >
+                    <Button onClick={disconnectDevice} variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
                       Disconnect
                     </Button>
                   </div>
                 ) : (
-                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                    <Bluetooth className="mx-auto text-gray-400 mb-2" size={24} />
-                    <div className="text-sm text-gray-600">No Bluetooth printer connected</div>
-                    <div className="text-xs text-gray-500 mt-1">Click "Find Printer" to search for devices</div>
+                  <div className="p-4 bg-muted border border-border rounded-lg text-center">
+                    <Bluetooth className="mx-auto text-muted-foreground mb-2" size={24} />
+                    <div className="text-sm text-muted-foreground">No Bluetooth printer connected</div>
+                    <div className="text-xs text-muted-foreground mt-1">Click "Find Printer" to search for devices</div>
                   </div>
                 )}
               </div>
@@ -471,18 +473,13 @@ const Settings = () => {
           </div>
 
           {/* Page Settings */}
-          <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Page Settings</h3>
+          <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border border-border">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Page Settings</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Paper Size
-                </label>
-                <select
-                  value={paperSize}
-                  onChange={(e) => setPaperSize(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
+                <label className="block text-sm font-medium text-muted-foreground mb-2">Paper Size</label>
+                <select value={paperSize} onChange={(e) => setPaperSize(e.target.value)}
+                  className="w-full px-3 py-3 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground">
                   <option value="3inch">3 inch (76mm) - Thermal</option>
                   <option value="2inch">2 inch (58mm) - Thermal</option>
                   <option value="a4">A4 - Standard</option>
@@ -492,17 +489,13 @@ const Settings = () => {
           </div>
 
           {/* Receipt Preview */}
-          <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+          <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border border-border">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Receipt Preview</h3>
-              <Button
-                onClick={() => setShowReceiptPreview(!showReceiptPreview)}
-                variant="outline"
-              >
+              <h3 className="text-lg font-semibold text-foreground">Receipt Preview</h3>
+              <Button onClick={() => setShowReceiptPreview(!showReceiptPreview)} variant="outline">
                 {showReceiptPreview ? 'Hide Preview' : 'Show Preview'}
               </Button>
             </div>
-            
             {showReceiptPreview && (
               <div className="mt-4">
                 <ReceiptPreview />
@@ -522,15 +515,11 @@ const Settings = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label htmlFor="editName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="editName" className="block text-sm font-medium text-muted-foreground mb-2">
                 Item Name *
               </label>
-              <input
-                id="editName"
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              <input id="editName" type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
+                className="w-full px-3 py-3 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                 placeholder="Enter item name"
               />
             </div>

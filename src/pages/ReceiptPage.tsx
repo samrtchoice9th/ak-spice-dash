@@ -43,18 +43,18 @@ const ReceiptPage = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 p-4 sm:p-6 lg:p-8">
+      <div className="flex-1 p-3 sm:p-6 lg:p-8">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading receipts...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading receipts...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8">
-      <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-gray-800">Receipt History</h1>
+    <div className="flex-1 p-3 sm:p-6 lg:p-8">
+      <h1 className="text-lg sm:text-2xl font-bold text-center mb-4 sm:mb-8 text-foreground">Receipt History</h1>
       
       <ReceiptSummaryCards receipts={receipts} />
       
