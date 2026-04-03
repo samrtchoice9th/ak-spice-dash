@@ -270,17 +270,17 @@ const Settings = () => {
   );
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8">
-      <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8 text-gray-800">Settings</h1>
+    <div className="flex-1 p-3 sm:p-6 lg:p-8">
+      <h1 className="text-lg sm:text-2xl font-bold text-center mb-4 sm:mb-8 text-foreground">Settings</h1>
       
       {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6 max-w-lg mx-auto">
+      <div className="flex space-x-1 bg-muted p-1 rounded-lg mb-4 sm:mb-6 max-w-lg mx-auto">
         <button
           onClick={() => setActiveTab('items')}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'items'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-card text-primary shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <SettingsIcon className="inline w-4 h-4 mr-2" />
@@ -290,8 +290,8 @@ const Settings = () => {
           onClick={() => setActiveTab('printer')}
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'printer'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-card text-primary shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Printer className="inline w-4 h-4 mr-2" />
@@ -301,78 +301,88 @@ const Settings = () => {
 
       {/* Items Management Tab */}
       {activeTab === 'items' && (
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200">
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Manage Items</h2>
+        <div className="bg-card rounded-lg shadow-lg border border-border">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border flex justify-between items-center">
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">Manage Items</h2>
             <Button onClick={() => setShowAddDialog(true)} className="flex items-center space-x-2">
               <Plus size={16} />
-              <span>Add New Item</span>
+              <span className="hidden sm:inline">Add New Item</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
           
           {loading ? (
-            <div className="p-6 text-center">Loading items...</div>
+            <div className="p-6 text-center text-muted-foreground">Loading items...</div>
           ) : products.length === 0 ? (
             <div className="p-6 text-center">
-              <SettingsIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No items found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Start by adding your first item.
-              </p>
+              <SettingsIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium text-foreground">No items found</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Start by adding your first item.</p>
+            </div>
+          ) : isMobile ? (
+            /* Mobile Card View */
+            <div className="divide-y divide-border">
+              {products.map((product) => {
+                const inventoryItem = inventory.find(inv => inv.itemName === product.name);
+                const displayPrice = inventoryItem?.averagePurchasePrice || 0;
+                const displayStock = inventoryItem?.currentStock || 0;
+                return (
+                  <div key={product.id} className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-foreground">{product.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Button onClick={() => startEditing(product)} variant="outline" size="icon" className="h-10 w-10">
+                          <Edit2 size={18} />
+                        </Button>
+                        <Button onClick={() => setDeleteConfirmProduct(product)} variant="outline" size="icon" className="h-10 w-10 text-destructive hover:text-destructive">
+                          <Trash2 size={18} />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 text-sm text-muted-foreground">
+                      <span>Price: <strong className="text-foreground">Rs.{displayPrice.toFixed(2)}</strong></span>
+                      <span>Stock: <strong className="text-foreground">{displayStock.toFixed(2)} kg</strong></span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
+            /* Desktop Table View */
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Item Name
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price (Rs/Kg)
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Stock (Kg)
-                    </th>
-                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                  <tr className="bg-muted/50 border-b border-border">
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Item Name</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Price (Rs/Kg)</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Stock (Kg)</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-card divide-y divide-border">
                   {products.map((product) => {
-                    // Find matching inventory item for this product
                     const inventoryItem = inventory.find(inv => inv.itemName === product.name);
                     const displayPrice = inventoryItem?.averagePurchasePrice || 0;
                     const displayStock = inventoryItem?.currentStock || 0;
-                    
                     return (
-                      <tr key={product.id} className="hover:bg-gray-50">
+                      <tr key={product.id} className="hover:bg-muted/30">
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                          <div className="text-sm font-medium text-foreground">{product.name}</div>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">Rs.{displayPrice.toFixed(2)}</div>
+                          <div className="text-sm text-foreground">Rs.{displayPrice.toFixed(2)}</div>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{displayStock.toFixed(2)}</div>
+                          <div className="text-sm text-foreground">{displayStock.toFixed(2)}</div>
                         </td>
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                           <div className="flex space-x-2">
-                            <button
-                              onClick={() => startEditing(product)}
-                              className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                              title="Edit item"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirmProduct(product)}
-                              className="p-1 text-red-600 hover:bg-red-100 rounded"
-                              title="Delete item"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <Button onClick={() => startEditing(product)} variant="outline" size="icon" className="h-10 w-10">
+                              <Edit2 size={18} />
+                            </Button>
+                            <Button onClick={() => setDeleteConfirmProduct(product)} variant="outline" size="icon" className="h-10 w-10 text-destructive hover:text-destructive">
+                              <Trash2 size={18} />
+                            </Button>
                           </div>
                         </td>
                       </tr>
