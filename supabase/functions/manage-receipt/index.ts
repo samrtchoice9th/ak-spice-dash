@@ -85,6 +85,8 @@ Deno.serve(async (req) => {
       return await handleUpdate(supabaseAdmin, body, shopId);
     } else if (action === "delete") {
       return await handleDelete(supabaseAdmin, body);
+    } else if (action === "pay_due") {
+      return await handlePayDue(supabaseAdmin, body, shopId);
     } else {
       return jsonResponse({ error: "Invalid action" }, 400);
     }
