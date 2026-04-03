@@ -17,6 +17,7 @@ interface ItemSearchDropdownProps {
 export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
   value,
   onChange,
+  onItemSelected,
   placeholder = "Search item name",
   onKeyDown,
   inputRef
