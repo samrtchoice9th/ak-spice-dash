@@ -433,3 +433,65 @@ async function handleDelete(db: any, body: RequestBody) {
 
   return jsonResponse({ success: true });
 }
+
+async function handlePayDue(db: any, body: RequestBody, shopId: string | null) {
+  const { receipt_id, amount, payment_method, note } = body;
+
+  if (!receipt_id) return jsonResponse({ error: "receipt_id is required" }, 400);
+  if (!shopId) return jsonResponse({ error: "shop_id is required" }, 400);
+  if (!amount || amount <= 0) return jsonResponse({ error: "Amount must be greater than 0" }, 400);
+
+  const validMethods = ["cash", "bank", "other"];
+  const method = payment_method && validMethods.includes(payment_method) ? payment_method : "cash";
+
+  // Fetch receipt
+  const { data: receipt, error: fetchError } = await db
+    .from("receipts")
+    .select("id, due_amount, paid_amount, total_amount, customer_id, supplier_id, type")
+    .eq("id", receipt_id)
+    .single();
+
+  if (fetchError || !receipt) return jsonResponse({ error: "Receipt not found" }, 404);
+
+  const currentDue = Number(receipt.due_amount);
+  if (amount > currentDue) {
+    return jsonResponse({ error: `Payment amount (${amount}) exceeds due amount (${currentDue})` }, 400);
+  }
+
+  const paymentType = receipt.type === "purchase" || receipt.type === "increase" ? "out" : "in";
+
+  // Insert payment record
+  const { error: payError } = await db.from("payments").insert({
+    receipt_id,
+    customer_id: receipt.customer_id || null,
+    supplier_id: receipt.supplier_id || null,
+    amount,
+    payment_type: paymentType,
+    payment_method: method,
+    note: note || null,
+    shop_id: shopId,
+  });
+
+  if (payError) throw new Error(`Failed to record payment: ${payError.message}`);
+
+  // Update receipt
+  const newPaid = Number(receipt.paid_amount) + amount;
+  const newDue = currentDue - amount;
+
+  const { error: updateError } = await db
+    .from("receipts")
+    .update({
+      paid_amount: newPaid,
+      due_amount: newDue,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", receipt_id);
+
+  if (updateError) throw new Error(`Failed to update receipt: ${updateError.message}`);
+
+  return jsonResponse({
+    success: true,
+    paid_amount: newPaid,
+    due_amount: newDue,
+  });
+}
