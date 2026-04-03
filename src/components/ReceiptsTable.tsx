@@ -3,6 +3,7 @@ import { Receipt, Edit, Printer, Smartphone, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Receipt as ReceiptType } from '@/contexts/ReceiptsContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,8 +23,21 @@ interface ReceiptsTableProps {
   onDelete?: (id: string) => void;
 }
 
+const getTypeBadge = (type: string) => {
+  const map: Record<string, { bg: string; label: string }> = {
+    sales: { bg: 'bg-green-100 text-green-800', label: 'Sales' },
+    purchase: { bg: 'bg-blue-100 text-blue-800', label: 'Purchase' },
+    increase: { bg: 'bg-teal-100 text-teal-800', label: 'Stock In' },
+    reduce: { bg: 'bg-orange-100 text-orange-800', label: 'Stock Out' },
+    adjustment: { bg: 'bg-purple-100 text-purple-800', label: 'Adjustment' },
+  };
+  const info = map[type] || { bg: 'bg-muted text-muted-foreground', label: type };
+  return <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${info.bg}`}>{info.label}</span>;
+};
+
 export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, onPrint, onRawBTPrint, onDelete }) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   const handleConfirmDelete = () => {
     if (deleteId && onDelete) {
@@ -55,14 +69,14 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
     return (
       <>
         {deleteDialog}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900">All Receipts</h2>
+        <div className="bg-card rounded-lg shadow-lg overflow-hidden border border-border">
+          <div className="px-4 sm:px-6 py-4 border-b border-border">
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">All Receipts</h2>
           </div>
           <div className="p-6 sm:p-8 text-center">
-            <Receipt className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No receipts found</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <Receipt className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-2 text-sm font-medium text-foreground">No receipts found</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
               Start by creating sales or purchase entries to generate receipts.
             </p>
           </div>
@@ -71,69 +85,109 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
     );
   }
 
+  // Mobile card view
+  if (isMobile) {
+    return (
+      <>
+        {deleteDialog}
+        <div className="bg-card rounded-lg shadow-lg overflow-hidden border border-border">
+          <div className="px-4 py-3 border-b border-border">
+            <h2 className="text-base font-semibold text-foreground">All Receipts</h2>
+          </div>
+          <ScrollArea className="h-[600px]">
+            <div className="divide-y divide-border">
+              {receipts.map((receipt) => (
+                <div key={receipt.id} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    {getTypeBadge(receipt.type)}
+                    <span className="text-sm font-bold text-foreground">Rs.{receipt.totalAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>{receipt.date}</span>
+                    <span>{receipt.time}</span>
+                  </div>
+                  {receipt.due_amount > 0 && (
+                    <div className="text-xs text-destructive font-medium">
+                      Due: Rs.{receipt.due_amount.toFixed(2)}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button onClick={() => onEdit(receipt)} variant="outline" size="icon" className="h-10 w-10">
+                      <Edit size={18} />
+                    </Button>
+                    <Button onClick={() => onPrint(receipt)} variant="outline" size="icon" className="h-10 w-10">
+                      <Printer size={18} />
+                    </Button>
+                    {onRawBTPrint && (
+                      <Button onClick={() => onRawBTPrint(receipt)} variant="outline" size="icon" className="h-10 w-10">
+                        <Smartphone size={18} />
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button onClick={() => setDeleteId(receipt.id)} variant="outline" size="icon" className="h-10 w-10 text-destructive hover:text-destructive">
+                        <Trash2 size={18} />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      </>
+    );
+  }
+
+  // Desktop table view
   return (
     <>
       {deleteDialog}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">All Receipts</h2>
+      <div className="bg-card rounded-lg shadow-lg overflow-hidden border border-border">
+        <div className="px-4 sm:px-6 py-4 border-b border-border">
+          <h2 className="text-base sm:text-lg font-semibold text-foreground">All Receipts</h2>
         </div>
         
         <ScrollArea className="h-[600px]">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Time</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <tr className="bg-muted/50 border-b border-border">
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Time</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Amount</th>
+                  <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-border">
                 {receipts.map((receipt) => (
-                  <tr key={receipt.id} className="hover:bg-gray-50">
+                  <tr key={receipt.id} className="hover:bg-muted/30">
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        receipt.type === 'sales' ? 'bg-green-100 text-green-800' 
-                        : receipt.type === 'purchase' ? 'bg-blue-100 text-blue-800'
-                        : receipt.type === 'increase' ? 'bg-teal-100 text-teal-800'
-                        : receipt.type === 'reduce' ? 'bg-orange-100 text-orange-800'
-                        : receipt.type === 'adjustment' ? 'bg-purple-100 text-purple-800'
-                        : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {receipt.type === 'sales' ? 'Sales' 
-                        : receipt.type === 'purchase' ? 'Purchase'
-                        : receipt.type === 'increase' ? 'Stock In'
-                        : receipt.type === 'reduce' ? 'Stock Out'
-                        : receipt.type === 'adjustment' ? 'Adjustment'
-                        : receipt.type}
-                      </span>
+                      {getTypeBadge(receipt.type)}
                     </td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">{receipt.date}</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell text-sm text-gray-900">{receipt.time}</td>
-                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Rs.{receipt.totalAmount.toFixed(2)}</td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-foreground">{receipt.date}</td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-foreground">{receipt.time}</td>
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">Rs.{receipt.totalAmount.toFixed(2)}</td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       <div className="flex space-x-2">
                         <Button onClick={() => onEdit(receipt)} variant="outline" size="sm" className="flex items-center space-x-1">
                           <Edit size={16} />
-                          <span className="hidden sm:inline">Edit</span>
+                          <span>Edit</span>
                         </Button>
                         <Button onClick={() => onPrint(receipt)} variant="outline" size="sm" className="flex items-center space-x-1">
                           <Printer size={16} />
-                          <span className="hidden sm:inline">Print</span>
+                          <span>Print</span>
                         </Button>
                         {onRawBTPrint && (
                           <Button onClick={() => onRawBTPrint(receipt)} variant="outline" size="sm" className="flex items-center space-x-1">
                             <Smartphone size={16} />
-                            <span className="hidden sm:inline">RawBT</span>
+                            <span>RawBT</span>
                           </Button>
                         )}
                         {onDelete && (
                           <Button onClick={() => setDeleteId(receipt.id)} variant="outline" size="sm" className="flex items-center space-x-1 text-destructive hover:text-destructive">
                             <Trash2 size={16} />
-                            <span className="hidden sm:inline">Delete</span>
+                            <span>Delete</span>
                           </Button>
                         )}
                       </div>

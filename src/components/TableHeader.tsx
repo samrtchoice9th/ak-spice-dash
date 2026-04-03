@@ -10,39 +10,39 @@ export const TableHeader: React.FC<TableHeaderProps> = ({ type = 'sales' }) => {
 
   return (
     <thead className="hidden md:table-header-group">
-      <tr className="bg-gray-50 border-b-2 border-gray-200">
-        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+      <tr className="bg-muted/50 border-b-2 border-border">
+        <th className="px-6 py-4 text-left text-sm font-semibold text-foreground border-r border-border">
           Item Name
         </th>
         {isAdjustment && (
-          <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">
+          <th className="px-6 py-4 text-center text-sm font-semibold text-foreground border-r border-border">
             Action
           </th>
         )}
-        <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+        <th className="px-6 py-4 text-left text-sm font-semibold text-foreground border-r border-border">
           Qty (Kg)
         </th>
         {isAdjustment && (
-          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+          <th className="px-6 py-4 text-left text-sm font-semibold text-foreground border-r border-border">
             Cost (per Kg)
           </th>
         )}
         {isAdjustment && (
-          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+          <th className="px-6 py-4 text-left text-sm font-semibold text-foreground border-r border-border">
             Reason
           </th>
         )}
         {isAdjustment && (
-          <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+          <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
             Value
           </th>
         )}
         {!isAdjustment && (
           <>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 border-r border-gray-200">
+            <th className="px-6 py-4 text-left text-sm font-semibold text-foreground border-r border-border">
               Price
             </th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+            <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
               Total
             </th>
           </>
