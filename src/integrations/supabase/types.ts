@@ -52,6 +52,53 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string | null
+          id: string
+          note: string | null
+          payment_method: string
+          payment_type: string
+          receipt_id: string
+          shop_id: string
+          supplier_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          note?: string | null
+          payment_method?: string
+          payment_type: string
+          receipt_id: string
+          shop_id: string
+          supplier_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          note?: string | null
+          payment_method?: string
+          payment_type?: string
+          receipt_id?: string
+          shop_id?: string
+          supplier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           avg_cost: number
