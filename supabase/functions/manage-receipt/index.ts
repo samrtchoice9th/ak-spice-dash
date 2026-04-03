@@ -22,7 +22,7 @@ interface ReceiptItem {
 }
 
 interface RequestBody {
-  action: "create" | "update" | "delete";
+  action: "create" | "update" | "delete" | "pay_due";
   receipt_id?: string;
   type?: "purchase" | "sales" | "adjustment" | "increase" | "reduce";
   items?: ReceiptItem[];
@@ -32,6 +32,9 @@ interface RequestBody {
   paid_amount?: number;
   due_amount?: number;
   due_date?: string | null;
+  amount?: number;
+  payment_method?: string;
+  note?: string;
 }
 
 Deno.serve(async (req) => {
