@@ -8,6 +8,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 interface ItemSearchDropdownProps {
   value: string;
   onChange: (value: string) => void;
+  onItemSelected?: (name: string, avgCost: number) => void;
   placeholder?: string;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   inputRef?: (ref: HTMLInputElement | null) => void;
