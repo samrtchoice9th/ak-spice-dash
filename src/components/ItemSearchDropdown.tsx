@@ -45,17 +45,32 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
     }
   }, [inputRef]);
 
+  const { products } = useProducts();
+
+  const notifyItemSelected = (itemName: string) => {
+    if (onItemSelected) {
+      const product = products.find(p => p.name === itemName);
+      if (product) {
+        onItemSelected(itemName, product.avg_cost || 0);
+      }
+    }
+  };
+
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
     const selectedItem = handleKeyNavigation(e);
     if (selectedItem) {
-      onChange(handleItemSelect(selectedItem));
+      const name = handleItemSelect(selectedItem);
+      onChange(name);
+      notifyItemSelected(name);
     } else {
       onKeyDown?.(e);
     }
   };
 
   const onItemSelect = (item: string) => {
-    onChange(handleItemSelect(item));
+    const name = handleItemSelect(item);
+    onChange(name);
+    notifyItemSelected(name);
   };
 
   return (
