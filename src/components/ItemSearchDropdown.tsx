@@ -4,10 +4,12 @@ import { ChevronDown } from 'lucide-react';
 import { DropdownItemsList } from './DropdownItemsList';
 import { useItemDropdown } from '@/hooks/useItemDropdown';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useProducts } from '@/contexts/ProductsContext';
 
 interface ItemSearchDropdownProps {
   value: string;
   onChange: (value: string) => void;
+  onItemSelected?: (name: string, avgCost: number) => void;
   placeholder?: string;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   inputRef?: (ref: HTMLInputElement | null) => void;
@@ -16,6 +18,7 @@ interface ItemSearchDropdownProps {
 export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
   value,
   onChange,
+  onItemSelected,
   placeholder = "Search item name",
   onKeyDown,
   inputRef
@@ -42,17 +45,32 @@ export const ItemSearchDropdown: React.FC<ItemSearchDropdownProps> = ({
     }
   }, [inputRef]);
 
+  const { products } = useProducts();
+
+  const notifyItemSelected = (itemName: string) => {
+    if (onItemSelected) {
+      const product = products.find(p => p.name === itemName);
+      if (product) {
+        onItemSelected(itemName, product.avg_cost || 0);
+      }
+    }
+  };
+
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
     const selectedItem = handleKeyNavigation(e);
     if (selectedItem) {
-      onChange(handleItemSelect(selectedItem));
+      const name = handleItemSelect(selectedItem);
+      onChange(name);
+      notifyItemSelected(name);
     } else {
       onKeyDown?.(e);
     }
   };
 
   const onItemSelect = (item: string) => {
-    onChange(handleItemSelect(item));
+    const name = handleItemSelect(item);
+    onChange(name);
+    notifyItemSelected(name);
   };
 
   return (

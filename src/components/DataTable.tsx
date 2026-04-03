@@ -80,7 +80,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             />
           ))}
         </tbody>
-        {!isAdjustment && <TableFooter totalAmount={totalAmount} totalQuantity={totalQuantity} distinctItems={distinctItems} />}
+        <TableFooter totalAmount={totalAmount} totalQuantity={totalQuantity} distinctItems={distinctItems} />
       </DataTableContainer>
 
       <ActionButtons
