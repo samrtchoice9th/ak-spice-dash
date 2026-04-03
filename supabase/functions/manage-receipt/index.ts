@@ -22,7 +22,7 @@ interface ReceiptItem {
 }
 
 interface RequestBody {
-  action: "create" | "update" | "delete" | "pay_due";
+  action: "create" | "update" | "delete" | "pay_due" | "rename_item" | "delete_item";
   receipt_id?: string;
   type?: "purchase" | "sales" | "adjustment" | "increase" | "reduce";
   items?: ReceiptItem[];
@@ -35,6 +35,10 @@ interface RequestBody {
   amount?: number;
   payment_method?: string;
   note?: string;
+  old_name?: string;
+  new_name?: string;
+  new_stock?: number;
+  item_name?: string;
 }
 
 Deno.serve(async (req) => {
@@ -72,6 +76,7 @@ Deno.serve(async (req) => {
       .from("shop_members")
       .select("shop_id")
       .eq("user_id", userId)
+      .order("created_at", { ascending: true })
       .limit(1)
       .single();
     const shopId = membership?.shop_id || null;
@@ -82,11 +87,15 @@ Deno.serve(async (req) => {
     if (action === "create") {
       return await handleCreate(supabaseAdmin, body, userId, shopId);
     } else if (action === "update") {
-      return await handleUpdate(supabaseAdmin, body, shopId);
+      return await handleUpdate(supabaseAdmin, body, shopId, userId);
     } else if (action === "delete") {
-      return await handleDelete(supabaseAdmin, body);
+      return await handleDelete(supabaseAdmin, body, shopId);
     } else if (action === "pay_due") {
       return await handlePayDue(supabaseAdmin, body, shopId);
+    } else if (action === "rename_item") {
+      return await handleRenameItem(supabaseAdmin, body, shopId);
+    } else if (action === "delete_item") {
+      return await handleDeleteItem(supabaseAdmin, body, shopId);
     } else {
       return jsonResponse({ error: "Invalid action" }, 400);
     }
@@ -245,6 +254,33 @@ async function handleCreate(
     if (item.price <= 0) return jsonResponse({ error: `Price must be > 0 for ${item.itemName}` }, 400);
   }
 
+  // Issue #4: Validate paid_amount <= totalAmount server-side
+  const effectivePaid = paid_amount || 0;
+  if (totalAmount !== undefined && effectivePaid > totalAmount) {
+    return jsonResponse({ error: `Paid amount (${effectivePaid}) cannot exceed total (${totalAmount})` }, 400);
+  }
+
+  // Issue #1: Pre-validate stock for sales before any mutations
+  if (isSalesType(type)) {
+    // Aggregate quantities per item in case same item appears multiple times
+    const qtyByItem = new Map<string, number>();
+    for (const item of items) {
+      qtyByItem.set(item.itemName, (qtyByItem.get(item.itemName) || 0) + item.qty);
+    }
+    for (const [itemName, totalQty] of qtyByItem) {
+      const { data: product } = await db
+        .from("products")
+        .select("current_stock")
+        .eq("name", itemName)
+        .eq("shop_id", shopId)
+        .maybeSingle();
+      const available = product?.current_stock ?? 0;
+      if (available < totalQty) {
+        return jsonResponse({ error: `Insufficient stock for ${itemName}. Available: ${available}, Requested: ${totalQty}` }, 400);
+      }
+    }
+  }
+
   const now = new Date();
   const date = now.toLocaleDateString("en-CA", { timeZone: "Asia/Colombo" });
   const time = now.toLocaleTimeString("en-US", { timeZone: "Asia/Colombo", hour12: true });
@@ -261,7 +297,7 @@ async function handleCreate(
       shop_id: shopId,
       customer_id: customer_id || null,
       supplier_id: supplier_id || null,
-      paid_amount: paid_amount || 0,
+      paid_amount: effectivePaid,
       due_amount: due_amount || 0,
       due_date: due_date || null,
     })
@@ -292,8 +328,15 @@ async function handleCreate(
   }
 
   // 3. Apply stock effects
-  for (const item of items) {
-    await applyStockEffect(db, type!, item, shopId, userId);
+  try {
+    for (const item of items) {
+      await applyStockEffect(db, type!, item, shopId, userId);
+    }
+  } catch (stockError) {
+    // Rollback: delete items and receipt
+    await db.from("receipt_items").delete().eq("receipt_id", receipt.id);
+    await db.from("receipts").delete().eq("id", receipt.id);
+    throw stockError;
   }
 
   // Build response
@@ -321,10 +364,11 @@ async function handleCreate(
   return jsonResponse(result);
 }
 
-async function handleUpdate(db: any, body: RequestBody, shopId: string | null) {
+async function handleUpdate(db: any, body: RequestBody, shopId: string | null, userId?: string) {
   const { receipt_id, type, items, totalAmount } = body;
 
   if (!receipt_id) return jsonResponse({ error: "receipt_id is required" }, 400);
+  if (!shopId) return jsonResponse({ error: "shop_id is required" }, 400);
   if (!type || !items || items.length === 0) {
     return jsonResponse({ error: "type and items are required" }, 400);
   }
@@ -338,6 +382,11 @@ async function handleUpdate(db: any, body: RequestBody, shopId: string | null) {
 
   if (fetchError || !oldReceipt) {
     return jsonResponse({ error: "Receipt not found" }, 404);
+  }
+
+  // Issue #3: Authorization check — verify receipt belongs to user's shop
+  if (oldReceipt.shop_id !== shopId) {
+    return jsonResponse({ error: "Unauthorized: receipt does not belong to your shop" }, 403);
   }
 
   const oldItems: ReceiptItem[] = oldReceipt.receipt_items.map((ri: any) => ({
@@ -383,18 +432,18 @@ async function handleUpdate(db: any, body: RequestBody, shopId: string | null) {
   if (newItemsError) throw new Error(`Failed to insert new items: ${newItemsError.message}`);
 
   // 5. Apply new stock effects
-  // Get userId from old receipt for product creation
-  const userId = oldReceipt.user_id;
+  const effectiveUserId = userId || oldReceipt.user_id;
   for (const item of items) {
-    await applyStockEffect(db, type!, item, shopId, userId);
+    await applyStockEffect(db, type!, item, shopId, effectiveUserId);
   }
 
   return jsonResponse({ success: true });
 }
 
-async function handleDelete(db: any, body: RequestBody) {
+async function handleDelete(db: any, body: RequestBody, userShopId: string | null) {
   const { receipt_id } = body;
   if (!receipt_id) return jsonResponse({ error: "receipt_id is required" }, 400);
+  if (!userShopId) return jsonResponse({ error: "shop_id is required" }, 400);
 
   // 1. Fetch receipt + items
   const { data: receipt, error: fetchError } = await db
@@ -407,8 +456,12 @@ async function handleDelete(db: any, body: RequestBody) {
     return jsonResponse({ error: "Receipt not found" }, 404);
   }
 
+  // Issue #3: Authorization check
   const shopId = receipt.shop_id;
   if (!shopId) return jsonResponse({ error: "Receipt has no shop_id" }, 400);
+  if (shopId !== userShopId) {
+    return jsonResponse({ error: "Unauthorized: receipt does not belong to your shop" }, 403);
+  }
 
   const oldItems: ReceiptItem[] = receipt.receipt_items.map((ri: any) => ({
     itemName: ri.item_name,
@@ -447,11 +500,16 @@ async function handlePayDue(db: any, body: RequestBody, shopId: string | null) {
   // Fetch receipt
   const { data: receipt, error: fetchError } = await db
     .from("receipts")
-    .select("id, due_amount, paid_amount, total_amount, customer_id, supplier_id, type")
+    .select("id, due_amount, paid_amount, total_amount, customer_id, supplier_id, type, shop_id")
     .eq("id", receipt_id)
     .single();
 
   if (fetchError || !receipt) return jsonResponse({ error: "Receipt not found" }, 404);
+
+  // Authorization check
+  if (receipt.shop_id !== shopId) {
+    return jsonResponse({ error: "Unauthorized: receipt does not belong to your shop" }, 403);
+  }
 
   const currentDue = Number(receipt.due_amount);
   if (amount > currentDue) {
@@ -494,4 +552,76 @@ async function handlePayDue(db: any, body: RequestBody, shopId: string | null) {
     paid_amount: newPaid,
     due_amount: newDue,
   });
+}
+
+// Issue #2: New action to rename items atomically via edge function
+async function handleRenameItem(db: any, body: RequestBody, shopId: string | null) {
+  const { old_name, new_name, new_stock } = body;
+
+  if (!shopId) return jsonResponse({ error: "shop_id is required" }, 400);
+  if (!old_name?.trim()) return jsonResponse({ error: "old_name is required" }, 400);
+  if (!new_name?.trim()) return jsonResponse({ error: "new_name is required" }, 400);
+
+  // Find the product
+  const { data: product, error: findError } = await db
+    .from("products")
+    .select("id")
+    .eq("name", old_name)
+    .eq("shop_id", shopId)
+    .maybeSingle();
+
+  if (findError || !product) return jsonResponse({ error: "Product not found" }, 404);
+
+  // Update product name and optionally stock
+  const updateData: any = {
+    name: new_name.trim(),
+    updated_at: new Date().toISOString(),
+  };
+  if (new_stock !== undefined && new_stock !== null) {
+    updateData.current_stock = new_stock;
+  }
+
+  const { error: updateError } = await db
+    .from("products")
+    .update(updateData)
+    .eq("id", product.id);
+
+  if (updateError) throw new Error(`Failed to update product: ${updateError.message}`);
+
+  // Update all receipt items with old name to new name
+  const { error: itemsError } = await db
+    .from("receipt_items")
+    .update({ item_name: new_name.trim() })
+    .eq("item_name", old_name);
+
+  if (itemsError) throw new Error(`Failed to update receipt items: ${itemsError.message}`);
+
+  return jsonResponse({ success: true });
+}
+
+// Issue #2: New action to delete an item via edge function
+async function handleDeleteItem(db: any, body: RequestBody, shopId: string | null) {
+  const { item_name } = body;
+
+  if (!shopId) return jsonResponse({ error: "shop_id is required" }, 400);
+  if (!item_name?.trim()) return jsonResponse({ error: "item_name is required" }, 400);
+
+  // Delete all receipt items with this name
+  const { error: itemsError } = await db
+    .from("receipt_items")
+    .delete()
+    .eq("item_name", item_name);
+
+  if (itemsError) throw new Error(`Failed to delete receipt items: ${itemsError.message}`);
+
+  // Delete the product
+  const { error: productError } = await db
+    .from("products")
+    .delete()
+    .eq("name", item_name)
+    .eq("shop_id", shopId);
+
+  if (productError) throw new Error(`Failed to delete product: ${productError.message}`);
+
+  return jsonResponse({ success: true });
 }

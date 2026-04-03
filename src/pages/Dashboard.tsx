@@ -9,13 +9,21 @@ const Dashboard = () => {
   const { receipts, loading: receiptsLoading } = useReceipts();
   const { inventory } = useInventory();
 
-  const salesReceipts = receipts.filter(r => r.type === 'sales');
-  const purchaseReceipts = receipts.filter(r => r.type === 'purchase');
-  
-  const totalSales = salesReceipts.reduce((sum, receipt) => sum + receipt.totalAmount, 0);
-  const totalPurchases = purchaseReceipts.reduce((sum, receipt) => sum + receipt.totalAmount, 0);
-  const totalInventoryItems = inventory.length;
-  const totalReceipts = receipts.length;
+  // Issue #15: Memoize dashboard stats
+  const { totalSales, totalPurchases, totalInventoryItems, totalReceipts } = useMemo(() => {
+    let sales = 0;
+    let purchases = 0;
+    for (const r of receipts) {
+      if (r.type === 'sales') sales += r.totalAmount;
+      else if (r.type === 'purchase') purchases += r.totalAmount;
+    }
+    return {
+      totalSales: sales,
+      totalPurchases: purchases,
+      totalInventoryItems: inventory.length,
+      totalReceipts: receipts.length,
+    };
+  }, [receipts, inventory.length]);
 
   const overdueInfo = useMemo(() => {
     const now = new Date();

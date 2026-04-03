@@ -36,8 +36,46 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
   const { receipts } = useReceipts();
   const { products } = useProducts();
 
-  const calculateInventory = (): InventoryItem[] => {
-    // Build a map from product name -> avg_cost from products table
+
+import React, { createContext, useContext, ReactNode, useMemo } from 'react';
+import { useReceipts } from './ReceiptsContext';
+import { useProducts } from './ProductsContext';
+
+export interface InventoryItem {
+  itemName: string;
+  totalPurchased: number;
+  totalSold: number;
+  currentStock: number;
+  averagePurchasePrice: number;
+  totalPurchaseValue: number;
+  totalSalesValue: number;
+}
+
+interface InventoryContextType {
+  inventory: InventoryItem[];
+  getItemStock: (itemName: string) => number;
+}
+
+const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
+
+export const useInventory = () => {
+  const context = useContext(InventoryContext);
+  if (!context) {
+    throw new Error('useInventory must be used within an InventoryProvider');
+  }
+  return context;
+};
+
+interface InventoryProviderProps {
+  children: ReactNode;
+}
+
+export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }) => {
+  const { receipts } = useReceipts();
+  const { products } = useProducts();
+
+  // Issue #9: Memoize inventory calculation
+  const inventory = useMemo(() => {
     const productAvgCostMap = new Map<string, number>();
     const productStockMap = new Map<string, number>();
     for (const p of products) {
@@ -71,7 +109,6 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
       });
     });
 
-    // Use products table for stock and avg_cost (source of truth)
     for (const [name, item] of itemMap) {
       item.currentStock = productStockMap.get(name) ?? (item.totalPurchased - item.totalSold);
       item.averagePurchasePrice = productAvgCostMap.get(name) ?? 
@@ -79,9 +116,7 @@ export const InventoryProvider: React.FC<InventoryProviderProps> = ({ children }
     }
 
     return Array.from(itemMap.values()).sort((a, b) => a.itemName.localeCompare(b.itemName));
-  };
-
-  const inventory = calculateInventory();
+  }, [receipts, products]);
 
   const getItemStock = (itemName: string): number => {
     const item = inventory.find(inv => inv.itemName === itemName);
