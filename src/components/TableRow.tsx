@@ -84,12 +84,34 @@ export const TableRowComponent: React.FC<TableRowProps> = ({
         {isAdjustment && (
           <td className="px-6 py-4 border-r border-gray-200">
             <input
+              type="number"
+              value={row.price === 0 ? '' : row.price}
+              onChange={(e) => {
+                const value = e.target.value;
+                onUpdateRow(row.id, 'price', value === '' ? 0 : parseFloat(value) || 0);
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Cost per Kg"
+              step="0.01"
+            />
+          </td>
+        )}
+        {isAdjustment && (
+          <td className="px-6 py-4 border-r border-gray-200">
+            <input
               type="text"
               value={row.reason || ''}
               onChange={(e) => onUpdateRow(row.id, 'reason', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g., Damaged, Expired, Returned"
             />
+          </td>
+        )}
+        {isAdjustment && (
+          <td className="px-6 py-4">
+            <div className="px-3 py-2 bg-gray-100 rounded-md text-gray-700 font-medium">
+              Rs{calculateRowTotal(row.qty, row.price).toFixed(2)}
+            </div>
           </td>
         )}
         {!isAdjustment && (
