@@ -96,9 +96,19 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
                   <tr key={receipt.id} className="hover:bg-gray-50">
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        receipt.type === 'sales' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                        receipt.type === 'sales' ? 'bg-green-100 text-green-800' 
+                        : receipt.type === 'purchase' ? 'bg-blue-100 text-blue-800'
+                        : receipt.type === 'increase' ? 'bg-teal-100 text-teal-800'
+                        : receipt.type === 'reduce' ? 'bg-orange-100 text-orange-800'
+                        : receipt.type === 'adjustment' ? 'bg-purple-100 text-purple-800'
+                        : 'bg-gray-100 text-gray-800'
                       }`}>
-                        {receipt.type === 'sales' ? 'Sales' : 'Purchase'}
+                        {receipt.type === 'sales' ? 'Sales' 
+                        : receipt.type === 'purchase' ? 'Purchase'
+                        : receipt.type === 'increase' ? 'Stock In'
+                        : receipt.type === 'reduce' ? 'Stock Out'
+                        : receipt.type === 'adjustment' ? 'Adjustment'
+                        : receipt.type}
                       </span>
                     </td>
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">{receipt.date}</td>

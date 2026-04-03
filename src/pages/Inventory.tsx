@@ -12,13 +12,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Inventory = () => {
   const { inventory } = useInventory();
-  const { products, updateProduct, deleteProduct } = useProducts();
+  const { products, refreshProducts } = useProducts();
   const { refreshReceipts } = useReceipts();
   const { toast } = useToast();
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editStock, setEditStock] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const totalInventoryValue = inventory.reduce((sum, item) => 
     sum + (item.currentStock * item.averagePurchasePrice), 0
@@ -36,40 +37,70 @@ const Inventory = () => {
   const handleEditItem = async () => {
     if (editingItem && editName.trim()) {
       try {
-        const productToUpdate = products.find(p => p.name === editingItem);
-        if (productToUpdate) {
-          // Update product name and stock
-          await updateProduct(productToUpdate.id, {
-            name: editName.trim(),
-            current_stock: parseFloat(editStock) || 0
-          });
+        setIsLoading(true);
+        // Use edge function for atomic rename
+        const { data, error } = await supabase.functions.invoke('manage-receipt', {
+          body: {
+            action: 'rename_item',
+            old_name: editingItem,
+            new_name: editName.trim(),
+            new_stock: parseFloat(editStock) || 0,
+          },
+        });
 
-          // Update all receipt items with the old name to the new name
-          const { error: updateError } = await supabase
-            .from('receipt_items')
-            .update({ item_name: editName.trim() })
-            .eq('item_name', editingItem);
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
 
-          if (updateError) throw updateError;
+        await Promise.all([refreshProducts(), refreshReceipts()]);
 
-          // Refresh receipts to update inventory
-          await refreshReceipts();
-
-          toast({
-            title: "Success",
-            description: "Item updated successfully",
-          });
-        }
+        toast({
+          title: "Success",
+          description: "Item updated successfully",
+        });
         setEditingItem(null);
         setEditName('');
         setEditStock('');
-      } catch (error) {
+      } catch (error: any) {
         toast({
           title: "Error",
-          description: "Failed to update item",
+          description: error?.message || "Failed to update item",
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
+    }
+  };
+
+  const handleDeleteItem = async (itemName: string) => {
+    try {
+      setIsLoading(true);
+      // Use edge function for atomic delete
+      const { data, error } = await supabase.functions.invoke('manage-receipt', {
+        body: {
+          action: 'delete_item',
+          item_name: itemName,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      await Promise.all([refreshProducts(), refreshReceipts()]);
+
+      toast({
+        title: "Success",
+        description: "Item deleted successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete item",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setDeleteConfirmItem(null);
     }
   };
 
@@ -226,6 +257,7 @@ const Inventory = () => {
                           onClick={() => startEditing(item.itemName)}
                           className="p-1 text-blue-600 hover:bg-blue-100 rounded"
                           title="Edit item"
+                          disabled={isLoading}
                         >
                           <Edit2 size={16} />
                         </button>
@@ -233,6 +265,7 @@ const Inventory = () => {
                           onClick={() => setDeleteConfirmItem(item.itemName)}
                           className="p-1 text-red-600 hover:bg-red-100 rounded"
                           title="Delete item"
+                          disabled={isLoading}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -281,11 +314,11 @@ const Inventory = () => {
               />
             </div>
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setEditingItem(null)}>
+              <Button variant="outline" onClick={() => setEditingItem(null)} disabled={isLoading}>
                 Cancel
               </Button>
-              <Button onClick={handleEditItem}>
-                Save Changes
+              <Button onClick={handleEditItem} disabled={isLoading}>
+                {isLoading ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </div>
@@ -302,45 +335,13 @@ const Inventory = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={async () => {
-                if (deleteConfirmItem) {
-                  try {
-                    // First delete all receipt items with this item name
-                    const { error: itemsError } = await supabase
-                      .from('receipt_items')
-                      .delete()
-                      .eq('item_name', deleteConfirmItem);
-
-                    if (itemsError) throw itemsError;
-
-                    // Then delete the product
-                    const productToDelete = products.find(p => p.name === deleteConfirmItem);
-                    if (productToDelete) {
-                      await deleteProduct(productToDelete.id);
-                    }
-
-                    // Refresh receipts to update inventory
-                    await refreshReceipts();
-
-                    toast({
-                      title: "Success",
-                      description: "Item deleted successfully",
-                    });
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "Failed to delete item",
-                      variant: "destructive",
-                    });
-                  }
-                  setDeleteConfirmItem(null);
-                }
-              }}
+              onClick={() => deleteConfirmItem && handleDeleteItem(deleteConfirmItem)}
               className="bg-red-600 hover:bg-red-700"
+              disabled={isLoading}
             >
-              Delete
+              {isLoading ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
