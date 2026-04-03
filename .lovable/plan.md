@@ -1,52 +1,79 @@
 
 
-# Add Cost/Value Tracking to Stock Adjustments
+# Mobile-First UI/UX Audit & Fix — AK SPICE POS
 
-## Problem
-Currently, stock adjustments (expired, damaged, stock clearance) save with `price: 0` and `total: 0`. There's no way to record the financial loss when items are reduced. The user wants to track the cost of expired/damaged goods and stock clearance losses.
+## Audit Findings
 
-## Solution
-Add an optional "Cost (per Kg)" field to the Stock Adjustment page. When a value is entered, the receipt records the loss amount. For "reduce" adjustments, the system will use the product's existing avg_cost as the default price if not specified.
+### Already Good
+- Sales/Purchase pages: card-based mobile layout, 44px touch targets, sticky TotalBar, overflow-visible
+- Customers/Suppliers pages: card-based lists, proper spacing, touch-friendly
+- CustomerDetail/SupplierDetail: responsive grid, proper padding
+- TopNavigation: scrollable bottom nav with role-based filtering
+- PaymentSection: responsive grid layout
 
-## Changes
+### Issues Found
 
-### 1. `src/components/TableRow.tsx`
-- Add a "Cost" input field for adjustment rows (between Qty and Reason)
-- Show on both desktop and mobile layouts
-- Auto-fill with product's avg_cost when item is selected (optional manual override)
+| # | Page/Component | Problem | Severity |
+|---|----------------|---------|----------|
+| 1 | **ReceiptsTable** | Full `<table>` on mobile — cramped action buttons (4 buttons in a row), no card view | Critical |
+| 2 | **Inventory page** | Full `<table>` on mobile — 8 columns, horizontal scroll required, tiny edit/delete buttons (p-1) | Critical |
+| 3 | **Settings (Items tab)** | Full `<table>` on mobile, tiny action buttons | High |
+| 4 | **StockAdjustment** | Uses old DataTable with full table layout, no mobile card view | High |
+| 5 | **Hardcoded colors** | Dashboard, DashboardStats, ReceiptSummaryCards, ReceiptsTable, Inventory, Settings all use `bg-white`, `text-gray-800` instead of `bg-card`, `text-foreground` — breaks dark mode | Medium |
+| 6 | **Receipt page padding** | Uses `p-4 sm:p-6 lg:p-8` — excessive on mobile | Low |
+| 7 | **Inventory action buttons** | `p-1` with 16px icons = ~26px touch target, below 44px minimum | High |
 
-### 2. `src/hooks/useTableData.ts`
-- Change line 135-136: instead of hardcoding `price: 0, total: 0` for adjustments, use the entered price value
-- Calculate `total = qty * price` for adjustments when price is provided
+## Plan
 
-### 3. `src/components/TableHeader.tsx`
-- Add "Cost" column header for adjustment type
+### 1. ReceiptsTable → Mobile Card View
+- Detect `isMobile` via `useIsMobile()`
+- On mobile: render each receipt as a card showing type badge, date, amount, due status
+- Action buttons as icon-only row with `h-10 w-10` (44px) touch targets
+- Keep desktop table unchanged
 
-### 4. `src/components/DataTable.tsx`
-- Show a total/summary for adjustment value (loss amount)
+### 2. Inventory Page → Mobile Card View
+- On mobile: render each item as a card with name, stock, value, status badge
+- Edit/Delete as `h-10 w-10` icon buttons
+- Summary cards: `grid-cols-2` (already done, just fix colors)
 
-### 5. `src/types/table.ts`
-- No change needed — `price` field already exists on TableRow
+### 3. Settings Items Tab → Mobile Card View
+- On mobile: product cards instead of table rows
+- Touch-friendly edit/delete buttons
 
-### 6. Edge Function — No changes needed
-- `applyStockEffect` already handles price correctly for increase/reduce types
-- For "reduce": avg_cost stays unchanged (correct — remaining stock keeps its value)
-- For "increase": weighted average recalculated using the price (correct)
-- The receipt will now properly store the loss value in `total_amount`
+### 4. StockAdjustment Mobile Layout
+- The page uses the old `DataTable` component which renders a plain table
+- Add mobile detection and card-based row rendering in `TableRowComponent`
 
-## How It Works
-1. User selects item → system auto-fills cost from product's avg_cost
-2. User can override cost or leave it
-3. On save: `total = qty × cost` is recorded as the loss/gain value
-4. Receipt page shows the financial impact of each adjustment
-5. Reports can now track waste/damage costs
+### 5. Fix Hardcoded Colors (Theme Tokens)
+- Replace `bg-white` → `bg-card`, `text-gray-800` → `text-foreground`, `text-gray-900` → `text-foreground`, `border-gray-200` → `border-border`, `text-gray-600` → `text-muted-foreground` across:
+  - `DashboardStats.tsx`
+  - `ReceiptSummaryCards.tsx`
+  - `ReceiptsTable.tsx`
+  - `Inventory.tsx`
+  - `Settings.tsx`
+  - `Dashboard.tsx`
+  - `ReceiptPage.tsx`
+  - `DataTableContainer.tsx`
+
+### 6. Increase Touch Targets
+- Inventory: edit/delete buttons → `h-10 w-10` with `p-2`
+- Settings: same treatment
+- ReceiptsTable: action buttons → icon-only `h-10 w-10` on mobile
 
 ## Files Changed
+
 | File | Change |
 |------|--------|
-| `src/components/TableRow.tsx` | Add Cost input for adjustments |
-| `src/components/TableHeader.tsx` | Add Cost column header |
-| `src/hooks/useTableData.ts` | Use actual price instead of 0 for adjustments |
-| `src/components/DataTable.tsx` | Show adjustment total in footer |
-| `src/components/ItemSearchDropdown.tsx` | Return product price/avg_cost on selection |
+| `src/components/ReceiptsTable.tsx` | Add mobile card view, fix colors, 44px buttons |
+| `src/pages/Inventory.tsx` | Add mobile card view, fix colors, 44px buttons |
+| `src/pages/Settings.tsx` | Add mobile card view for items tab, fix colors |
+| `src/components/DashboardStats.tsx` | Replace hardcoded colors with theme tokens |
+| `src/components/ReceiptSummaryCards.tsx` | Replace hardcoded colors with theme tokens |
+| `src/pages/Dashboard.tsx` | Fix hardcoded colors |
+| `src/pages/ReceiptPage.tsx` | Fix padding for mobile |
+| `src/components/DataTableContainer.tsx` | Fix hardcoded colors |
+| `src/components/TableRow.tsx` | Add mobile card layout for stock adjustment |
+| `src/components/TableHeader.tsx` | Hide on mobile when card view active |
+
+No backend or database changes required.
 
