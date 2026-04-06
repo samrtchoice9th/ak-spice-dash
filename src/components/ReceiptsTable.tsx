@@ -227,10 +227,6 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
                           <Edit size={16} />
                           <span>Edit</span>
                         </Button>
-                        <Button onClick={() => onPrint(receipt)} variant="outline" size="sm" className="flex items-center space-x-1">
-                          <Printer size={16} />
-                          <span>Print</span>
-                        </Button>
                         {onRawBTPrint && (
                           <Button onClick={() => onRawBTPrint(receipt)} variant="outline" size="sm" className="flex items-center space-x-1">
                             <Smartphone size={16} />
