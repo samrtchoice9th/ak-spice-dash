@@ -1,67 +1,34 @@
 
 
-# Theme Color Change — Teal Palette
+# Fix Save Error + Receipt Reprint
 
-## Color Palette (from uploaded image)
-- **#265073** — Deep navy teal (darkest)
-- **#2D9596** — Teal (primary)
-- **#9AD0C2** — Soft mint (secondary/accent)
-- **#ECF4D6** — Pale lime cream (lightest)
+## Two Issues
 
-## HSL Conversions
-- `#265073` → 207 51% 30% — primary (buttons, headings)
-- `#2D9596` → 180 53% 38% — ring, sidebar primary, active states
-- `#9AD0C2` → 160 38% 71% — accent, secondary
-- `#ECF4D6` → 80 56% 90% — muted, background tints
+### Issue 1: "Edge Function returned a non-2xx status code" on Save (Critical)
 
-## Changes — `src/index.css`
+**Root Cause**: The edge function (`manage-receipt/index.ts` line 66) calls `supabase.auth.getClaims()`, but it imports `@supabase/supabase-js@2.49.4` which **does not have this method** (it was added in `auth-js@2.69.0`, shipped with `supabase-js@2.50+`). This causes a runtime error intermittently (or always, depending on esm.sh caching).
 
-### Light mode `:root`
-| Variable | New HSL | Mapped from |
-|----------|---------|-------------|
-| `--primary` | `207 51% 30%` | #265073 — buttons, nav active |
-| `--primary-foreground` | `80 56% 90%` | #ECF4D6 — text on primary |
-| `--secondary` | `160 38% 92%` | Lighter #9AD0C2 tint |
-| `--secondary-foreground` | `207 51% 30%` | #265073 |
-| `--accent` | `160 38% 92%` | Light mint |
-| `--accent-foreground` | `207 51% 30%` | #265073 |
-| `--muted` | `80 30% 94%` | Subtle cream |
-| `--muted-foreground` | `207 20% 46%` | Muted teal-gray |
-| `--ring` | `180 53% 38%` | #2D9596 |
-| `--border` | `160 20% 88%` | Soft mint border |
-| `--input` | `160 20% 88%` | Match border |
-| `--sidebar-background` | `207 51% 30%` | Deep navy |
-| `--sidebar-foreground` | `80 56% 90%` | Cream text |
-| `--sidebar-primary` | `180 53% 38%` | Teal highlight |
-| `--sidebar-primary-foreground` | `0 0% 100%` | White |
-| `--sidebar-accent` | `207 40% 25%` | Darker navy |
-| `--sidebar-accent-foreground` | `80 56% 90%` | Cream |
-| `--sidebar-border` | `207 30% 35%` | Navy border |
-| `--sidebar-ring` | `180 53% 38%` | Teal |
+**Fix**: Upgrade the import to a version that supports `getClaims`, e.g. `@supabase/supabase-js@2.50.0` or later. Alternatively, fall back to `getUser()` which works on all versions but is slightly slower.
 
-### Dark mode `.dark`
-| Variable | New HSL | Notes |
-|----------|---------|-------|
-| `--background` | `207 51% 8%` | Very dark navy |
-| `--foreground` | `80 30% 92%` | Off-white cream |
-| `--card` | `207 45% 12%` | Dark card |
-| `--primary` | `180 53% 38%` | Teal buttons |
-| `--primary-foreground` | `207 51% 8%` | Dark text on teal |
-| `--secondary` | `207 30% 18%` | Dark secondary |
-| `--accent` | `207 30% 18%` | Dark accent |
-| `--muted` | `207 30% 18%` | Dark muted |
-| `--muted-foreground` | `160 20% 60%` | Soft mint text |
-| `--border` | `207 30% 20%` | Dark border |
-| `--ring` | `180 53% 38%` | Teal ring |
-| `--sidebar-background` | `207 51% 6%` | Deepest navy |
-| `--sidebar-primary` | `180 53% 45%` | Brighter teal |
+**Recommended approach**: Upgrade to `@supabase/supabase-js@2.50.0` (or latest stable like `2.51.0`) in the import URL.
 
-### Background/foreground/card/popover remain white/dark as base — only accent colors change.
+### Issue 2: Receipt Page Reprint
 
-## Files Changed
+The receipt page already has print buttons (native Print and RawBT). The print handler uses `receipt.date` and `receipt.time` from the saved receipt, so reprints should show the original date/time correctly. This appears to already work. If there's a specific issue with the print button, please clarify.
+
+However, I notice the print currently generates a **random invoice number** each time (`INVM-XX-XXXXX`). On reprint, it should ideally use a consistent number derived from the receipt ID.
+
+## Changes
+
+### File: `supabase/functions/manage-receipt/index.ts`
+- Line 1: Change import from `@2.49.4` to `@2.51.0`
+- This fixes the `getClaims` method not found error
+
+### File: `src/components/ReceiptPrintHandler.tsx` (Optional improvement)
+- Generate invoice number from receipt ID instead of random number, so reprints show consistent invoice numbers
+
 | File | Change |
 |------|--------|
-| `src/index.css` | Update all CSS custom properties in `:root` and `.dark` |
-
-One file, no logic changes. Pure color token update.
+| `supabase/functions/manage-receipt/index.ts` | Upgrade supabase-js import version |
+| `src/components/ReceiptPrintHandler.tsx` | Use receipt ID for consistent invoice numbers on reprint |
 
