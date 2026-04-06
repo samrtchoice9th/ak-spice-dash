@@ -1,5 +1,5 @@
 import { 
-  LayoutDashboard, ShoppingCart, Package, PackageMinus,
+  LayoutDashboard, ShoppingCart, Package,
   Warehouse, Receipt, BarChart3, Settings, Users, Truck,
   LucideIcon
 } from 'lucide-react';
