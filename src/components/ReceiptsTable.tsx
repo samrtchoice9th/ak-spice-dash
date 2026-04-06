@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Receipt, Edit, Printer, Smartphone, Trash2, Search } from 'lucide-react';
+import { Receipt, Edit, Smartphone, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -164,9 +164,6 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
                     <Button onClick={() => onEdit(receipt)} variant="outline" size="icon" className="h-10 w-10">
                       <Edit size={18} />
                     </Button>
-                    <Button onClick={() => onPrint(receipt)} variant="outline" size="icon" className="h-10 w-10">
-                      <Printer size={18} />
-                    </Button>
                     {onRawBTPrint && (
                       <Button onClick={() => onRawBTPrint(receipt)} variant="outline" size="icon" className="h-10 w-10">
                         <Smartphone size={18} />
@@ -229,10 +226,6 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
                         <Button onClick={() => onEdit(receipt)} variant="outline" size="sm" className="flex items-center space-x-1">
                           <Edit size={16} />
                           <span>Edit</span>
-                        </Button>
-                        <Button onClick={() => onPrint(receipt)} variant="outline" size="sm" className="flex items-center space-x-1">
-                          <Printer size={16} />
-                          <span>Print</span>
                         </Button>
                         {onRawBTPrint && (
                           <Button onClick={() => onRawBTPrint(receipt)} variant="outline" size="sm" className="flex items-center space-x-1">
