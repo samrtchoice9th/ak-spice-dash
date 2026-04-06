@@ -33,7 +33,7 @@ interface ReceiptsContextType {
   updateReceipt: (id: string, receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<void>;
   deleteReceipt: (id: string) => Promise<void>;
   payDue: (receiptId: string, amount: number, method: string, note?: string) => Promise<void>;
-  refreshReceipts: () => Promise<void>;
+  refreshReceipts: (year?: number, month?: number) => Promise<void>;
 }
 
 const ReceiptsContext = createContext<ReceiptsContextType | undefined>(undefined);
