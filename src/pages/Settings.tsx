@@ -32,12 +32,11 @@ declare global {
 
 const Settings = () => {
   const { products, updateProduct, deleteProduct, loading } = useProducts();
-  const { inventory } = useInventory();
   const isMobile = useIsMobile();
-  const { toast } = useToast();
   // Shop context removed - single shop mode
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editName, setEditName] = useState('');
+  const [itemSearch, setItemSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteConfirmProduct, setDeleteConfirmProduct] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('items');
