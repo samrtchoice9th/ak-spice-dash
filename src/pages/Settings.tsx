@@ -597,7 +597,7 @@ const Settings = () => {
             )}
 
             {!isScanning && bluetoothDevices.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 <Bluetooth className="mx-auto mb-2" size={32} />
                 <div className="text-sm">No devices found</div>
                 <div className="text-xs mt-1">Make sure your printer is discoverable</div>
