@@ -5,8 +5,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Edit2, Trash2, Plus, Printer, Bluetooth, Wifi, Cable, Settings as SettingsIcon, Search, CheckCircle } from 'lucide-react';
+import { Edit2, Trash2, Plus, Printer, Bluetooth, Wifi, Cable, Settings as SettingsIcon, Search, CheckCircle, PackageMinus } from 'lucide-react';
 import { AddItemDialog } from '@/components/AddItemDialog';
+import { DataTable } from '@/components/DataTable';
 import { toast } from 'sonner';
 
 // Extend Navigator interface for Web Bluetooth API
@@ -239,27 +240,38 @@ const Settings = () => {
       <h1 className="text-lg sm:text-2xl font-bold text-center mb-4 sm:mb-8 text-foreground">Settings</h1>
       
       {/* Tab Navigation */}
-      <div className="flex space-x-1 bg-muted p-1 rounded-lg mb-4 sm:mb-6 max-w-lg mx-auto">
+      <div className="flex space-x-1 bg-muted p-1 rounded-lg mb-4 sm:mb-6 max-w-xl mx-auto">
         <button
           onClick={() => setActiveTab('items')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+          className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'items'
               ? 'bg-card text-primary shadow-sm'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <SettingsIcon className="inline w-4 h-4 mr-2" />
+          <SettingsIcon className="inline w-4 h-4 mr-1" />
           Items
         </button>
         <button
+          onClick={() => setActiveTab('adjustment')}
+          className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'adjustment'
+              ? 'bg-card text-primary shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <PackageMinus className="inline w-4 h-4 mr-1" />
+          Stock Adj.
+        </button>
+        <button
           onClick={() => setActiveTab('printer')}
-          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+          className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'printer'
               ? 'bg-card text-primary shadow-sm'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Printer className="inline w-4 h-4 mr-2" />
+          <Printer className="inline w-4 h-4 mr-1" />
           Printer
         </button>
       </div>
@@ -372,6 +384,11 @@ const Settings = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Stock Adjustment Tab */}
+      {activeTab === 'adjustment' && (
+        <DataTable title="Stock Adjustment" showSave={true} type="adjustment" />
       )}
 
       {/* Printer Settings Tab */}
