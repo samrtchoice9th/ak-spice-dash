@@ -143,10 +143,7 @@ const Settings = () => {
   const connectToDevice = async (device: any) => {
     try {
       if (device.device.gatt?.connected) {
-        toast({
-          title: "Already Connected",
-          description: `Already connected to ${device.name}`,
-        });
+        toast.info(`Already connected to ${device.name}`);
         setSelectedDevice(device);
         setShowBluetoothDialog(false);
         return;
