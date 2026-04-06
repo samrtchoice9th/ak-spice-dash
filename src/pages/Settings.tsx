@@ -84,18 +84,11 @@ const Settings = () => {
     if (deleteConfirmProduct) {
       try {
         await deleteProduct(deleteConfirmProduct.id);
-        toast({
-          title: "Success",
-          description: "Item deleted successfully!",
-        });
+        toast.success('Item deleted successfully!');
         setDeleteConfirmProduct(null);
       } catch (error) {
         console.error('Error deleting product:', error);
-        toast({
-          title: "Error",
-          description: "Failed to delete item. Please try again.",
-          variant: "destructive"
-        });
+        toast.error('Failed to delete item. Please try again.');
       }
     }
   };
