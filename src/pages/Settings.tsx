@@ -578,7 +578,7 @@ const Settings = () => {
                     className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50"
                   >
                     <div className="flex items-center space-x-3">
-                      <Bluetooth size={16} className="text-blue-600" />
+                      <Bluetooth size={16} className="text-primary" />
                       <div>
                         <div className="font-medium">{device.name}</div>
                         <div className="text-xs text-gray-500">{device.id}</div>
