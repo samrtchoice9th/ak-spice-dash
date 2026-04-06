@@ -154,10 +154,7 @@ const Settings = () => {
         setSelectedDevice(device);
         setShowBluetoothDialog(false);
         
-        toast({
-          title: "Connected Successfully",
-          description: `Connected to ${device.name}`,
-        });
+        toast.success(`Connected to ${device.name}`);
 
         // Store the connection in localStorage for persistence
         localStorage.setItem('selectedBluetoothPrinter', JSON.stringify({
