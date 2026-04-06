@@ -1,14 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useProducts } from '@/contexts/ProductsContext';
-import { useInventory } from '@/contexts/InventoryContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Edit2, Trash2, Plus, Printer, Bluetooth, Wifi, Cable, Settings as SettingsIcon, Search, CheckCircle } from 'lucide-react';
 import { AddItemDialog } from '@/components/AddItemDialog';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 // Extend Navigator interface for Web Bluetooth API
 declare global {
@@ -33,12 +32,11 @@ declare global {
 
 const Settings = () => {
   const { products, updateProduct, deleteProduct, loading } = useProducts();
-  const { inventory } = useInventory();
   const isMobile = useIsMobile();
-  const { toast } = useToast();
   // Shop context removed - single shop mode
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editName, setEditName] = useState('');
+  const [itemSearch, setItemSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteConfirmProduct, setDeleteConfirmProduct] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('items');
@@ -53,25 +51,31 @@ const Settings = () => {
 
   // Shop management functions removed - single shop mode
 
+  const filteredProducts = useMemo(() => {
+    if (!itemSearch.trim()) return products;
+    const q = itemSearch.toLowerCase();
+    return products.filter(p => p.name.toLowerCase().includes(q));
+  }, [products, itemSearch]);
+
   const handleEditProduct = async () => {
     if (editingProduct && editName.trim()) {
+      const trimmed = editName.trim();
+      // Duplicate name check (case-insensitive, exclude self)
+      const isDuplicate = products.some(
+        p => p.id !== editingProduct.id && p.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (isDuplicate) {
+        toast.error('An item with this name already exists.');
+        return;
+      }
       try {
-        await updateProduct(editingProduct.id, {
-          name: editName.trim()
-        });
-        toast({
-          title: "Success",
-          description: "Item name updated successfully!",
-        });
+        await updateProduct(editingProduct.id, { name: trimmed });
+        toast.success('Item name updated successfully!');
         setEditingProduct(null);
         setEditName('');
       } catch (error) {
         console.error('Error updating product:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update item name. Please try again.",
-          variant: "destructive"
-        });
+        toast.error('Failed to update item name. Please try again.');
       }
     }
   };
@@ -80,18 +84,11 @@ const Settings = () => {
     if (deleteConfirmProduct) {
       try {
         await deleteProduct(deleteConfirmProduct.id);
-        toast({
-          title: "Success",
-          description: "Item deleted successfully!",
-        });
+        toast.success('Item deleted successfully!');
         setDeleteConfirmProduct(null);
       } catch (error) {
         console.error('Error deleting product:', error);
-        toast({
-          title: "Error",
-          description: "Failed to delete item. Please try again.",
-          variant: "destructive"
-        });
+        toast.error('Failed to delete item. Please try again.');
       }
     }
   };
@@ -108,11 +105,7 @@ const Settings = () => {
     try {
       // Check if Web Bluetooth API is available
       if (!navigator.bluetooth) {
-        toast({
-          title: "Bluetooth Not Supported",
-          description: "Web Bluetooth API is not supported in this browser. Please use Chrome, Edge, or Opera.",
-          variant: "destructive"
-        });
+        toast.error('Web Bluetooth API is not supported in this browser. Please use Chrome, Edge, or Opera.');
         setIsScanning(false);
         return;
       }
@@ -130,32 +123,17 @@ const Settings = () => {
           device: device
         }]);
         
-        toast({
-          title: "Device Found",
-          description: `Found ${device.name || 'Unknown Device'}`,
-        });
+        toast.success(`Found ${device.name || 'Unknown Device'}`);
       }
     } catch (error: any) {
       console.error('Bluetooth scan error:', error);
       
       if (error.name === 'NotFoundError') {
-        toast({
-          title: "No Device Selected",
-          description: "No Bluetooth device was selected.",
-          variant: "destructive"
-        });
+        toast.error('No Bluetooth device was selected.');
       } else if (error.name === 'NotAllowedError') {
-        toast({
-          title: "Permission Denied",
-          description: "Bluetooth access was denied. Please allow Bluetooth permissions.",
-          variant: "destructive"
-        });
+        toast.error('Bluetooth access was denied. Please allow Bluetooth permissions.');
       } else {
-        toast({
-          title: "Bluetooth Error",
-          description: error.message || "Failed to scan for Bluetooth devices.",
-          variant: "destructive"
-        });
+        toast.error(error.message || 'Failed to scan for Bluetooth devices.');
       }
     }
 
@@ -165,10 +143,7 @@ const Settings = () => {
   const connectToDevice = async (device: any) => {
     try {
       if (device.device.gatt?.connected) {
-        toast({
-          title: "Already Connected",
-          description: `Already connected to ${device.name}`,
-        });
+        toast.info(`Already connected to ${device.name}`);
         setSelectedDevice(device);
         setShowBluetoothDialog(false);
         return;
@@ -179,10 +154,7 @@ const Settings = () => {
         setSelectedDevice(device);
         setShowBluetoothDialog(false);
         
-        toast({
-          title: "Connected Successfully",
-          description: `Connected to ${device.name}`,
-        });
+        toast.success(`Connected to ${device.name}`);
 
         // Store the connection in localStorage for persistence
         localStorage.setItem('selectedBluetoothPrinter', JSON.stringify({
@@ -192,11 +164,7 @@ const Settings = () => {
       }
     } catch (error: any) {
       console.error('Connection error:', error);
-      toast({
-        title: "Connection Failed",
-        description: `Failed to connect to ${device.name}: ${error.message}`,
-        variant: "destructive"
-      });
+      toast.error(`Failed to connect to ${device.name}: ${error.message}`);
     }
   };
 
@@ -207,10 +175,7 @@ const Settings = () => {
     setSelectedDevice(null);
     localStorage.removeItem('selectedBluetoothPrinter');
     
-    toast({
-      title: "Disconnected",
-      description: "Bluetooth printer disconnected",
-    });
+    toast.success('Bluetooth printer disconnected');
   };
 
   // Load saved device on component mount
@@ -303,13 +268,29 @@ const Settings = () => {
       {activeTab === 'items' && (
         <div className="bg-card rounded-lg shadow-lg border border-border">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border flex justify-between items-center">
-            <h2 className="text-base sm:text-lg font-semibold text-foreground">Manage Items</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">
+              Manage Items <span className="text-sm font-normal text-muted-foreground">({products.length})</span>
+            </h2>
             <Button onClick={() => setShowAddDialog(true)} className="flex items-center space-x-2">
               <Plus size={16} />
               <span className="hidden sm:inline">Add New Item</span>
               <span className="sm:hidden">Add</span>
             </Button>
           </div>
+          {products.length > 0 && (
+            <div className="px-4 sm:px-6 py-2 border-b border-border">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={itemSearch}
+                  onChange={(e) => setItemSearch(e.target.value)}
+                  placeholder="Search items..."
+                  className="w-full pl-9 pr-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+          )}
           
           {loading ? (
             <div className="p-6 text-center text-muted-foreground">Loading items...</div>
@@ -322,10 +303,9 @@ const Settings = () => {
           ) : isMobile ? (
             /* Mobile Card View */
             <div className="divide-y divide-border">
-              {products.map((product) => {
-                const inventoryItem = inventory.find(inv => inv.itemName === product.name);
-                const displayPrice = inventoryItem?.averagePurchasePrice || 0;
-                const displayStock = inventoryItem?.currentStock || 0;
+              {filteredProducts.map((product) => {
+                const displayPrice = product.avg_cost || 0;
+                const displayStock = product.current_stock || 0;
                 return (
                   <div key={product.id} className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
@@ -360,10 +340,9 @@ const Settings = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-card divide-y divide-border">
-                  {products.map((product) => {
-                    const inventoryItem = inventory.find(inv => inv.itemName === product.name);
-                    const displayPrice = inventoryItem?.averagePurchasePrice || 0;
-                    const displayStock = inventoryItem?.currentStock || 0;
+                  {filteredProducts.map((product) => {
+                    const displayPrice = product.avg_cost || 0;
+                    const displayStock = product.current_stock || 0;
                     return (
                       <tr key={product.id} className="hover:bg-muted/30">
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
@@ -519,8 +498,10 @@ const Settings = () => {
                 Item Name *
               </label>
               <input id="editName" type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleEditProduct(); }}
                 className="w-full px-3 py-3 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                 placeholder="Enter item name"
+                autoFocus
               />
             </div>
             <div className="flex justify-end space-x-2">
@@ -552,7 +533,7 @@ const Settings = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteProduct} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={handleDeleteProduct} className="bg-destructive hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -566,7 +547,7 @@ const Settings = () => {
             <DialogTitle>Select Bluetooth Printer</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-muted-foreground">
               Make sure your thermal printer is in pairing mode and discoverable.
             </div>
             
@@ -590,17 +571,17 @@ const Settings = () => {
 
             {bluetoothDevices.length > 0 && (
               <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-700">Available Devices:</div>
+                <div className="text-sm font-medium text-foreground">Available Devices:</div>
                 {bluetoothDevices.map((device) => (
                   <div
                     key={device.id}
-                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50"
                   >
                     <div className="flex items-center space-x-3">
-                      <Bluetooth size={16} className="text-blue-600" />
+                      <Bluetooth size={16} className="text-primary" />
                       <div>
                         <div className="font-medium">{device.name}</div>
-                        <div className="text-xs text-gray-500">{device.id}</div>
+                        <div className="text-xs text-muted-foreground">{device.id}</div>
                       </div>
                     </div>
                     <Button
@@ -616,7 +597,7 @@ const Settings = () => {
             )}
 
             {!isScanning && bluetoothDevices.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 <Bluetooth className="mx-auto mb-2" size={32} />
                 <div className="text-sm">No devices found</div>
                 <div className="text-xs mt-1">Make sure your printer is discoverable</div>

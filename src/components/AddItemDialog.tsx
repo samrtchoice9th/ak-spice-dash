@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useProducts } from '@/contexts/ProductsContext';
 import { productSchema } from '@/lib/validations';
+import { toast } from 'sonner';
 
 interface AddItemDialogProps {
   isOpen: boolean;
@@ -22,19 +23,23 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
     try {
       setIsLoading(true);
       
-      // Check for duplicate item name
       const itemName = newItemName.trim();
+      if (!itemName) {
+        toast.error('Please enter an item name.');
+        setIsLoading(false);
+        return;
+      }
+
       const isDuplicate = products.some(
         product => product.name.toLowerCase() === itemName.toLowerCase()
       );
       
       if (isDuplicate) {
-        alert('Item with this name already exists. Please use a different name.');
+        toast.error('Item with this name already exists. Please use a different name.');
         setIsLoading(false);
         return;
       }
       
-      // Validate input
       const productData = {
         name: itemName,
         current_stock: parseFloat(initialStock) || 0,
@@ -43,31 +48,20 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
       };
       
       const validatedData = productSchema.parse(productData);
-      
-      // Add to database
       await addProduct(validatedData);
 
-      // Add to localStorage for dropdown
-      const existingItems = JSON.parse(localStorage.getItem('spiceItems') || '[]');
-      if (!existingItems.includes(newItemName.trim())) {
-        const updatedItems = [...existingItems, newItemName.trim()];
-        localStorage.setItem('spiceItems', JSON.stringify(updatedItems));
-        window.dispatchEvent(new CustomEvent('spiceItemsUpdated'));
-      }
-      
-      // Reset form
       setNewItemName('');
       setPrice('');
       setInitialStock('');
       onClose();
       
-      alert('Item added successfully!');
+      toast.success('Item added successfully!');
     } catch (error) {
       console.error('Error adding item:', error);
       if (error instanceof Error) {
-        alert(error.message);
+        toast.error(error.message);
       } else {
-        alert('Failed to add item. Please try again.');
+        toast.error('Failed to add item. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -88,7 +82,7 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <label htmlFor="itemName" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="itemName" className="block text-sm font-medium text-muted-foreground mb-2">
               Item Name *
             </label>
             <input
@@ -97,14 +91,14 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-3 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
               placeholder="Enter item name"
               autoFocus
               disabled={isLoading}
             />
           </div>
           <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="price" className="block text-sm font-medium text-muted-foreground mb-2">
               Price per Kg (Rs.)
             </label>
             <input
@@ -113,14 +107,14 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-3 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
               placeholder="0.00"
               step="0.01"
               disabled={isLoading}
             />
           </div>
           <div>
-            <label htmlFor="initialStock" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="initialStock" className="block text-sm font-medium text-muted-foreground mb-2">
               Initial Stock (Kg)
             </label>
             <input
@@ -129,7 +123,7 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({ isOpen, onClose })
               value={initialStock}
               onChange={(e) => setInitialStock(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-3 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
               placeholder="0.00"
               step="0.01"
               disabled={isLoading}
