@@ -129,23 +129,11 @@ const Settings = () => {
       console.error('Bluetooth scan error:', error);
       
       if (error.name === 'NotFoundError') {
-        toast({
-          title: "No Device Selected",
-          description: "No Bluetooth device was selected.",
-          variant: "destructive"
-        });
+        toast.error('No Bluetooth device was selected.');
       } else if (error.name === 'NotAllowedError') {
-        toast({
-          title: "Permission Denied",
-          description: "Bluetooth access was denied. Please allow Bluetooth permissions.",
-          variant: "destructive"
-        });
+        toast.error('Bluetooth access was denied. Please allow Bluetooth permissions.');
       } else {
-        toast({
-          title: "Bluetooth Error",
-          description: error.message || "Failed to scan for Bluetooth devices.",
-          variant: "destructive"
-        });
+        toast.error(error.message || 'Failed to scan for Bluetooth devices.');
       }
     }
 
