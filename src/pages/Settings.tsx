@@ -571,7 +571,7 @@ const Settings = () => {
 
             {bluetoothDevices.length > 0 && (
               <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-700">Available Devices:</div>
+                <div className="text-sm font-medium text-foreground">Available Devices:</div>
                 {bluetoothDevices.map((device) => (
                   <div
                     key={device.id}
