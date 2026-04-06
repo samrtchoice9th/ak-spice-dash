@@ -33,7 +33,7 @@ interface ReceiptsContextType {
   updateReceipt: (id: string, receipt: Omit<Receipt, 'id' | 'date' | 'time'>) => Promise<void>;
   deleteReceipt: (id: string) => Promise<void>;
   payDue: (receiptId: string, amount: number, method: string, note?: string) => Promise<void>;
-  refreshReceipts: () => Promise<void>;
+  refreshReceipts: (year?: number, month?: number) => Promise<void>;
 }
 
 const ReceiptsContext = createContext<ReceiptsContextType | undefined>(undefined);
@@ -55,14 +55,20 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refreshReceipts = useCallback(async () => {
+  const refreshReceipts = useCallback(async (year?: number, month?: number) => {
     if (!user) {
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      const fetchedReceipts = await receiptService.getAllReceipts();
+      let fetchedReceipts: Receipt[];
+      if (year !== undefined && month !== undefined) {
+        fetchedReceipts = await receiptService.getReceiptsByMonth(year, month);
+      } else {
+        const now = new Date();
+        fetchedReceipts = await receiptService.getReceiptsByMonth(now.getFullYear(), now.getMonth());
+      }
       setReceipts(fetchedReceipts);
     } catch (error) {
       console.error('Failed to fetch receipts:', error);

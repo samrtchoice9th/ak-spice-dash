@@ -3,6 +3,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { Receipt, ReceiptItem } from '@/contexts/ReceiptsContext';
 
 export const receiptService = {
+  async getReceiptsByMonth(year: number, month: number): Promise<Receipt[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    const endDate = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-01`;
+
+    const { data: receiptsData, error: receiptsError } = await supabase
+      .from('receipts')
+      .select(`
+        *,
+        receipt_items (*)
+      `)
+      .gte('date', startDate)
+      .lt('date', endDate)
+      .order('created_at', { ascending: false })
+      .limit(3000);
+
+    if (receiptsError) {
+      console.error('Error fetching receipts:', receiptsError);
+      throw receiptsError;
+    }
+
+    return this._mapReceipts(receiptsData);
+  },
+
   async getAllReceipts(): Promise<Receipt[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
@@ -21,7 +49,11 @@ export const receiptService = {
       throw receiptsError;
     }
 
-    const receipts: Receipt[] = receiptsData.map(receipt => ({
+    return this._mapReceipts(receiptsData);
+  },
+
+  _mapReceipts(receiptsData: any[]): Receipt[] {
+    return receiptsData.map(receipt => ({
       id: receipt.id,
       type: receipt.type as 'purchase' | 'sales' | 'adjustment' | 'increase' | 'reduce',
       totalAmount: Number(receipt.total_amount),
@@ -41,8 +73,6 @@ export const receiptService = {
         reason: item.reason
       }))
     }));
-
-    return receipts;
   },
 
   async createReceipt(receiptData: Omit<Receipt, 'id' | 'date' | 'time'>): Promise<Receipt> {
