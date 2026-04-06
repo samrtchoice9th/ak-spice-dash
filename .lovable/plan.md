@@ -1,57 +1,80 @@
 
 
-# Settings Page — Items Panel Audit & Fixes
+# Inventory Page Audit — Issues & Fixes
 
-## Issues Found
+## Critical Bugs
 
-### 1. Edit Only Updates `name` — No Duplicate Check (Bug)
-`handleEditProduct` (line 56) updates the name without checking if the new name already exists. User could rename "Turmeric" to "Chilli" when "Chilli" already exists, creating duplicates.
+### 1. Products Missing from Inventory List (Data Bug)
+`InventoryContext` builds inventory by iterating **receipts first**, then enriching with product data. Since receipts are now **month-filtered**, any product with zero receipts in the selected month **won't appear at all** in the inventory list. A product with 100kg stock but no transactions this month = invisible.
 
-### 2. AddItemDialog Uses `alert()` Instead of Toast (UX)
-Lines 32, 64, 68 use browser `alert()` — inconsistent with the rest of the app which uses toast notifications. Also uses hardcoded `text-gray-700`, `border-gray-300`, `focus:ring-blue-500` instead of theme tokens.
+**Fix**: Build inventory starting from the `products` table as the base, then enrich with receipt totals. Every product always appears.
 
-### 3. AddItemDialog localStorage Sync Is Fragile (Bug)
-Lines 50-56: After adding a product to the DB, it also writes to `localStorage('spiceItems')`. This is legacy code — the dropdown now reads from ProductsContext. The localStorage write is dead code that can cause stale data.
+### 2. Total Purchased / Total Sold Only Shows Current Month (Data Bug)
+Since `receipts` array is month-filtered, `totalPurchased` and `totalSold` only reflect the current month — not all-time totals. This is misleading. The column headers say "Total Purchased" / "Total Sold" but show monthly data.
 
-### 4. InventoryContext Depends on Receipts (Performance)
-The Settings page imports `useInventory` which depends on `useReceipts`. Since receipts are now month-filtered, the inventory data shown (price/stock) on Settings page may only reflect current month's receipts — not all-time data. **However**, lines 326-327 and 363-364 use `inventory.find()` to display price/stock. The `products` table has `current_stock` and `avg_cost` directly — no need to go through inventory context.
+**Fix**: Since we can't fetch all receipts (performance), use the products table for stock/avg_cost (already correct) and either: (a) remove totalPurchased/totalSold columns, or (b) rename them to "This Month Purchased/Sold", or (c) fetch all-time totals from a DB query. Option (b) is simplest and most honest.
 
-### 5. No Search/Filter for Items List (Performance)
-With many products, no way to search. Should add a search input.
+### 3. Edit Dialog Missing Duplicate Name Check
+Same bug that was fixed in Settings — user can rename an item to an existing name, causing duplicates.
 
-### 6. Delete Doesn't Clean Up Related Data
-`deleteProduct` in productService just deletes from `products` table. It doesn't warn about or clean up receipt_items referencing this product name. This is acceptable since receipt_items store the name as text (not FK), but user should be warned.
+### 4. No Enter Key Support in Edit Dialog
 
-### 7. Edit Dialog Missing Enter Key Support
-The edit dialog (line 521) has no `onKeyDown` handler for Enter to save.
+### 5. No Search/Filter for Large Inventories
+No way to find a specific item quickly.
+
+### 6. Computations Not Memoized
+`totalInventoryValue`, `lowStockItems`, and `inventory.filter(item => item.currentStock > 0)` run on every render.
 
 ## Plan
 
-### Fix 1: Add duplicate name check to edit
-Before saving, check if another product already has the new name (case-insensitive).
+### Fix 1: Rebuild InventoryContext — Products-First Approach
+Start from `products` array. Every product gets an entry. Then layer receipt data on top for monthly purchased/sold figures.
 
-### Fix 2: Replace alert() with toast in AddItemDialog
-Use the `useToast` hook. Also replace hardcoded colors with theme tokens.
+```typescript
+const inventory = useMemo(() => {
+  const itemMap = new Map<string, InventoryItem>();
+  
+  // Step 1: Every product gets an entry
+  for (const p of products) {
+    itemMap.set(p.name, {
+      itemName: p.name,
+      totalPurchased: 0,
+      totalSold: 0,
+      currentStock: p.current_stock,
+      averagePurchasePrice: p.avg_cost ?? 0,
+      totalPurchaseValue: 0,
+      totalSalesValue: 0,
+    });
+  }
+  
+  // Step 2: Enrich with monthly receipt data
+  receipts.forEach(receipt => { ... });
+  
+  return Array.from(itemMap.values()).sort(...);
+}, [receipts, products]);
+```
 
-### Fix 3: Remove localStorage sync from AddItemDialog
-Remove the dead `spiceItems` localStorage code.
+### Fix 2: Rename Columns
+- "Total Purchased" → "Purchased (Month)"
+- "Total Sold" → "Sold (Month)"
+- Mobile cards: same labels
 
-### Fix 4: Use products table directly instead of inventory context
-Display `product.avg_cost` and `product.current_stock` directly from the products array. Remove `useInventory` import from Settings page.
+### Fix 3: Add Duplicate Name Check to Edit
+Check `products.some(p => p.name.toLowerCase() === editName.trim().toLowerCase() && p.name !== editingItem)` before saving.
 
-### Fix 5: Add search input to items list
-Simple text filter above the items list.
+### Fix 4: Add Enter Key Support
+Add `onKeyDown` handler to edit inputs.
 
-### Fix 6: Add Enter key support to edit dialog
-Add `onKeyDown` handler to the edit name input.
+### Fix 5: Add Search Filter
+Add search input above the inventory table with `useMemo` filtering.
 
-### Fix 7: Add item count display
-Show "X items" count in the header.
+### Fix 6: Memoize Summary Computations
+Wrap `totalInventoryValue`, `lowStockItems`, and in-stock count in `useMemo`.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/Settings.tsx` | Add duplicate check on edit, use products directly (remove useInventory), add search, add Enter key on edit dialog, add item count |
-| `src/components/AddItemDialog.tsx` | Replace alert() with toast, remove localStorage sync, fix hardcoded colors |
+| `src/contexts/InventoryContext.tsx` | Products-first inventory building |
+| `src/pages/Inventory.tsx` | Duplicate check, Enter key, search filter, memoize summaries, rename column headers |
 
