@@ -18,7 +18,7 @@ import { RoleProtectedRoute } from "./components/RoleProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Sales from "./pages/Sales";
 import Purchase from "./pages/Purchase";
-import StockAdjustment from "./pages/StockAdjustment";
+
 import Inventory from "./pages/Inventory";
 import ReceiptPage from "./pages/ReceiptPage";
 import Report from "./pages/Report";
