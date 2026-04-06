@@ -547,7 +547,7 @@ const Settings = () => {
             <DialogTitle>Select Bluetooth Printer</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-muted-foreground">
               Make sure your thermal printer is in pairing mode and discoverable.
             </div>
             
