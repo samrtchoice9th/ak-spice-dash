@@ -51,25 +51,31 @@ const Settings = () => {
 
   // Shop management functions removed - single shop mode
 
+  const filteredProducts = useMemo(() => {
+    if (!itemSearch.trim()) return products;
+    const q = itemSearch.toLowerCase();
+    return products.filter(p => p.name.toLowerCase().includes(q));
+  }, [products, itemSearch]);
+
   const handleEditProduct = async () => {
     if (editingProduct && editName.trim()) {
+      const trimmed = editName.trim();
+      // Duplicate name check (case-insensitive, exclude self)
+      const isDuplicate = products.some(
+        p => p.id !== editingProduct.id && p.name.toLowerCase() === trimmed.toLowerCase()
+      );
+      if (isDuplicate) {
+        toast.error('An item with this name already exists.');
+        return;
+      }
       try {
-        await updateProduct(editingProduct.id, {
-          name: editName.trim()
-        });
-        toast({
-          title: "Success",
-          description: "Item name updated successfully!",
-        });
+        await updateProduct(editingProduct.id, { name: trimmed });
+        toast.success('Item name updated successfully!');
         setEditingProduct(null);
         setEditName('');
       } catch (error) {
         console.error('Error updating product:', error);
-        toast({
-          title: "Error",
-          description: "Failed to update item name. Please try again.",
-          variant: "destructive"
-        });
+        toast.error('Failed to update item name. Please try again.');
       }
     }
   };
