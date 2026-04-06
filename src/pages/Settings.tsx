@@ -175,10 +175,7 @@ const Settings = () => {
     setSelectedDevice(null);
     localStorage.removeItem('selectedBluetoothPrinter');
     
-    toast({
-      title: "Disconnected",
-      description: "Bluetooth printer disconnected",
-    });
+    toast.success('Bluetooth printer disconnected');
   };
 
   // Load saved device on component mount
