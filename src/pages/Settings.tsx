@@ -581,7 +581,7 @@ const Settings = () => {
                       <Bluetooth size={16} className="text-primary" />
                       <div>
                         <div className="font-medium">{device.name}</div>
-                        <div className="text-xs text-gray-500">{device.id}</div>
+                        <div className="text-xs text-muted-foreground">{device.id}</div>
                       </div>
                     </div>
                     <Button
