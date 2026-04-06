@@ -575,7 +575,7 @@ const Settings = () => {
                 {bluetoothDevices.map((device) => (
                   <div
                     key={device.id}
-                    className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50"
                   >
                     <div className="flex items-center space-x-3">
                       <Bluetooth size={16} className="text-blue-600" />
