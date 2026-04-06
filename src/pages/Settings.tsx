@@ -268,13 +268,29 @@ const Settings = () => {
       {activeTab === 'items' && (
         <div className="bg-card rounded-lg shadow-lg border border-border">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border flex justify-between items-center">
-            <h2 className="text-base sm:text-lg font-semibold text-foreground">Manage Items</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">
+              Manage Items <span className="text-sm font-normal text-muted-foreground">({products.length})</span>
+            </h2>
             <Button onClick={() => setShowAddDialog(true)} className="flex items-center space-x-2">
               <Plus size={16} />
               <span className="hidden sm:inline">Add New Item</span>
               <span className="sm:hidden">Add</span>
             </Button>
           </div>
+          {products.length > 0 && (
+            <div className="px-4 sm:px-6 py-2 border-b border-border">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={itemSearch}
+                  onChange={(e) => setItemSearch(e.target.value)}
+                  placeholder="Search items..."
+                  className="w-full pl-9 pr-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+          )}
           
           {loading ? (
             <div className="p-6 text-center text-muted-foreground">Loading items...</div>
