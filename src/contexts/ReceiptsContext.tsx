@@ -95,8 +95,8 @@ export const ReceiptsProvider: React.FC<ReceiptsProviderProps> = ({ children }) 
   const updateReceipt = async (id: string, receiptData: Omit<Receipt, 'id' | 'date' | 'time'>) => {
     try {
       await receiptService.updateReceipt(id, receiptData);
-      // Edge function handles stock reversal + update atomically
-      await refreshReceipts();
+      // Don't call refreshReceipts here — let the caller (ReceiptPage) handle it
+      // with the correct year/month params to avoid fetching wrong month data
     } catch (error) {
       console.error('Failed to update receipt:', error);
       throw error;

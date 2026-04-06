@@ -139,7 +139,7 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
             </div>
             <div>
               <Label>Total Amount</Label>
-              <div className="text-lg font-semibold text-gray-800 mt-2">
+              <div className="text-lg font-semibold text-foreground mt-2">
                 Rs.{calculateTotal().toFixed(2)}
               </div>
             </div>
@@ -167,7 +167,7 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
             </div>
 
             {items.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 No items added yet. Click "Add Item" to get started.
               </div>
             )}

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useReceipts } from '@/contexts/ReceiptsContext';
 import { useProducts } from '@/contexts/ProductsContext';
 import { ReceiptSummaryCards } from '@/components/ReceiptSummaryCards';
@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const ReceiptPage = () => {
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const { receipts, loading, updateReceipt, deleteReceipt, refreshReceipts } = useReceipts();
@@ -24,7 +24,7 @@ const ReceiptPage = () => {
 
   useEffect(() => {
     refreshReceipts(selectedYear, selectedMonth);
-  }, [selectedYear, selectedMonth]);
+  }, [selectedYear, selectedMonth, refreshReceipts]);
 
   const goToPrevMonth = () => {
     if (selectedMonth === 0) {
@@ -46,32 +46,31 @@ const ReceiptPage = () => {
 
   const isCurrentMonth = selectedMonth === now.getMonth() && selectedYear === now.getFullYear();
 
-  const handleDeleteReceipt = async (id: string) => {
+  const handleDeleteReceipt = useCallback(async (id: string) => {
     try {
       await deleteReceipt(id);
       await refreshProducts();
     } catch (error) {
       console.error('Failed to delete receipt:', error);
     }
-  };
+  }, [deleteReceipt, refreshProducts]);
 
-  const handleEditReceipt = (receipt: ReceiptType) => {
+  const handleEditReceipt = useCallback((receipt: ReceiptType) => {
     setEditingReceipt(receipt);
     setIsEditDialogOpen(true);
-  };
+  }, []);
 
-  const handleSaveReceipt = async (id: string, receiptData: any) => {
+  const handleSaveReceipt = useCallback(async (id: string, receiptData: any) => {
     try {
       await updateReceipt(id, receiptData);
       await refreshProducts();
-      await refreshReceipts(selectedYear, selectedMonth);
       setEditingReceipt(null);
       setIsEditDialogOpen(false);
     } catch (error) {
       console.error('Failed to save receipt:', error);
       throw error;
     }
-  };
+  }, [updateReceipt, refreshProducts]);
 
   if (loading) {
     return (

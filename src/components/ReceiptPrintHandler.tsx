@@ -385,8 +385,8 @@ export const useReceiptPrintHandler = () => {
 
     const currentDate = new Date();
     const invoiceNumber = receipt.id ? `INVM-${receipt.id.slice(-6).toUpperCase()}` : `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
-    const formattedDate = currentDate.toLocaleDateString();
-    const formattedTime = currentDate.toLocaleTimeString();
+    const formattedDate = receipt.date || currentDate.toLocaleDateString();
+    const formattedTime = receipt.time || currentDate.toLocaleTimeString();
 
     const shopDetailsHtml = [
       shopInfo.phone ? `Mob: ${shopInfo.phone}` : '',
@@ -522,7 +522,7 @@ export const useReceiptPrintHandler = () => {
     const currentDate = new Date();
     const formattedDate = receipt.date || currentDate.toLocaleDateString();
     const formattedTime = receipt.time || currentDate.toLocaleTimeString();
-    const invoiceNumber = `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
+    const invoiceNumber = receipt.id ? `INVM-${receipt.id.slice(-6).toUpperCase()}` : `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
 
     const escPos = generateESCPOSText(shopInfo, invoiceNumber, formattedDate, formattedTime, receipt.items, receipt.totalAmount);
 
