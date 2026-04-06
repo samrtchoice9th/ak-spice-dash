@@ -167,7 +167,7 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
             </div>
 
             {items.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 No items added yet. Click "Add Item" to get started.
               </div>
             )}

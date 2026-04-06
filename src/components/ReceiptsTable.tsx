@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Receipt, Edit, Printer, Smartphone, Trash2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Receipt, Edit, Printer, Smartphone, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Receipt as ReceiptType } from '@/contexts/ReceiptsContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -14,6 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+const PAGE_SIZE = 50;
 
 interface ReceiptsTableProps {
   receipts: ReceiptType[];
@@ -37,7 +40,22 @@ const getTypeBadge = (type: string) => {
 
 export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, onPrint, onRawBTPrint, onDelete }) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const isMobile = useIsMobile();
+
+  const filteredReceipts = useMemo(() => {
+    if (!searchTerm.trim()) return receipts;
+    const term = searchTerm.toLowerCase();
+    return receipts.filter(r =>
+      r.items.some(i => i.itemName.toLowerCase().includes(term)) ||
+      r.totalAmount.toFixed(2).includes(term) ||
+      r.type.toLowerCase().includes(term)
+    );
+  }, [receipts, searchTerm]);
+
+  const visibleReceipts = useMemo(() => filteredReceipts.slice(0, visibleCount), [filteredReceipts, visibleCount]);
+  const hasMore = visibleCount < filteredReceipts.length;
 
   const handleConfirmDelete = () => {
     if (deleteId && onDelete) {
@@ -63,6 +81,33 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+
+  const searchBar = (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Input
+        placeholder="Search by item, amount, type..."
+        value={searchTerm}
+        onChange={(e) => { setSearchTerm(e.target.value); setVisibleCount(PAGE_SIZE); }}
+        className="pl-9 h-9"
+      />
+    </div>
+  );
+
+  const receiptCount = (
+    <p className="text-xs text-muted-foreground">
+      Showing {visibleReceipts.length} of {filteredReceipts.length} receipts
+      {searchTerm && ` (filtered from ${receipts.length})`}
+    </p>
+  );
+
+  const loadMoreButton = hasMore && (
+    <div className="p-3 text-center border-t border-border">
+      <Button variant="outline" size="sm" onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}>
+        Load More ({filteredReceipts.length - visibleCount} remaining)
+      </Button>
+    </div>
   );
 
   if (receipts.length === 0) {
@@ -91,12 +136,16 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
       <>
         {deleteDialog}
         <div className="bg-card rounded-lg shadow-lg overflow-hidden border border-border">
-          <div className="px-4 py-3 border-b border-border">
-            <h2 className="text-base font-semibold text-foreground">All Receipts</h2>
+          <div className="px-4 py-3 border-b border-border space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-foreground">All Receipts</h2>
+            </div>
+            {searchBar}
+            {receiptCount}
           </div>
           <ScrollArea className="h-[600px]">
             <div className="divide-y divide-border">
-              {receipts.map((receipt) => (
+              {visibleReceipts.map((receipt) => (
                 <div key={receipt.id} className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     {getTypeBadge(receipt.type)}
@@ -132,6 +181,7 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
                 </div>
               ))}
             </div>
+            {loadMoreButton}
           </ScrollArea>
         </div>
       </>
@@ -143,8 +193,14 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
     <>
       {deleteDialog}
       <div className="bg-card rounded-lg shadow-lg overflow-hidden border border-border">
-        <div className="px-4 sm:px-6 py-4 border-b border-border">
-          <h2 className="text-base sm:text-lg font-semibold text-foreground">All Receipts</h2>
+        <div className="px-4 sm:px-6 py-4 border-b border-border space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base sm:text-lg font-semibold text-foreground">All Receipts</h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 max-w-sm">{searchBar}</div>
+            {receiptCount}
+          </div>
         </div>
         
         <ScrollArea className="h-[600px]">
@@ -160,7 +216,7 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
                 </tr>
               </thead>
               <tbody className="bg-card divide-y divide-border">
-                {receipts.map((receipt) => (
+                {visibleReceipts.map((receipt) => (
                   <tr key={receipt.id} className="hover:bg-muted/30">
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       {getTypeBadge(receipt.type)}
@@ -197,6 +253,7 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
               </tbody>
             </table>
           </div>
+          {loadMoreButton}
         </ScrollArea>
       </div>
     </>
