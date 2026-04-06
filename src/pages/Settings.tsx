@@ -164,11 +164,7 @@ const Settings = () => {
       }
     } catch (error: any) {
       console.error('Connection error:', error);
-      toast({
-        title: "Connection Failed",
-        description: `Failed to connect to ${device.name}: ${error.message}`,
-        variant: "destructive"
-      });
+      toast.error(`Failed to connect to ${device.name}: ${error.message}`);
     }
   };
 
