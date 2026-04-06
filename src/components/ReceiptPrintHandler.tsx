@@ -137,7 +137,7 @@ export const useReceiptPrintHandler = () => {
     `;
 
     const currentDate = new Date();
-    const invoiceNumber = `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
+    const invoiceNumber = receipt.id ? `INVM-${receipt.id.slice(-6).toUpperCase()}` : `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
 
     const shopDetailsHtml = [
       shopInfo.phone ? `Mob: ${shopInfo.phone}` : '',
