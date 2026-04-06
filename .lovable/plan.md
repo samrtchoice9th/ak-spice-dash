@@ -1,34 +1,40 @@
 
 
-# Fix Save Error + Receipt Reprint
+# Receipt Page: Month Filter + Load Optimization
 
-## Two Issues
+## Current State
+- `receiptService.getAllReceipts()` fetches up to 5,000 receipts at once
+- No month/date filter — all receipts load every time
+- Summary cards and table show everything unfiltered
 
-### Issue 1: "Edge Function returned a non-2xx status code" on Save (Critical)
+## Plan
 
-**Root Cause**: The edge function (`manage-receipt/index.ts` line 66) calls `supabase.auth.getClaims()`, but it imports `@supabase/supabase-js@2.49.4` which **does not have this method** (it was added in `auth-js@2.69.0`, shipped with `supabase-js@2.50+`). This causes a runtime error intermittently (or always, depending on esm.sh caching).
+### 1. Add Month Picker to ReceiptPage
+- Add a month/year selector (default: current month) at the top of the page
+- Use two state variables: `selectedMonth` (0-11) and `selectedYear`
+- Pass selected month to both `ReceiptSummaryCards` and `ReceiptsTable`
 
-**Fix**: Upgrade the import to a version that supports `getClaims`, e.g. `@supabase/supabase-js@2.50.0` or later. Alternatively, fall back to `getUser()` which works on all versions but is slightly slower.
+### 2. Add `getReceiptsByMonth()` to receiptService
+- New method that filters by `date` column using `.gte()` and `.lt()` on the first and last day of the selected month
+- Limit to 3,000 receipts per month query (more than enough)
+- Remove the 5,000 global fetch — only fetch the selected month
 
-**Recommended approach**: Upgrade to `@supabase/supabase-js@2.50.0` (or latest stable like `2.51.0`) in the import URL.
+### 3. Update ReceiptsContext
+- Add `fetchReceiptsByMonth(year, month)` method
+- Keep `receipts` state but populate it with month-filtered data
+- `refreshReceipts` becomes `refreshReceipts(year?, month?)` — defaults to current month
 
-### Issue 2: Receipt Page Reprint
+### 4. Summary Cards Update
+- Summary cards compute from the filtered (monthly) receipts — automatically shows selected month totals
 
-The receipt page already has print buttons (native Print and RawBT). The print handler uses `receipt.date` and `receipt.time` from the saved receipt, so reprints should show the original date/time correctly. This appears to already work. If there's a specific issue with the print button, please clarify.
+### 5. ReceiptsTable
+- No changes needed — it already renders whatever `receipts` array it receives
 
-However, I notice the print currently generates a **random invoice number** each time (`INVM-XX-XXXXX`). On reprint, it should ideally use a consistent number derived from the receipt ID.
-
-## Changes
-
-### File: `supabase/functions/manage-receipt/index.ts`
-- Line 1: Change import from `@2.49.4` to `@2.51.0`
-- This fixes the `getClaims` method not found error
-
-### File: `src/components/ReceiptPrintHandler.tsx` (Optional improvement)
-- Generate invoice number from receipt ID instead of random number, so reprints show consistent invoice numbers
+## Files Changed
 
 | File | Change |
 |------|--------|
-| `supabase/functions/manage-receipt/index.ts` | Upgrade supabase-js import version |
-| `src/components/ReceiptPrintHandler.tsx` | Use receipt ID for consistent invoice numbers on reprint |
+| `src/pages/ReceiptPage.tsx` | Add month/year picker, pass filter to context |
+| `src/services/receiptService.ts` | Add `getReceiptsByMonth(year, month)` with date range filter, limit 3000 |
+| `src/contexts/ReceiptsContext.tsx` | Update `refreshReceipts` to accept year/month params, fetch filtered data |
 
