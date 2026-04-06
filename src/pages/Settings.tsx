@@ -303,10 +303,9 @@ const Settings = () => {
           ) : isMobile ? (
             /* Mobile Card View */
             <div className="divide-y divide-border">
-              {products.map((product) => {
-                const inventoryItem = inventory.find(inv => inv.itemName === product.name);
-                const displayPrice = inventoryItem?.averagePurchasePrice || 0;
-                const displayStock = inventoryItem?.currentStock || 0;
+              {filteredProducts.map((product) => {
+                const displayPrice = product.avg_cost || 0;
+                const displayStock = product.current_stock || 0;
                 return (
                   <div key={product.id} className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
@@ -341,10 +340,9 @@ const Settings = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-card divide-y divide-border">
-                  {products.map((product) => {
-                    const inventoryItem = inventory.find(inv => inv.itemName === product.name);
-                    const displayPrice = inventoryItem?.averagePurchasePrice || 0;
-                    const displayStock = inventoryItem?.currentStock || 0;
+                  {filteredProducts.map((product) => {
+                    const displayPrice = product.avg_cost || 0;
+                    const displayStock = product.current_stock || 0;
                     return (
                       <tr key={product.id} className="hover:bg-muted/30">
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
