@@ -386,6 +386,11 @@ const Settings = () => {
         </div>
       )}
 
+      {/* Stock Adjustment Tab */}
+      {activeTab === 'adjustment' && (
+        <DataTable title="Stock Adjustment" showSave={true} type="adjustment" />
+      )}
+
       {/* Printer Settings Tab */}
       {activeTab === 'printer' && (
         <div className="space-y-6">
