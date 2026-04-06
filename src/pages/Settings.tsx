@@ -498,8 +498,10 @@ const Settings = () => {
                 Item Name *
               </label>
               <input id="editName" type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleEditProduct(); }}
                 className="w-full px-3 py-3 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                 placeholder="Enter item name"
+                autoFocus
               />
             </div>
             <div className="flex justify-end space-x-2">
