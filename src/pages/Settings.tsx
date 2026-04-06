@@ -123,10 +123,7 @@ const Settings = () => {
           device: device
         }]);
         
-        toast({
-          title: "Device Found",
-          description: `Found ${device.name || 'Unknown Device'}`,
-        });
+        toast.success(`Found ${device.name || 'Unknown Device'}`);
       }
     } catch (error: any) {
       console.error('Bluetooth scan error:', error);
