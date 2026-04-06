@@ -105,11 +105,7 @@ const Settings = () => {
     try {
       // Check if Web Bluetooth API is available
       if (!navigator.bluetooth) {
-        toast({
-          title: "Bluetooth Not Supported",
-          description: "Web Bluetooth API is not supported in this browser. Please use Chrome, Edge, or Opera.",
-          variant: "destructive"
-        });
+        toast.error('Web Bluetooth API is not supported in this browser. Please use Chrome, Edge, or Opera.');
         setIsScanning(false);
         return;
       }
