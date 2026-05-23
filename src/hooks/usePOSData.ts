@@ -31,7 +31,15 @@ const createEmptyRow = (): POSRow => ({
 
 const getDraftKey = (type: POSType) => `pos-${type}-draft`;
 
-const loadDraft = (type: POSType): POSRow[] | null => {
+interface DraftShape {
+  rows: POSRow[];
+  paidAmount?: number;
+  dueDate?: string;
+  selectedContactId?: string | null;
+  timestamp: number;
+}
+
+const loadDraft = (type: POSType): DraftShape | null => {
   try {
     const raw = localStorage.getItem(getDraftKey(type));
     if (!raw) return null;
@@ -40,15 +48,15 @@ const loadDraft = (type: POSType): POSRow[] | null => {
       localStorage.removeItem(getDraftKey(type));
       return null;
     }
-    return draft.rows as POSRow[];
+    return draft as DraftShape;
   } catch {
     return null;
   }
 };
 
-const saveDraft = (type: POSType, rows: POSRow[]) => {
+const saveDraft = (type: POSType, data: Omit<DraftShape, 'timestamp'>) => {
   try {
-    localStorage.setItem(getDraftKey(type), JSON.stringify({ rows, timestamp: Date.now() }));
+    localStorage.setItem(getDraftKey(type), JSON.stringify({ ...data, timestamp: Date.now() }));
   } catch { /* ignore */ }
 };
 
