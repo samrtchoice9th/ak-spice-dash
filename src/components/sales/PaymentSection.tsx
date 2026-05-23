@@ -33,7 +33,7 @@ export const PaymentSection: React.FC<PaymentSectionProps> = ({
             min={0}
             max={grandTotal}
             value={paidAmount || ''}
-            onChange={e => onPaidAmountChange(Math.max(0, Number(e.target.value)))}
+            onChange={e => onPaidAmountChange(Math.min(grandTotal, Math.max(0, Number(e.target.value) || 0)))}
             className="h-8 text-sm"
             placeholder="0"
           />

@@ -7,6 +7,7 @@ import { Printer, X, CheckCircle, FileText } from 'lucide-react';
 import { POSRow } from '@/hooks/usePOSData';
 import { printToRawBT } from '@/utils/printReceipt';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SaveSuccessModalProps {
   open: boolean;
@@ -23,8 +24,16 @@ export const SaveSuccessModal: React.FC<SaveSuccessModalProps> = ({
   open, onClose, savedRows, type = 'sales',
   customerName, customerWhatsApp, paidAmount = 0, dueAmount = 0,
 }) => {
+  const { user } = useAuth();
+  const meta = (user?.user_metadata || {}) as { shop_name?: string; shop_phone?: string; shop_address?: string };
+  const shopName = meta.shop_name?.trim() || 'My Shop';
+  const shopPhone = meta.shop_phone?.trim() || '';
+  const shopAddress = meta.shop_address?.trim() || '';
+
   const grandTotal = savedRows.reduce((sum, r) => sum + r.total, 0);
   const label = type === 'purchase' ? 'Purchase' : 'Sale';
+  const now = new Date();
+  const dateStr = now.toLocaleString('en-GB', { timeZone: 'Asia/Colombo' });
 
   const handlePrint = () => {
     const tableRows = savedRows.map(r => ({
@@ -38,8 +47,6 @@ export const SaveSuccessModal: React.FC<SaveSuccessModalProps> = ({
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const now = new Date();
-    const dateStr = now.toLocaleDateString();
     const itemsHtml = savedRows.map(r =>
       `<tr><td style="padding:4px;border-bottom:1px solid #eee">${r.name}</td>
        <td style="padding:4px;text-align:center;border-bottom:1px solid #eee">${r.qty}</td>
@@ -53,7 +60,10 @@ export const SaveSuccessModal: React.FC<SaveSuccessModalProps> = ({
       .total{font-size:16px;font-weight:bold;margin-top:10px;text-align:right}
       .header{text-align:center;margin-bottom:15px}h2{margin:0}
       @media print{body{padding:5px}}</style></head><body>
-      <div class="header"><h2>AK SPICE</h2><p style="font-size:12px">${dateStr} • ${label}</p>
+      <div class="header"><h2>${shopName}</h2>
+      ${shopAddress ? `<p style="font-size:11px;margin:2px 0">${shopAddress}</p>` : ''}
+      ${shopPhone ? `<p style="font-size:11px;margin:2px 0">${shopPhone}</p>` : ''}
+      <p style="font-size:12px">${dateStr} • ${label}</p>
       ${customerName ? `<p style="font-size:12px">Customer: ${customerName}</p>` : ''}</div>
       <table><thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr></thead>
       <tbody>${itemsHtml}</tbody></table>
@@ -66,7 +76,7 @@ export const SaveSuccessModal: React.FC<SaveSuccessModalProps> = ({
     printWindow.print();
   };
 
-  const receiptText = `*AK SPICE*\nDate: ${new Date().toLocaleDateString()}\n${label}\n---------------\n${
+  const receiptText = `*${shopName}*\nDate: ${dateStr}\n${label}\n---------------\n${
     savedRows.map(r => `${r.name} x${r.qty} = Rs.${r.total.toFixed(2)}`).join('\n')
   }\n---------------\nTotal: Rs.${grandTotal.toFixed(2)}${
     paidAmount > 0 ? `\nPaid: Rs.${paidAmount.toFixed(2)}` : ''

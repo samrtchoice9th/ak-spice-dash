@@ -31,7 +31,15 @@ const createEmptyRow = (): POSRow => ({
 
 const getDraftKey = (type: POSType) => `pos-${type}-draft`;
 
-const loadDraft = (type: POSType): POSRow[] | null => {
+interface DraftShape {
+  rows: POSRow[];
+  paidAmount?: number;
+  dueDate?: string;
+  selectedContactId?: string | null;
+  timestamp: number;
+}
+
+const loadDraft = (type: POSType): DraftShape | null => {
   try {
     const raw = localStorage.getItem(getDraftKey(type));
     if (!raw) return null;
@@ -40,15 +48,15 @@ const loadDraft = (type: POSType): POSRow[] | null => {
       localStorage.removeItem(getDraftKey(type));
       return null;
     }
-    return draft.rows as POSRow[];
+    return draft as DraftShape;
   } catch {
     return null;
   }
 };
 
-const saveDraft = (type: POSType, rows: POSRow[]) => {
+const saveDraft = (type: POSType, data: Omit<DraftShape, 'timestamp'>) => {
   try {
-    localStorage.setItem(getDraftKey(type), JSON.stringify({ rows, timestamp: Date.now() }));
+    localStorage.setItem(getDraftKey(type), JSON.stringify({ ...data, timestamp: Date.now() }));
   } catch { /* ignore */ }
 };
 
@@ -57,17 +65,17 @@ const clearDraft = (type: POSType) => {
 };
 
 export const usePOSData = (type: POSType) => {
-  const [rows, setRows] = useState<POSRow[]>(() => {
-    const draft = loadDraft(type);
-    return draft && draft.length > 0 ? draft : [createEmptyRow()];
-  });
+  const initialDraft = typeof window !== 'undefined' ? loadDraft(type) : null;
+  const [rows, setRows] = useState<POSRow[]>(() =>
+    initialDraft && initialDraft.rows.length > 0 ? initialDraft.rows : [createEmptyRow()]
+  );
   const [errors, setErrors] = useState<POSErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastSavedRows, setLastSavedRows] = useState<POSRow[]>([]);
-  const [paidAmount, setPaidAmount] = useState(0);
-  const [dueDate, setDueDate] = useState('');
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [paidAmount, setPaidAmount] = useState(initialDraft?.paidAmount ?? 0);
+  const [dueDate, setDueDate] = useState(initialDraft?.dueDate ?? '');
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(initialDraft?.selectedContactId ?? null);
 
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const { addReceipt } = useReceipts();
@@ -75,8 +83,11 @@ export const usePOSData = (type: POSType) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    saveDraft(type, rows);
-  }, [rows, type]);
+    const t = setTimeout(() => {
+      saveDraft(type, { rows, paidAmount, dueDate, selectedContactId });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [rows, paidAmount, dueDate, selectedContactId, type]);
 
   const updateRow = useCallback((id: string, field: keyof POSRow, value: string | number) => {
     setRows(prev => prev.map(row => {

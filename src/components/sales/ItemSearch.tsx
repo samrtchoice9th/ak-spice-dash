@@ -66,6 +66,8 @@ export const ItemSearch: React.FC<ItemSearchProps> = React.memo(({
     justSelectedRef.current = true;
     onSelect(product.name, product.price);
     setIsOpen(false);
+    setFiltered([]);
+    setHighlightIdx(-1);
   }, [onSelect]);
 
   const handleKeyDownInternal = useCallback((e: React.KeyboardEvent) => {
@@ -96,7 +98,7 @@ export const ItemSearch: React.FC<ItemSearchProps> = React.memo(({
         value={value}
         onChange={e => onChange(e.target.value)}
         onKeyDown={handleKeyDownInternal}
-        onFocus={() => { if (filtered.length > 0) setIsOpen(true); }}
+        onFocus={() => { if (filtered.length > 0 && value.trim()) setIsOpen(true); }}
         placeholder="Search item..."
         className={cn(
           "h-9 text-sm",

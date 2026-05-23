@@ -3,7 +3,7 @@ import { POSRow } from '@/hooks/usePOSData';
 import { ItemSearch } from './ItemSearch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash2, Copy, Minus, Plus } from 'lucide-react';
+import { Trash2, Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -12,7 +12,6 @@ interface SalesRowProps {
   rowErrors?: { [field: string]: string };
   onUpdate: (id: string, field: keyof POSRow, value: string | number) => void;
   onDelete: (id: string) => void;
-  onDuplicate: (id: string) => void;
   onKeyDown: (e: React.KeyboardEvent, rowId: string, field: 'name' | 'qty' | 'price') => void;
   inputRefs: React.MutableRefObject<{ [key: string]: HTMLInputElement | null }>;
 }
@@ -22,7 +21,6 @@ export const SalesRowComponent: React.FC<SalesRowProps> = React.memo(({
   rowErrors,
   onUpdate,
   onDelete,
-  onDuplicate,
   onKeyDown,
   inputRefs,
 }) => {

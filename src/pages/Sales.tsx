@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePOSData } from '@/hooks/usePOSData';
 import { SalesRowComponent } from '@/components/sales/SalesRow';
 import { TotalBar } from '@/components/sales/TotalBar';
@@ -12,7 +12,7 @@ const Sales = () => {
   const {
     rows, errors, isSaving, showSuccess, setShowSuccess,
     lastSavedRows, grandTotal, distinctItems, inputRefs,
-    updateRow, addRow, deleteRow, duplicateRow, handleKeyDown, handleSave,
+    updateRow, addRow, deleteRow, handleKeyDown, handleSave,
     paidAmount, setPaidAmount, dueDate, setDueDate,
     setSelectedContactId,
   } = usePOSData('sales');
@@ -25,6 +25,17 @@ const Sales = () => {
     setSelectedContactId(c?.id || null);
     if (!c) { setPaidAmount(0); setDueDate(''); }
   };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isSaving && Object.keys(errors).length === 0) {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isSaving, errors, handleSave]);
 
   return (
     <div className="pb-24">
@@ -40,7 +51,7 @@ const Sales = () => {
         <div className="space-y-2">
           {rows.map(row => (
             <SalesRowComponent key={row.id} row={row} rowErrors={errors[row.id]}
-              onUpdate={updateRow} onDelete={deleteRow} onDuplicate={duplicateRow}
+              onUpdate={updateRow} onDelete={deleteRow}
               onKeyDown={handleKeyDown} inputRefs={inputRefs} />
           ))}
         </div>
@@ -59,7 +70,7 @@ const Sales = () => {
             <tbody>
               {rows.map(row => (
                 <SalesRowComponent key={row.id} row={row} rowErrors={errors[row.id]}
-                  onUpdate={updateRow} onDelete={deleteRow} onDuplicate={duplicateRow}
+                  onUpdate={updateRow} onDelete={deleteRow}
                   onKeyDown={handleKeyDown} inputRefs={inputRefs} />
               ))}
             </tbody>
