@@ -12,7 +12,7 @@ const Purchase = () => {
   const {
     rows, errors, isSaving, showSuccess, setShowSuccess,
     lastSavedRows, grandTotal, distinctItems, inputRefs,
-    updateRow, addRow, deleteRow, duplicateRow, handleKeyDown, handleSave,
+    updateRow, addRow, deleteRow, handleKeyDown, handleSave,
     paidAmount, setPaidAmount, dueDate, setDueDate,
     setSelectedContactId,
   } = usePOSData('purchase');
@@ -40,7 +40,7 @@ const Purchase = () => {
         <div className="space-y-2">
           {rows.map(row => (
             <SalesRowComponent key={row.id} row={row} rowErrors={errors[row.id]}
-              onUpdate={updateRow} onDelete={deleteRow} onDuplicate={duplicateRow}
+              onUpdate={updateRow} onDelete={deleteRow}
               onKeyDown={handleKeyDown} inputRefs={inputRefs} />
           ))}
         </div>
@@ -59,7 +59,7 @@ const Purchase = () => {
             <tbody>
               {rows.map(row => (
                 <SalesRowComponent key={row.id} row={row} rowErrors={errors[row.id]}
-                  onUpdate={updateRow} onDelete={deleteRow} onDuplicate={duplicateRow}
+                  onUpdate={updateRow} onDelete={deleteRow}
                   onKeyDown={handleKeyDown} inputRefs={inputRefs} />
               ))}
             </tbody>

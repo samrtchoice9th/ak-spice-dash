@@ -51,7 +51,7 @@ const Sales = () => {
         <div className="space-y-2">
           {rows.map(row => (
             <SalesRowComponent key={row.id} row={row} rowErrors={errors[row.id]}
-              onUpdate={updateRow} onDelete={deleteRow} onDuplicate={duplicateRow}
+              onUpdate={updateRow} onDelete={deleteRow}
               onKeyDown={handleKeyDown} inputRefs={inputRefs} />
           ))}
         </div>
@@ -70,7 +70,7 @@ const Sales = () => {
             <tbody>
               {rows.map(row => (
                 <SalesRowComponent key={row.id} row={row} rowErrors={errors[row.id]}
-                  onUpdate={updateRow} onDelete={deleteRow} onDuplicate={duplicateRow}
+                  onUpdate={updateRow} onDelete={deleteRow}
                   onKeyDown={handleKeyDown} inputRefs={inputRefs} />
               ))}
             </tbody>
