@@ -2,6 +2,29 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Receipt, ReceiptItem } from '@/contexts/ReceiptsContext';
 
+// Extract the real error message from a FunctionsHttpError by reading its response body.
+// supabase.functions.invoke() doesn't surface the JSON `{ error }` payload for non-2xx
+// responses by default — only the generic "Edge Function returned a non-2xx status code".
+async function extractEdgeError(error: any, fallback = 'Request failed'): Promise<Error> {
+  let msg = error?.message || fallback;
+  try {
+    const ctx = error?.context;
+    if (ctx && typeof ctx.json === 'function') {
+      const body = await ctx.json();
+      if (body?.error) msg = body.error;
+    } else if (ctx && typeof ctx.text === 'function') {
+      const text = await ctx.text();
+      if (text) {
+        try { msg = JSON.parse(text)?.error || text; } catch { msg = text; }
+      }
+    }
+  } catch {
+    // ignore parse failures, keep fallback msg
+  }
+  return new Error(msg);
+}
+
+
 export const receiptService = {
   async getReceiptsByMonth(year: number, month: number): Promise<Receipt[]> {
     const { data: { user } } = await supabase.auth.getUser();
