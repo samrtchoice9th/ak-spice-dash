@@ -121,7 +121,7 @@ export const receiptService = {
 
     if (error) {
       console.error('Error creating receipt:', error);
-      throw error;
+      throw await extractEdgeError(error, 'Failed to create receipt');
     }
 
     if (data?.error) {
