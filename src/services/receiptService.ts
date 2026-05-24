@@ -150,7 +150,7 @@ export const receiptService = {
 
     if (error) {
       console.error('Error updating receipt:', error);
-      throw error;
+      throw await extractEdgeError(error, 'Failed to update receipt');
     }
 
     if (data?.error) {
