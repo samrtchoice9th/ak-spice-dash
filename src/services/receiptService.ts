@@ -189,7 +189,7 @@ export const receiptService = {
 
     if (error) {
       console.error('Error paying due:', error);
-      throw error;
+      throw await extractEdgeError(error, 'Failed to record payment');
     }
 
     if (data?.error) {
