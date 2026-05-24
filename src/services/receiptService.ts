@@ -168,7 +168,7 @@ export const receiptService = {
 
     if (error) {
       console.error('Error deleting receipt:', error);
-      throw error;
+      throw await extractEdgeError(error, 'Failed to delete receipt');
     }
 
     if (data?.error) {
