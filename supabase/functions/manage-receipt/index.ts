@@ -142,11 +142,25 @@ async function getOrCreateProduct(
 }
 
 function isPurchaseType(type: string) {
-  return type === "purchase" || type === "increase";
+  return type === "purchase" || type === "increase" || type === "return_in";
 }
 
 function isSalesType(type: string) {
-  return type === "sales" || type === "reduce";
+  return (
+    type === "sales" ||
+    type === "reduce" ||
+    type === "adjustment" ||
+    type === "damage" ||
+    type === "return_out"
+  );
+}
+
+// Signed inventory effect for a transaction type.
+// +qty for stock-in, -qty for stock-out, 0 for unknown.
+function getInventoryDelta(type: string, qty: number): number {
+  if (isPurchaseType(type)) return qty;
+  if (isSalesType(type)) return -qty;
+  return 0;
 }
 
 async function applyStockEffect(
@@ -373,6 +387,13 @@ async function handleUpdate(db: any, body: RequestBody, shopId: string | null, u
     return jsonResponse({ error: "type and items are required" }, 400);
   }
 
+  // Validate items
+  for (const item of items) {
+    if (!item.itemName?.trim()) return jsonResponse({ error: "Item name is required" }, 400);
+    if (item.qty <= 0) return jsonResponse({ error: `Qty must be > 0 for ${item.itemName}` }, 400);
+    if (item.price < 0) return jsonResponse({ error: `Price must be >= 0 for ${item.itemName}` }, 400);
+  }
+
   // 1. Fetch old receipt + items
   const { data: oldReceipt, error: fetchError } = await db
     .from("receipts")
@@ -384,7 +405,6 @@ async function handleUpdate(db: any, body: RequestBody, shopId: string | null, u
     return jsonResponse({ error: "Receipt not found" }, 404);
   }
 
-  // Issue #3: Authorization check — verify receipt belongs to user's shop
   if (oldReceipt.shop_id !== shopId) {
     return jsonResponse({ error: "Unauthorized: receipt does not belong to your shop" }, 403);
   }
@@ -395,13 +415,65 @@ async function handleUpdate(db: any, body: RequestBody, shopId: string | null, u
     price: Number(ri.price),
     total: Number(ri.total),
   }));
+  const oldType = oldReceipt.type as string;
 
-  // 2. Reverse old stock effects
-  for (const item of oldItems) {
-    await reverseStockEffect(db, oldReceipt.type, item, shopId);
+  // 2. SIMULATE the net stock delta per product BEFORE touching the DB.
+  //    delta = -oldEffect + newEffect, aggregated by itemName.
+  const deltaByItem = new Map<string, number>();
+  for (const it of oldItems) {
+    deltaByItem.set(
+      it.itemName,
+      (deltaByItem.get(it.itemName) || 0) - getInventoryDelta(oldType, it.qty),
+    );
+  }
+  for (const it of items) {
+    deltaByItem.set(
+      it.itemName,
+      (deltaByItem.get(it.itemName) || 0) + getInventoryDelta(type!, it.qty),
+    );
   }
 
-  // 3. Update receipt
+  // Fetch current stock for every affected product and check none would go negative
+  const affectedNames = Array.from(deltaByItem.keys());
+  const { data: affectedProducts } = await db
+    .from("products")
+    .select("name, current_stock")
+    .eq("shop_id", shopId)
+    .in("name", affectedNames);
+
+  const stockByName = new Map<string, number>(
+    (affectedProducts ?? []).map((p: any) => [p.name, Number(p.current_stock)]),
+  );
+
+  for (const [name, delta] of deltaByItem) {
+    const current = stockByName.get(name) ?? 0;
+    const simulated = current + delta;
+    if (simulated < 0) {
+      return jsonResponse(
+        {
+          error: `Insufficient stock for ${name}. Available: ${current}, edit would result in ${simulated}.`,
+        },
+        400,
+      );
+    }
+  }
+
+  // 3. Reverse old stock effects (snapshot for rollback)
+  const reversed: ReceiptItem[] = [];
+  try {
+    for (const item of oldItems) {
+      await reverseStockEffect(db, oldType, item, shopId);
+      reversed.push(item);
+    }
+  } catch (e) {
+    // Re-apply anything we already reversed to restore original stock
+    for (const item of reversed) {
+      try { await applyStockEffect(db, oldType, item, shopId, userId || oldReceipt.user_id); } catch {}
+    }
+    throw e;
+  }
+
+  // 4. Update receipt row
   const { error: updateError } = await db
     .from("receipts")
     .update({
@@ -411,9 +483,15 @@ async function handleUpdate(db: any, body: RequestBody, shopId: string | null, u
     })
     .eq("id", receipt_id);
 
-  if (updateError) throw new Error(`Failed to update receipt: ${updateError.message}`);
+  if (updateError) {
+    // Rollback: re-apply old stock
+    for (const item of oldItems) {
+      try { await applyStockEffect(db, oldType, item, shopId, userId || oldReceipt.user_id); } catch {}
+    }
+    throw new Error(`Failed to update receipt: ${updateError.message}`);
+  }
 
-  // 4. Delete old items, insert new
+  // 5. Replace receipt_items
   await db.from("receipt_items").delete().eq("receipt_id", receipt_id);
 
   const itemsToInsert = items.map((item) => ({
@@ -429,12 +507,54 @@ async function handleUpdate(db: any, body: RequestBody, shopId: string | null, u
     .from("receipt_items")
     .insert(itemsToInsert);
 
-  if (newItemsError) throw new Error(`Failed to insert new items: ${newItemsError.message}`);
+  if (newItemsError) {
+    // Restore old items + old stock + old type
+    await db.from("receipt_items").insert(
+      oldReceipt.receipt_items.map((ri: any) => ({
+        receipt_id,
+        item_name: ri.item_name,
+        qty: ri.qty,
+        price: ri.price,
+        total: ri.total,
+        reason: ri.reason,
+      })),
+    );
+    await db.from("receipts").update({ type: oldType, total_amount: oldReceipt.total_amount }).eq("id", receipt_id);
+    for (const item of oldItems) {
+      try { await applyStockEffect(db, oldType, item, shopId, userId || oldReceipt.user_id); } catch {}
+    }
+    throw new Error(`Failed to insert new items: ${newItemsError.message}`);
+  }
 
-  // 5. Apply new stock effects
+  // 6. Apply new stock effects (snapshot for rollback)
   const effectiveUserId = userId || oldReceipt.user_id;
-  for (const item of items) {
-    await applyStockEffect(db, type!, item, shopId, effectiveUserId);
+  const applied: ReceiptItem[] = [];
+  try {
+    for (const item of items) {
+      await applyStockEffect(db, type!, item, shopId, effectiveUserId);
+      applied.push(item);
+    }
+  } catch (e) {
+    // Rollback applied new effects, restore items, restore old type, re-apply old effects
+    for (const item of applied) {
+      try { await reverseStockEffect(db, type!, item, shopId); } catch {}
+    }
+    await db.from("receipt_items").delete().eq("receipt_id", receipt_id);
+    await db.from("receipt_items").insert(
+      oldReceipt.receipt_items.map((ri: any) => ({
+        receipt_id,
+        item_name: ri.item_name,
+        qty: ri.qty,
+        price: ri.price,
+        total: ri.total,
+        reason: ri.reason,
+      })),
+    );
+    await db.from("receipts").update({ type: oldType, total_amount: oldReceipt.total_amount }).eq("id", receipt_id);
+    for (const item of oldItems) {
+      try { await applyStockEffect(db, oldType, item, shopId, effectiveUserId); } catch {}
+    }
+    throw e;
   }
 
   return jsonResponse({ success: true });

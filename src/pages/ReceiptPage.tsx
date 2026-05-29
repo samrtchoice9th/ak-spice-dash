@@ -63,14 +63,18 @@ const ReceiptPage = () => {
   const handleSaveReceipt = useCallback(async (id: string, receiptData: any) => {
     try {
       await updateReceipt(id, receiptData);
-      await refreshProducts();
+      // Refresh both products (stock) and receipts (so the dialog re-reads fresh values)
+      await Promise.all([
+        refreshProducts(),
+        refreshReceipts(selectedYear, selectedMonth),
+      ]);
       setEditingReceipt(null);
       setIsEditDialogOpen(false);
     } catch (error) {
       console.error('Failed to save receipt:', error);
       throw error;
     }
-  }, [updateReceipt, refreshProducts]);
+  }, [updateReceipt, refreshProducts, refreshReceipts, selectedYear, selectedMonth]);
 
   if (loading) {
     return (
