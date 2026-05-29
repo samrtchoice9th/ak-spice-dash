@@ -142,11 +142,25 @@ async function getOrCreateProduct(
 }
 
 function isPurchaseType(type: string) {
-  return type === "purchase" || type === "increase";
+  return type === "purchase" || type === "increase" || type === "return_in";
 }
 
 function isSalesType(type: string) {
-  return type === "sales" || type === "reduce";
+  return (
+    type === "sales" ||
+    type === "reduce" ||
+    type === "adjustment" ||
+    type === "damage" ||
+    type === "return_out"
+  );
+}
+
+// Signed inventory effect for a transaction type.
+// +qty for stock-in, -qty for stock-out, 0 for unknown.
+function getInventoryDelta(type: string, qty: number): number {
+  if (isPurchaseType(type)) return qty;
+  if (isSalesType(type)) return -qty;
+  return 0;
 }
 
 async function applyStockEffect(
