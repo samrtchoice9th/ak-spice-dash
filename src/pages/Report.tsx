@@ -1,8 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { useReceipts } from '@/contexts/ReceiptsContext';
-import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, parseISO } from 'date-fns';
+import {
+  format, startOfDay, endOfDay, startOfWeek, endOfWeek,
+  startOfMonth, endOfMonth, subMonths, parseISO,
+} from 'date-fns';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -10,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 
-type DateFilter = 'today' | 'week' | 'all';
+type DateFilter = 'today' | 'week' | 'month' | 'lastMonth' | 'all';
 
 interface DayReport {
   date: string;
@@ -19,20 +22,40 @@ interface DayReport {
 }
 
 const Report = () => {
-  const { receipts, loading } = useReceipts();
+  const { receipts, loading, refreshReceipts } = useReceipts();
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+
+  // Load the correct month when filter changes
+  useEffect(() => {
+    const now = new Date();
+    if (dateFilter === 'lastMonth') {
+      const last = subMonths(now, 1);
+      refreshReceipts(last.getFullYear(), last.getMonth());
+    } else {
+      refreshReceipts(now.getFullYear(), now.getMonth());
+    }
+  }, [dateFilter, refreshReceipts]);
+
+  const { startDate, endDate, periodLabel } = useMemo(() => {
+    const now = new Date();
+    switch (dateFilter) {
+      case 'today':
+        return { startDate: startOfDay(now), endDate: endOfDay(now), periodLabel: `Today — ${format(now, 'MMM dd, yyyy')}` };
+      case 'week':
+        return { startDate: startOfWeek(now), endDate: endOfWeek(now), periodLabel: `This Week — ${format(startOfWeek(now), 'MMM dd')} – ${format(endOfWeek(now), 'MMM dd, yyyy')}` };
+      case 'month':
+        return { startDate: startOfMonth(now), endDate: endOfMonth(now), periodLabel: `This Month — ${format(now, 'MMM yyyy')}` };
+      case 'lastMonth': {
+        const last = subMonths(now, 1);
+        return { startDate: startOfMonth(last), endDate: endOfMonth(last), periodLabel: `Last Month — ${format(last, 'MMM yyyy')}` };
+      }
+      default:
+        return { startDate: new Date(0), endDate: new Date(2099, 11, 31), periodLabel: 'All Time' };
+    }
+  }, [dateFilter]);
 
   const filteredReports = useMemo(() => {
     if (!receipts.length) return [];
-    const now = new Date();
-    let startDate: Date;
-    let endDate: Date = endOfDay(now);
-
-    switch (dateFilter) {
-      case 'today': startDate = startOfDay(now); break;
-      case 'week': startDate = startOfWeek(now); endDate = endOfWeek(now); break;
-      default: startDate = new Date(0); endDate = new Date(2099, 11, 31);
-    }
 
     const groupedByDate = receipts.reduce((acc, receipt) => {
       const receiptDate = parseISO(receipt.date);
@@ -46,7 +69,7 @@ const Report = () => {
     }, {} as Record<string, DayReport>);
 
     return Object.values(groupedByDate).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [receipts, dateFilter]);
+  }, [receipts, startDate, endDate]);
 
   const totals = useMemo(() => {
     return filteredReports.reduce(
@@ -70,15 +93,20 @@ const Report = () => {
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <h1 className="text-lg sm:text-2xl font-bold text-foreground">Sales & Purchase Report</h1>
+        <div>
+          <h1 className="text-lg sm:text-2xl font-bold text-foreground">Sales & Purchase Report</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">{periodLabel}</p>
+        </div>
         <Select value={dateFilter} onValueChange={(value) => setDateFilter(value as DateFilter)}>
-          <SelectTrigger className="w-full sm:w-[180px] h-10">
+          <SelectTrigger className="w-full sm:w-[200px] h-10">
             <CalendarIcon className="mr-2 h-4 w-4" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="today">Today</SelectItem>
             <SelectItem value="week">This Week</SelectItem>
+            <SelectItem value="month">This Month</SelectItem>
+            <SelectItem value="lastMonth">Last Month</SelectItem>
             <SelectItem value="all">All Time</SelectItem>
           </SelectContent>
         </Select>
