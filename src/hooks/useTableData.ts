@@ -13,7 +13,7 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const { addReceipt } = useReceipts();
-  const { refreshProducts } = useProducts();
+  const { refreshProducts, updateStock } = useProducts();
   const { toast } = useToast();
 
   const addRow = () => {
@@ -145,23 +145,13 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
         setIsSaving(true);
         
         if (isAdjustment) {
-          const increaseItems = itemsWithType.filter(i => i.type === 'increase');
-          const reduceItems = itemsWithType.filter(i => i.type === 'reduce');
-          
-          if (increaseItems.length > 0) {
-            await addReceipt({
-              type: 'increase',
-              items: increaseItems.map(i => i.item),
-              totalAmount: increaseItems.reduce((sum, i) => sum + i.item.total, 0)
-            });
-          }
-          
-          if (reduceItems.length > 0) {
-            await addReceipt({
-              type: 'reduce',
-              items: reduceItems.map(i => i.item),
-              totalAmount: reduceItems.reduce((sum, i) => sum + i.item.total, 0)
-            });
+          // Stock adjustment: update inventory only, do NOT create receipts
+          for (const i of itemsWithType) {
+            await updateStock(
+              i.item.itemName,
+              i.item.qty,
+              i.type as 'increase' | 'reduce'
+            );
           }
         } else {
           await addReceipt({
@@ -171,13 +161,17 @@ export const useTableData = (type: 'purchase' | 'sales' | 'adjustment' = 'sales'
           });
         }
 
+
         // Refresh products to get updated stock from edge function
         await refreshProducts();
 
         toast({
           title: "Saved successfully",
-          description: "Receipt saved and inventory updated successfully",
+          description: isAdjustment
+            ? "Stock updated successfully"
+            : "Receipt saved and inventory updated successfully",
         });
+
         
         clearAllFields();
       } catch (error: any) {

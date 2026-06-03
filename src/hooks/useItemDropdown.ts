@@ -21,7 +21,9 @@ export const useItemDropdown = (value: string) => {
     );
     setFilteredItems(filtered);
     setSelectedIndex(-1);
+    setIsOpen(true);
   }, [value, itemNames]);
+
 
   const handleItemSelect = (item: string) => {
     setIsOpen(false);
