@@ -1,64 +1,62 @@
-# Fix Two Receipt/Stock Issues
+# Fix: Edit Receipt dialog — dropdown selection doesn't fill item name
 
-## Issue 1 — Item search dropdown shows only after 2 characters
+## Problem
+In the Edit Receipt popup, when adding a new item and picking a name from the dropdown, the item name field stays empty. Only typing letters works (and even that shows the search list but selection appears to do nothing).
 
-**Root cause** (`src/hooks/useItemDropdown.ts`):
-The effect closes the dropdown when value is empty (`setIsOpen(false)`), but never re-opens it when the user starts typing. Once closed, the next keystroke filters items but the panel stays hidden until the user clicks/focuses again — making it feel like "needs 2 characters".
-
-**Fix:** When `value` becomes non-empty after being empty, set `isOpen` to `true` in the same effect, so the first typed character immediately reveals the list.
+## Root cause
+`EditReceiptDialog.updateItem` always builds its next state from the `items` value captured in its closure:
 
 ```ts
-useEffect(() => {
-  if (!value.trim()) {
-    setFilteredItems([]);
-    setIsOpen(false);
-    return;
-  }
-  const filtered = itemNames.filter(i => i.toLowerCase().includes(value.toLowerCase()));
-  setFilteredItems(filtered);
-  setSelectedIndex(-1);
-  setIsOpen(true);   // <-- add this
-}, [value, itemNames]);
+const updatedItems = [...items];
+updatedItems[index] = { ...updatedItems[index], [field]: value };
+setItems(updatedItems);
 ```
 
-No other files touched.
+When the user picks a product in the dropdown, `EditReceiptItemRow` fires three updates back-to-back in the same tick:
+1. `onUpdate(index, 'itemName', selectedName)` (from `ItemSearchDropdown.onChange`)
+2. `onUpdate(index, 'itemName', selectedName)` (from `handleItemSelect`)
+3. `onUpdate(index, 'price', selectedProduct.price)` (from `handleItemSelect`)
 
----
+Each call reads the same stale `items`, so call #3 overwrites #1/#2 and the itemName is lost. End result: name field blank, price filled.
 
-## Issue 2 — Stock Adjustment save fails: `receipts_type_check` violation
+## Fix
+Two small, surgical changes — frontend only, no logic/business changes.
 
-**Root cause:**
-- DB CHECK constraint on `receipts.type` only allows `'purchase'` and `'sales'`.
-- Current Stock Adjustment flow (`src/hooks/useTableData.ts` → `handleSave`) calls `addReceipt({ type: 'increase' | 'reduce', ... })`, which the DB rejects.
-- Per your request, Stock Adjustment should **not create any receipt** — it should only update the product's stock in inventory.
+### 1. `src/components/EditReceiptDialog.tsx`
+Make `updateItem` use the functional form of `setItems` so consecutive updates compose correctly, and recompute `total` from the merged row:
 
-**Fix scope (frontend only, no DB migration):**
+```ts
+const updateItem = (index: number, field: keyof ReceiptItem, value: string | number) => {
+  setItems(prev => {
+    const next = [...prev];
+    const merged = { ...next[index], [field]: value };
+    if (field === 'qty' || field === 'price') {
+      merged.total = Number(merged.qty) * Number(merged.price);
+    }
+    next[index] = merged;
+    return next;
+  });
+};
+```
 
-1. **`src/hooks/useTableData.ts` — `handleSave`**
-   For `type === 'adjustment'`:
-   - Skip `addReceipt` entirely (no increase/reduce receipts inserted).
-   - For each valid row, call `updateStock(itemName, qty, 'increase' | 'reduce')` from `ProductsContext` (which uses `productService.updateStock` → direct `products` table update, no receipts).
-   - Keep WAC/cost handling out of scope (sticking to "stock update only" as you said).
-   - On success: toast "Stock updated successfully", clear rows, refresh products.
-   - On failure: toast error, keep rows so user can retry.
+### 2. `src/components/EditReceiptItemRow.tsx`
+Stop calling `onUpdate` twice for the name. The `ItemSearchDropdown` already forwards the chosen name through `onChange`, so `handleItemSelect` only needs to set the price:
 
-2. **No changes** to purchase/sales flow — those continue to create receipts as today.
+```ts
+const handleItemSelect = (itemName: string) => {
+  const selectedProduct = products.find(p => p.name === itemName);
+  if (selectedProduct) {
+    onUpdate(index, 'price', selectedProduct.price);
+  }
+};
+```
 
-3. **Receipt page filtering** — already only displays receipts that exist in the DB. Since adjustments will no longer be saved, they simply won't appear in receipts/reports. ✅ matches your requirement.
-
-### Stock Adjustment ↔ Inventory connection re-check
-
-Verified the flow after the fix:
-- `useTableData.handleSave` (adjustment) → `productsContext.updateStock` → `productService.updateStock` → direct `products` table UPSERT/UPDATE → `refreshProducts` → Inventory page sees new `current_stock`.
-- No edge function call, no `receipts` insert, no constraint violation.
-
----
+`onChange` keeps doing `onUpdate(index, 'itemName', value)` then `handleItemSelect(value)`. With the functional setter from change #1, both updates compose and the row ends up with the correct name, price, and total.
 
 ## Out of scope
-- Not touching `manage-receipt` edge function (only sales/purchase use it now).
-- Not changing the DB constraint (no migration needed — adjustments stop writing to receipts).
-- No audit log, no UI redesign for stock adjustment, no historical migration of past `increase`/`reduce` receipts (the constraint already blocks them, so none exist).
+- No changes to `useItemDropdown`, `ItemSearchDropdown`, stock-adjustment flow, or any DB/edge logic.
+- Sales/Purchase pages use a different component (`sales/ItemSearch`) and are unaffected.
 
-## Files to edit
-- `src/hooks/useItemDropdown.ts` — 1-line fix
-- `src/hooks/useTableData.ts` — replace adjustment branch in `handleSave`
+## Files changed
+- `src/components/EditReceiptDialog.tsx`
+- `src/components/EditReceiptItemRow.tsx`
