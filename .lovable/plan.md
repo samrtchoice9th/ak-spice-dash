@@ -1,35 +1,64 @@
-## Goal
-Extend the Report page so users can view sales/purchase totals for **last month** in addition to Today, This Week, and All Time.
+# Fix Two Receipt/Stock Issues
 
-## Changes (frontend only — `src/pages/Report.tsx`)
+## Issue 1 — Item search dropdown shows only after 2 characters
 
-1. **Extend `DateFilter` type**
-   - Add `'month'` (current month) and `'lastMonth'` options.
-   - New type: `'today' | 'week' | 'month' | 'lastMonth' | 'all'`.
+**Root cause** (`src/hooks/useItemDropdown.ts`):
+The effect closes the dropdown when value is empty (`setIsOpen(false)`), but never re-opens it when the user starts typing. Once closed, the next keystroke filters items but the panel stays hidden until the user clicks/focuses again — making it feel like "needs 2 characters".
 
-2. **Update filter logic in `filteredReports` useMemo**
-   - `month`: `startOfMonth(now)` → `endOfMonth(now)` (using `date-fns`).
-   - `lastMonth`: `startOfMonth(subMonths(now, 1))` → `endOfMonth(subMonths(now, 1))`.
+**Fix:** When `value` becomes non-empty after being empty, set `isOpen` to `true` in the same effect, so the first typed character immediately reveals the list.
 
-3. **Cross-month data fetch**
-   - `useReceipts` currently only loads the current month. When the user picks **Last Month**, call `refreshReceipts(year, month-1)` so the data is actually present.
-   - When switching back to Today/This Week/Month, reload current month.
-   - "All Time" stays as-is (still bounded by what's loaded; acceptable since `getAllReceipts` isn't wired into context — out of scope).
+```ts
+useEffect(() => {
+  if (!value.trim()) {
+    setFilteredItems([]);
+    setIsOpen(false);
+    return;
+  }
+  const filtered = itemNames.filter(i => i.toLowerCase().includes(value.toLowerCase()));
+  setFilteredItems(filtered);
+  setSelectedIndex(-1);
+  setIsOpen(true);   // <-- add this
+}, [value, itemNames]);
+```
 
-4. **Update the Select dropdown**
-   - Add `<SelectItem value="month">This Month</SelectItem>`
-   - Add `<SelectItem value="lastMonth">Last Month</SelectItem>`
-   - Order: Today → This Week → This Month → Last Month → All Time.
+No other files touched.
 
-5. **Header label**
-   - Show the active period under the title (e.g. "Last Month — Nov 2025") so the user knows which range they're looking at.
+---
+
+## Issue 2 — Stock Adjustment save fails: `receipts_type_check` violation
+
+**Root cause:**
+- DB CHECK constraint on `receipts.type` only allows `'purchase'` and `'sales'`.
+- Current Stock Adjustment flow (`src/hooks/useTableData.ts` → `handleSave`) calls `addReceipt({ type: 'increase' | 'reduce', ... })`, which the DB rejects.
+- Per your request, Stock Adjustment should **not create any receipt** — it should only update the product's stock in inventory.
+
+**Fix scope (frontend only, no DB migration):**
+
+1. **`src/hooks/useTableData.ts` — `handleSave`**
+   For `type === 'adjustment'`:
+   - Skip `addReceipt` entirely (no increase/reduce receipts inserted).
+   - For each valid row, call `updateStock(itemName, qty, 'increase' | 'reduce')` from `ProductsContext` (which uses `productService.updateStock` → direct `products` table update, no receipts).
+   - Keep WAC/cost handling out of scope (sticking to "stock update only" as you said).
+   - On success: toast "Stock updated successfully", clear rows, refresh products.
+   - On failure: toast error, keep rows so user can retry.
+
+2. **No changes** to purchase/sales flow — those continue to create receipts as today.
+
+3. **Receipt page filtering** — already only displays receipts that exist in the DB. Since adjustments will no longer be saved, they simply won't appear in receipts/reports. ✅ matches your requirement.
+
+### Stock Adjustment ↔ Inventory connection re-check
+
+Verified the flow after the fix:
+- `useTableData.handleSave` (adjustment) → `productsContext.updateStock` → `productService.updateStock` → direct `products` table UPSERT/UPDATE → `refreshProducts` → Inventory page sees new `current_stock`.
+- No edge function call, no `receipts` insert, no constraint violation.
+
+---
 
 ## Out of scope
-- Backend changes, new tables, audit logs.
-- Custom date-range picker (can add later if requested).
-- Changing All Time to load beyond what context provides.
+- Not touching `manage-receipt` edge function (only sales/purchase use it now).
+- Not changing the DB constraint (no migration needed — adjustments stop writing to receipts).
+- No audit log, no UI redesign for stock adjustment, no historical migration of past `increase`/`reduce` receipts (the constraint already blocks them, so none exist).
 
-## Technical notes
-- All work in `src/pages/Report.tsx`.
-- Use `date-fns` helpers already in the project: `startOfMonth`, `endOfMonth`, `subMonths`, `format`.
-- Trigger `refreshReceipts(y, m)` inside a `useEffect` keyed on `dateFilter`.
+## Files to edit
+- `src/hooks/useItemDropdown.ts` — 1-line fix
+- `src/hooks/useTableData.ts` — replace adjustment branch in `handleSave`
