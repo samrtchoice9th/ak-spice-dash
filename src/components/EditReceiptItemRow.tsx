@@ -25,7 +25,6 @@ export const EditReceiptItemRow: React.FC<EditReceiptItemRowProps> = ({
   const handleItemSelect = (itemName: string) => {
     const selectedProduct = products.find(p => p.name === itemName);
     if (selectedProduct) {
-      onUpdate(index, 'itemName', itemName);
       onUpdate(index, 'price', selectedProduct.price);
     }
   };

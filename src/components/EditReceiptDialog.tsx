@@ -46,16 +46,15 @@ export const EditReceiptDialog: React.FC<EditReceiptDialogProps> = ({
   };
 
   const updateItem = (index: number, field: keyof ReceiptItem, value: string | number) => {
-    const updatedItems = [...items];
-    updatedItems[index] = { ...updatedItems[index], [field]: value };
-    
-    if (field === 'qty' || field === 'price') {
-      const qty = field === 'qty' ? Number(value) : updatedItems[index].qty;
-      const price = field === 'price' ? Number(value) : updatedItems[index].price;
-      updatedItems[index].total = qty * price;
-    }
-    
-    setItems(updatedItems);
+    setItems(prev => {
+      const next = [...prev];
+      const merged = { ...next[index], [field]: value } as ReceiptItem;
+      if (field === 'qty' || field === 'price') {
+        merged.total = Number(merged.qty) * Number(merged.price);
+      }
+      next[index] = merged;
+      return next;
+    });
   };
 
   const removeItem = (index: number) => {
