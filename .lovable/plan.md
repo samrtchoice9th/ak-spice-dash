@@ -1,62 +1,100 @@
-# Fix: Edit Receipt dialog — dropdown selection doesn't fill item name
+# Remove Bluetooth Printing; Add Desktop Thermal Print for XPrinter XP-80T
 
-## Problem
-In the Edit Receipt popup, when adding a new item and picking a name from the dropdown, the item name field stays empty. Only typing letters works (and even that shows the search list but selection appears to do nothing).
+## Goal
 
-## Root cause
-`EditReceiptDialog.updateItem` always builds its next state from the `items` value captured in its closure:
+- Android → RawBT intent printing (kept).
+- Windows / Desktop → browser print to XPrinter XP-80T (80mm USB) via system print dialog.
+- One **Print** button per receipt that auto‑routes by device.
+- No Bluetooth code anywhere. No randomly generated invoice numbers at print time.
 
-```ts
-const updatedItems = [...items];
-updatedItems[index] = { ...updatedItems[index], [field]: value };
-setItems(updatedItems);
+## What to remove (Bluetooth — gone completely)
+
+1. **Delete** `src/hooks/useThermalPrinter.ts` (entire Web Bluetooth GATT flow).
+2. `**src/pages/Settings.tsx**` — strip everything Bluetooth:
+  - Remove `Bluetooth` icon import, `BluetoothDevice` / `BluetoothRemoteGATTServer` declarations.
+  - Remove state: `printerConnection`, `bluetoothDevices`, `showBluetoothDialog`, `selectedDevice`, and any related setters.
+  - Remove functions: `scanForBluetoothDevices`, connect/disconnect handlers, the `useEffect` that reads `selectedBluetoothPrinter`.
+  - Remove the entire "Printer Connection" card (Bluetooth / Wifi / Cable selector and the Bluetooth device list dialog).
+  - Remove every `localStorage` reference to `selectedBluetoothPrinter`.
+  - Replace the card with a small static info block: "Desktop: prints directly to USB thermal printer (XPrinter XP‑80T). Android: uses the RawBT app." (No connection / pairing UI.)
+
+## New / changed printing pipeline
+
+### `src/utils/printReceipt.ts`
+
+- **Add** `printDesktopReceipt(receipt)` — opens a hidden iframe (or new window as fallback), writes the 80mm thermal HTML, calls `window.print()`, then cleans up. Uses the receipt's saved `invoiceNumber`, `date`, `time` — never generates new values.
+- **Add** `getInvoiceNumber(receipt)` helper — returns `receipt.invoiceNumber` if present, otherwise derives a stable `INVM-XXXXXX` from `receipt.id.slice(-6).toUpperCase()`. Used by every print path. No `Math.random()` anywhere.
+- Existing `printToRawBT(...)` stays but is updated to:
+  - Use `getInvoiceNumber(receipt)` instead of the random generator.
+  - Use `receipt.date` / `receipt.time` as passed in (already does for new prints; ensure reprint path passes stored values).
+
+### `src/components/ReceiptPrintHandler.tsx`
+
+- Drop the dual `printReceiptNative` / `printToRawBT` exposure. Expose a single entry:
+  ```
+  const printReceipt = (receipt) => {
+    if (/Android/i.test(navigator.userAgent)) return printToRawBT(receipt);
+    return printDesktopReceipt(receipt);
+  };
+  ```
+- Remove the inline random `invoiceNumber` generation in `printReceiptNative` and the second copy in `printToRawBT`; both now read from `getInvoiceNumber(receipt)`.
+- `PrintPreviewComponent` still wraps `PrintPreviewDialog`; "Print Receipt" button calls the unified `printReceipt`.
+
+### `src/components/PrintPreviewDialog.tsx`
+
+- Remove the `Math.random()` invoice generator. Use `getInvoiceNumber(receipt)` and `receipt.date` / `receipt.time` from props. Preview now matches what will print.
+
+### `src/components/ReceiptsTable.tsx`
+
+- Replace the separate `RawBT` button (desktop + mobile) with a single **Print** button that calls the unified handler. Drop the `onRawBTPrint` prop — `onPrint` is the only print entry. Icon: `Printer` (desktop) / keep `Smartphone` only if you prefer; one button either way.
+
+### `src/pages/ReceiptPage.tsx`
+
+- Use the unified handler. Pass only `onPrint={printReceipt}` to `ReceiptsTable`. Remove `printToRawBT` destructure and the `onRawBTPrint` prop.
+
+## Thermal CSS (used by `printDesktopReceipt`)
+
+```css
+@page { size: 80mm auto; margin: 0; }
+body  { width: 80mm; margin: 0; padding: 2mm; font-family: monospace; font-size: 11px; line-height: 1.3; color: #000; background: #fff; }
+.center { text-align: center; }
+.row    { display: flex; justify-content: space-between; }
+.divider{ border-top: 1px dashed #000; margin: 2mm 0; }
+.bold   { font-weight: bold; }
+.total  { font-size: 13px; font-weight: bold; text-align: center; margin: 2mm 0; }
 ```
 
-When the user picks a product in the dropdown, `EditReceiptItemRow` fires three updates back-to-back in the same tick:
-1. `onUpdate(index, 'itemName', selectedName)` (from `ItemSearchDropdown.onChange`)
-2. `onUpdate(index, 'itemName', selectedName)` (from `handleItemSelect`)
-3. `onUpdate(index, 'price', selectedProduct.price)` (from `handleItemSelect`)
+Layout (80mm safe, no horizontal scroll):
 
-Each call reads the same stale `items`, so call #3 overwrites #1/#2 and the itemName is lost. End result: name field blank, price filled.
-
-## Fix
-Two small, surgical changes — frontend only, no logic/business changes.
-
-### 1. `src/components/EditReceiptDialog.tsx`
-Make `updateItem` use the functional form of `setItems` so consecutive updates compose correctly, and recompute `total` from the merged row:
-
-```ts
-const updateItem = (index: number, field: keyof ReceiptItem, value: string | number) => {
-  setItems(prev => {
-    const next = [...prev];
-    const merged = { ...next[index], [field]: value };
-    if (field === 'qty' || field === 'price') {
-      merged.total = Number(merged.qty) * Number(merged.price);
-    }
-    next[index] = merged;
-    return next;
-  });
-};
 ```
-
-### 2. `src/components/EditReceiptItemRow.tsx`
-Stop calling `onUpdate` twice for the name. The `ItemSearchDropdown` already forwards the chosen name through `onChange`, so `handleItemSelect` only needs to set the price:
-
-```ts
-const handleItemSelect = (itemName: string) => {
-  const selectedProduct = products.find(p => p.name === itemName);
-  if (selectedProduct) {
-    onUpdate(index, 'price', selectedProduct.price);
-  }
-};
+        SHOP NAME           (bold, centered)
+       phone / address      (centered, smaller)
+   ─────────────────────
+   Invoice: INVM-XXXXXX
+   Date: <receipt.date>  Time: <receipt.time>
+   ─────────────────────
+   ITEM           QTY PRICE  AMT
+   ─────────────────────
+   <item rows, name left, qty + price + amount right>
+   ─────────────────────
+   TOTAL: Rs. <amount>
+   Items: <n>
+   ─────────────────────
+   Thank you for your business!
 ```
-
-`onChange` keeps doing `onUpdate(index, 'itemName', value)` then `handleItemSelect(value)`. With the functional setter from change #1, both updates compose and the row ends up with the correct name, price, and total.
 
 ## Out of scope
-- No changes to `useItemDropdown`, `ItemSearchDropdown`, stock-adjustment flow, or any DB/edge logic.
-- Sales/Purchase pages use a different component (`sales/ItemSearch`) and are unaffected.
 
-## Files changed
-- `src/components/EditReceiptDialog.tsx`
-- `src/components/EditReceiptItemRow.tsx`
+- No DB schema changes; `invoiceNumber` continues to be derived from `receipt.id` (deterministic per project memory).
+- No changes to receipts/inventory logic, edit dialog, or stock adjustment.
+- No new dependencies.
+
+## Files touched
+
+- delete: `src/hooks/useThermalPrinter.ts`
+- edit:   `src/utils/printReceipt.ts`
+- edit:   `src/components/ReceiptPrintHandler.tsx`
+- edit:   `src/components/PrintPreviewDialog.tsx`
+- edit:   `src/components/ReceiptsTable.tsx`
+- edit:   `src/pages/ReceiptPage.tsx`
+- edit:   `src/pages/Settings.tsx` (Bluetooth UI + logic removed)
