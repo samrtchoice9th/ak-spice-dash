@@ -1,53 +1,25 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Edit2, Trash2, Plus, Printer, Bluetooth, Wifi, Cable, Settings as SettingsIcon, Search, CheckCircle, PackageMinus } from 'lucide-react';
+import { Edit2, Trash2, Plus, Printer, Settings as SettingsIcon, Search, PackageMinus, Smartphone, Cable } from 'lucide-react';
 import { AddItemDialog } from '@/components/AddItemDialog';
 import { DataTable } from '@/components/DataTable';
 import { toast } from 'sonner';
 
-// Extend Navigator interface for Web Bluetooth API
-declare global {
-  interface Navigator {
-    bluetooth?: {
-      requestDevice(options: any): Promise<BluetoothDevice>;
-    };
-  }
-  
-  interface BluetoothDevice {
-    id: string;
-    name?: string;
-    gatt?: BluetoothRemoteGATTServer;
-  }
-  
-  interface BluetoothRemoteGATTServer {
-    connected: boolean;
-    connect(): Promise<BluetoothRemoteGATTServer>;
-    disconnect(): void;
-  }
-}
-
 const Settings = () => {
   const { products, updateProduct, deleteProduct, loading } = useProducts();
   const isMobile = useIsMobile();
-  // Shop context removed - single shop mode
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editName, setEditName] = useState('');
   const [itemSearch, setItemSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteConfirmProduct, setDeleteConfirmProduct] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('items');
-  const [printerConnection, setPrinterConnection] = useState('bluetooth');
-  const [paperSize, setPaperSize] = useState('3inch');
-  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
-  const [bluetoothDevices, setBluetoothDevices] = useState<any[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState<any>(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [showBluetoothDialog, setShowBluetoothDialog] = useState(false);
+
   
 
   // Shop management functions removed - single shop mode
@@ -99,141 +71,8 @@ const Settings = () => {
     setEditName(product.name);
   };
 
-  const scanForBluetoothDevices = async () => {
-    setIsScanning(true);
-    setBluetoothDevices([]);
 
-    try {
-      // Check if Web Bluetooth API is available
-      if (!navigator.bluetooth) {
-        toast.error('Web Bluetooth API is not supported in this browser. Please use Chrome, Edge, or Opera.');
-        setIsScanning(false);
-        return;
-      }
 
-      // Request Bluetooth device scan
-      const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: ['battery_service']
-      });
-
-      if (device) {
-        setBluetoothDevices([{
-          id: device.id,
-          name: device.name || 'Unknown Device',
-          device: device
-        }]);
-        
-        toast.success(`Found ${device.name || 'Unknown Device'}`);
-      }
-    } catch (error: any) {
-      console.error('Bluetooth scan error:', error);
-      
-      if (error.name === 'NotFoundError') {
-        toast.error('No Bluetooth device was selected.');
-      } else if (error.name === 'NotAllowedError') {
-        toast.error('Bluetooth access was denied. Please allow Bluetooth permissions.');
-      } else {
-        toast.error(error.message || 'Failed to scan for Bluetooth devices.');
-      }
-    }
-
-    setIsScanning(false);
-  };
-
-  const connectToDevice = async (device: any) => {
-    try {
-      if (device.device.gatt?.connected) {
-        toast.info(`Already connected to ${device.name}`);
-        setSelectedDevice(device);
-        setShowBluetoothDialog(false);
-        return;
-      }
-
-      const server = await device.device.gatt?.connect();
-      if (server) {
-        setSelectedDevice(device);
-        setShowBluetoothDialog(false);
-        
-        toast.success(`Connected to ${device.name}`);
-
-        // Store the connection in localStorage for persistence
-        localStorage.setItem('selectedBluetoothPrinter', JSON.stringify({
-          id: device.id,
-          name: device.name
-        }));
-      }
-    } catch (error: any) {
-      console.error('Connection error:', error);
-      toast.error(`Failed to connect to ${device.name}: ${error.message}`);
-    }
-  };
-
-  const disconnectDevice = () => {
-    if (selectedDevice?.device?.gatt?.connected) {
-      selectedDevice.device.gatt.disconnect();
-    }
-    setSelectedDevice(null);
-    localStorage.removeItem('selectedBluetoothPrinter');
-    
-    toast.success('Bluetooth printer disconnected');
-  };
-
-  // Load saved device on component mount
-  useEffect(() => {
-    const savedDevice = localStorage.getItem('selectedBluetoothPrinter');
-    if (savedDevice) {
-      try {
-        const deviceInfo = JSON.parse(savedDevice);
-        setSelectedDevice(deviceInfo);
-      } catch (error) {
-        console.error('Error loading saved device:', error);
-      }
-    }
-  }, []);
-
-  const ReceiptPreview = () => (
-    <div className="bg-white border rounded-lg p-4 max-w-xs mx-auto font-mono text-xs">
-      <div className="text-center border-b border-dashed border-gray-400 pb-2 mb-2">
-        <div className="font-bold text-sm">YOUR SHOP</div>
-        <div className="text-xs">Mo: +974773962001</div>
-        <div className="text-xs">36, In Front of Ajile Factory</div>
-        <div className="text-xs">Mahiyangana</div>
-      </div>
-      
-      <div className="flex justify-between text-xs mb-2">
-        <div>Invoice N: INVM-25-12345</div>
-        <div>25/06/2025</div>
-      </div>
-      
-      <div className="border-b border-dashed border-gray-400 pb-1 mb-2">
-        <div className="flex justify-between font-bold">
-          <span>ITEM</span>
-          <span>QTY</span>
-          <span>PRICE</span>
-          <span>AMT</span>
-        </div>
-      </div>
-      
-      <div className="mb-2">
-        <div className="font-bold">Turmeric Powder</div>
-        <div className="flex justify-between">
-          <span>2kg</span>
-          <span>150.00</span>
-          <span>Rs.300.00</span>
-        </div>
-      </div>
-      
-      <div className="border-t border-b border-gray-400 py-2 text-center">
-        <div className="font-bold">Invoice Total Rs. : 300.00</div>
-      </div>
-      
-      <div className="text-center text-xs mt-2">
-        <div>Thank you for your business!</div>
-        <div>Visit us again</div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="flex-1 p-3 sm:p-6 lg:p-8">
@@ -393,113 +232,43 @@ const Settings = () => {
 
       {/* Printer Settings Tab */}
       {activeTab === 'printer' && (
-        <div className="space-y-6">
-          {/* Connection Settings */}
-           <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Printer Connection</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button
-                onClick={() => setPrinterConnection('bluetooth')}
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-colors ${
-                  printerConnection === 'bluetooth'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-muted-foreground'
-                }`}
-              >
-                <Bluetooth size={20} />
-                <span>Bluetooth</span>
-              </button>
-              <button
-                onClick={() => setPrinterConnection('wifi')}
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-colors ${
-                  printerConnection === 'wifi'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-muted-foreground'
-                }`}
-              >
-                <Wifi size={20} />
-                <span>Wi-Fi Direct</span>
-              </button>
-              <button
-                onClick={() => setPrinterConnection('wired')}
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-colors ${
-                  printerConnection === 'wired'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-muted-foreground'
-                }`}
-              >
-                <Cable size={20} />
-                <span>Wired</span>
-              </button>
-            </div>
-
-            {/* Bluetooth Device Selection */}
-            {printerConnection === 'bluetooth' && (
-              <div className="mt-6 pt-6 border-t border-border">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-md font-medium text-foreground">Bluetooth Printer</h4>
-                  <Button onClick={() => setShowBluetoothDialog(true)} variant="outline" size="sm" className="flex items-center space-x-2">
-                    <Search size={16} />
-                    <span>Find Printer</span>
-                  </Button>
-                </div>
-
-                {selectedDevice ? (
-                  <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="text-green-600" size={20} />
-                      <div>
-                        <div className="font-medium text-green-900">{selectedDevice.name}</div>
-                        <div className="text-sm text-green-700">Connected</div>
-                      </div>
-                    </div>
-                    <Button onClick={disconnectDevice} variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
-                      Disconnect
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="p-4 bg-muted border border-border rounded-lg text-center">
-                    <Bluetooth className="mx-auto text-muted-foreground mb-2" size={24} />
-                    <div className="text-sm text-muted-foreground">No Bluetooth printer connected</div>
-                    <div className="text-xs text-muted-foreground mt-1">Click "Find Printer" to search for devices</div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Page Settings */}
+        <div className="space-y-6 max-w-2xl mx-auto">
           <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Page Settings</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Printer className="h-5 w-5" />
+              Printer Setup
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Printing is automatic based on your device — no pairing, no Bluetooth.
+            </p>
+
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-2">Paper Size</label>
-                <select value={paperSize} onChange={(e) => setPaperSize(e.target.value)}
-                  className="w-full px-3 py-3 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground">
-                  <option value="3inch">3 inch (76mm) - Thermal</option>
-                  <option value="2inch">2 inch (58mm) - Thermal</option>
-                  <option value="a4">A4 - Standard</option>
-                </select>
+              <div className="flex items-start gap-3 p-4 border border-border rounded-lg">
+                <Cable className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="font-medium text-foreground">Windows Desktop</div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Prints directly to your USB thermal printer (e.g. <strong>XPrinter XP-80C</strong>)
+                    through the browser print dialog. Select the XPrinter and 80mm paper when the dialog appears.
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Receipt Preview */}
-          <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border border-border">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Receipt Preview</h3>
-              <Button onClick={() => setShowReceiptPreview(!showReceiptPreview)} variant="outline">
-                {showReceiptPreview ? 'Hide Preview' : 'Show Preview'}
-              </Button>
-            </div>
-            {showReceiptPreview && (
-              <div className="mt-4">
-                <ReceiptPreview />
+              <div className="flex items-start gap-3 p-4 border border-border rounded-lg">
+                <Smartphone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="font-medium text-foreground">Android</div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Prints through the <strong>RawBT</strong> app. Install RawBT from Google Play and pair
+                    your thermal printer once inside the RawBT app.
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
+
 
 
 
@@ -557,78 +326,6 @@ const Settings = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bluetooth Device Selection Dialog */}
-      <Dialog open={showBluetoothDialog} onOpenChange={setShowBluetoothDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Select Bluetooth Printer</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-sm text-muted-foreground">
-              Make sure your thermal printer is in pairing mode and discoverable.
-            </div>
-            
-            <Button
-              onClick={scanForBluetoothDevices}
-              disabled={isScanning}
-              className="w-full flex items-center justify-center space-x-2"
-            >
-              {isScanning ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Scanning...</span>
-                </>
-              ) : (
-                <>
-                  <Search size={16} />
-                  <span>Scan for Devices</span>
-                </>
-              )}
-            </Button>
-
-            {bluetoothDevices.length > 0 && (
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-foreground">Available Devices:</div>
-                {bluetoothDevices.map((device) => (
-                  <div
-                    key={device.id}
-                    className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Bluetooth size={16} className="text-primary" />
-                      <div>
-                        <div className="font-medium">{device.name}</div>
-                        <div className="text-xs text-muted-foreground">{device.id}</div>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => connectToDevice(device)}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Connect
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!isScanning && bluetoothDevices.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Bluetooth className="mx-auto mb-2" size={32} />
-                <div className="text-sm">No devices found</div>
-                <div className="text-xs mt-1">Make sure your printer is discoverable</div>
-              </div>
-            )}
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button variant="outline" onClick={() => setShowBluetoothDialog(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

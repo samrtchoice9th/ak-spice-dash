@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Receipt, Edit, Smartphone, Trash2, Search } from 'lucide-react';
+import { Receipt, Edit, Printer, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,7 +22,6 @@ interface ReceiptsTableProps {
   receipts: ReceiptType[];
   onEdit: (receipt: ReceiptType) => void;
   onPrint: (receipt: ReceiptType) => void;
-  onRawBTPrint?: (receipt: ReceiptType) => void;
   onDelete?: (id: string) => void;
 }
 
@@ -38,7 +37,7 @@ const getTypeBadge = (type: string) => {
   return <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${info.bg}`}>{info.label}</span>;
 };
 
-export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, onPrint, onRawBTPrint, onDelete }) => {
+export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, onPrint, onDelete }) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -164,11 +163,9 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
                     <Button onClick={() => onEdit(receipt)} variant="outline" size="icon" className="h-10 w-10">
                       <Edit size={18} />
                     </Button>
-                    {onRawBTPrint && (
-                      <Button onClick={() => onRawBTPrint(receipt)} variant="outline" size="icon" className="h-10 w-10">
-                        <Smartphone size={18} />
-                      </Button>
-                    )}
+                    <Button onClick={() => onPrint(receipt)} variant="outline" size="icon" className="h-10 w-10">
+                      <Printer size={18} />
+                    </Button>
                     {onDelete && (
                       <Button onClick={() => setDeleteId(receipt.id)} variant="outline" size="icon" className="h-10 w-10 text-destructive hover:text-destructive">
                         <Trash2 size={18} />
@@ -227,12 +224,10 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
                           <Edit size={16} />
                           <span>Edit</span>
                         </Button>
-                        {onRawBTPrint && (
-                          <Button onClick={() => onRawBTPrint(receipt)} variant="outline" size="sm" className="flex items-center space-x-1">
-                            <Smartphone size={16} />
-                            <span>RawBT</span>
-                          </Button>
-                        )}
+                        <Button onClick={() => onPrint(receipt)} variant="outline" size="sm" className="flex items-center space-x-1">
+                          <Printer size={16} />
+                          <span>Print</span>
+                        </Button>
                         {onDelete && (
                           <Button onClick={() => setDeleteId(receipt.id)} variant="outline" size="sm" className="flex items-center space-x-1 text-destructive hover:text-destructive">
                             <Trash2 size={16} />

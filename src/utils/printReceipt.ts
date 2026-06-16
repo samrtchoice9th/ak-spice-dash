@@ -1,17 +1,194 @@
-
 import { TableRow } from '@/types/table';
-import { ReceiptItem } from '@/contexts/ReceiptsContext';
+import { ReceiptItem, Receipt } from '@/contexts/ReceiptsContext';
 
-// Normal browser print using window.print() with hidden DOM container
+// ---------- Helpers ----------
+
+/** Stable invoice number derived from receipt id. Never random. */
+export const getInvoiceNumber = (receipt: { id?: string; invoiceNumber?: string } | undefined | null): string => {
+  if (!receipt) return 'INVM-000000';
+  const anyR = receipt as any;
+  if (anyR.invoiceNumber) return String(anyR.invoiceNumber);
+  if (receipt.id) return `INVM-${receipt.id.slice(-6).toUpperCase()}`;
+  return 'INVM-000000';
+};
+
+const getShopInfo = () => {
+  // Pulled from auth metadata where available; for util usage we keep defaults.
+  try {
+    const raw = localStorage.getItem('shopInfo');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        name: parsed.name || 'My Shop',
+        phone: parsed.phone || '',
+        address: parsed.address || '',
+      };
+    }
+  } catch { /* noop */ }
+  return { name: 'My Shop', phone: '', address: '' };
+};
+
+// ---------- 80mm Thermal HTML for Desktop browser printing ----------
+
+const THERMAL_CSS = `
+  @page { size: 80mm auto; margin: 0; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body {
+    width: 80mm;
+    margin: 0;
+    padding: 2mm;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.3;
+    color: #000;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .center { text-align: center; }
+  .right  { text-align: right; }
+  .bold   { font-weight: bold; }
+  .lg     { font-size: 13px; }
+  .xl     { font-size: 15px; }
+  .sm     { font-size: 10px; }
+  .row    { display: flex; justify-content: space-between; gap: 4px; }
+  .divider{ border-top: 1px dashed #000; margin: 2mm 0; }
+  table   { width: 100%; border-collapse: collapse; }
+  th, td  { padding: 1mm 0; font-size: 10px; vertical-align: top; }
+  th      { text-align: left; border-bottom: 1px dashed #000; }
+  td.num  { text-align: right; }
+  .item-name { word-wrap: break-word; max-width: 30mm; }
+`;
+
+const buildThermalHtml = (receipt: any): string => {
+  const shop = getShopInfo();
+  const invoiceNumber = getInvoiceNumber(receipt);
+  const date = receipt.date || '';
+  const time = receipt.time || '';
+  const items: ReceiptItem[] = receipt.items || [];
+  const totalAmount = Number(receipt.totalAmount || 0);
+
+  const itemsHtml = items.map(it => `
+    <tr>
+      <td class="item-name">${escapeHtml(it.itemName)}</td>
+      <td class="num">${Number(it.qty)}</td>
+      <td class="num">${Number(it.price).toFixed(2)}</td>
+      <td class="num">${Number(it.total).toFixed(2)}</td>
+    </tr>
+  `).join('');
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>${escapeHtml(shop.name)} - Receipt ${invoiceNumber}</title>
+<style>${THERMAL_CSS}</style>
+</head>
+<body>
+  <div class="center bold xl">${escapeHtml(shop.name.toUpperCase())}</div>
+  ${shop.phone ? `<div class="center sm">Mob: ${escapeHtml(shop.phone)}</div>` : ''}
+  ${shop.address ? `<div class="center sm">${escapeHtml(shop.address)}</div>` : ''}
+  <div class="divider"></div>
+  <div class="sm">Invoice: <span class="bold">${invoiceNumber}</span></div>
+  <div class="sm row"><span>Date: ${escapeHtml(date)}</span><span>Time: ${escapeHtml(time)}</span></div>
+  <div class="divider"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>ITEM</th>
+        <th class="num">QTY</th>
+        <th class="num">PRICE</th>
+        <th class="num">AMT</th>
+      </tr>
+    </thead>
+    <tbody>${itemsHtml}</tbody>
+  </table>
+  <div class="divider"></div>
+  <div class="center bold lg">TOTAL: Rs. ${totalAmount.toFixed(2)}</div>
+  <div class="center sm">Items: ${items.length}</div>
+  <div class="divider"></div>
+  <div class="center sm">Thank you for your business!</div>
+  <div class="center sm">Visit us again</div>
+</body>
+</html>`;
+};
+
+const escapeHtml = (s: string): string =>
+  String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c] as string));
+
+/**
+ * Desktop browser thermal printing.
+ * Renders the receipt in a hidden iframe using @page size: 80mm auto
+ * and opens the system print dialog. Works with USB thermal printers
+ * such as XPrinter XP-80C when 80mm paper is selected in the OS print dialog.
+ */
+export const printDesktopReceipt = (receipt: any): void => {
+  if (!receipt || !receipt.items || receipt.items.length === 0) {
+    alert('No items to print');
+    return;
+  }
+
+  // Remove any pre-existing print iframe
+  const existing = document.getElementById('thermal-print-frame');
+  if (existing) existing.remove();
+
+  const iframe = document.createElement('iframe');
+  iframe.id = 'thermal-print-frame';
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+
+  const html = buildThermalHtml(receipt);
+  const doc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (!doc) {
+    alert('Failed to open print frame');
+    iframe.remove();
+    return;
+  }
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  const triggerPrint = () => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch (err) {
+      console.error('Print failed:', err);
+    }
+    // Cleanup after a delay (afterprint may not fire on all browsers).
+    const cleanup = () => {
+      const f = document.getElementById('thermal-print-frame');
+      if (f) f.remove();
+    };
+    iframe.contentWindow?.addEventListener?.('afterprint', cleanup);
+    setTimeout(cleanup, 2000);
+  };
+
+  // Wait one frame to ensure DOM is laid out, then print.
+  if (iframe.contentWindow?.document.readyState === 'complete') {
+    setTimeout(triggerPrint, 50);
+  } else {
+    iframe.onload = () => setTimeout(triggerPrint, 50);
+  }
+};
+
+// ---------- Existing utilities used by POS DataTable (kept) ----------
+
 export const printReceipt = (
-  rows: TableRow[], 
-  title: string, 
+  rows: TableRow[],
+  title: string,
   calculateTotal: () => number,
   addReceipt: (receipt: { type: 'purchase' | 'sales' | 'adjustment'; items: ReceiptItem[]; totalAmount: number }) => void,
   type: 'purchase' | 'sales' | 'adjustment',
   clearAllFields: () => void,
   showPreviewFirst: boolean = false,
-  onShowPreview?: (receipt: any) => void
+  onShowPreview?: (receipt: any) => void,
 ) => {
   const receiptItems: ReceiptItem[] = rows
     .filter(row => row.itemName && row.qty > 0 && row.price > 0)
@@ -20,7 +197,7 @@ export const printReceipt = (
       itemName: row.itemName,
       qty: row.qty,
       price: row.price,
-      total: row.qty * row.price
+      total: row.qty * row.price,
     }));
 
   if (receiptItems.length === 0) {
@@ -29,173 +206,99 @@ export const printReceipt = (
   }
 
   const total = calculateTotal();
-  const currentDate = new Date();
-  const formattedDate = currentDate.toLocaleDateString();
-  const formattedTime = currentDate.toLocaleTimeString();
+  const now = new Date();
+  const date = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Colombo' });
+  const time = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Colombo' });
 
-  // Add receipt to storage
-  addReceipt({
-    type,
-    items: receiptItems,
-    totalAmount: total
-  });
+  addReceipt({ type, items: receiptItems, totalAmount: total });
 
-  // If preview first is enabled, show preview dialog
   if (showPreviewFirst && onShowPreview) {
-    const receiptData = {
+    onShowPreview({
       items: receiptItems,
       totalAmount: total,
-      type: type,
-      date: formattedDate,
-      time: formattedTime
-    };
-    onShowPreview(receiptData);
+      type,
+      date,
+      time,
+    });
     clearAllFields();
     return;
   }
 
-  // Generate invoice number
-  const invoiceNumber = `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
-
-  // Remove any existing print container
-  const existingContainer = document.getElementById('print-receipt-container');
-  if (existingContainer) {
-    document.body.removeChild(existingContainer);
-  }
-
-  // Create a hidden container for printing
-  const printContainer = document.createElement('div');
-  printContainer.id = 'print-receipt-container';
-  printContainer.innerHTML = `
-    <div class="receipt-container">
-      <div class="receipt-header">
-        <div class="company-name">AK TRADING</div>
-        <div class="company-details">
-          Mob: +974773962001<br>
-          36, In Front of Tile Factory<br>
-          Mahiyangana
-        </div>
-      </div>
-      
-      <div class="invoice-info">
-        <div class="invoice-left">
-          Invoice N: ${invoiceNumber}<br>
-          Invoice by: ADMIN
-        </div>
-        <div class="invoice-right">
-          ${formattedDate}<br>
-          ${formattedTime}
-        </div>
-      </div>
-
-      <div class="receipt-table">
-        <div class="table-header">
-          ITEM NAME | QTY | PRICE | AMOUNT
-        </div>
-        
-        ${receiptItems.map(item => `
-          <div class="receipt-item">
-            <div class="item-name">${item.itemName}</div>
-            <div class="item-details">
-              ${item.qty}kg | Rs.${item.price.toFixed(2)} | Rs.${item.total.toFixed(2)}
-            </div>
-          </div>
-        `).join('')}
-      </div>
-
-      <div class="receipt-total">
-        <div class="total-line">
-          TOTAL: Rs. ${total.toFixed(2)}
-        </div>
-        <div class="total-items">
-          Total Items: ${receiptItems.length}
-        </div>
-        <div class="thank-you">
-          Thank you for your business!<br>
-          Visit us again
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Append to body
-  document.body.appendChild(printContainer);
-
-  // Wait for DOM to be ready, then print
-  requestAnimationFrame(() => {
-    window.print();
-    
-    // Cleanup after print dialog closes (use both beforeprint/afterprint events and timeout as fallback)
-    const cleanup = () => {
-      const container = document.getElementById('print-receipt-container');
-      if (container) {
-        document.body.removeChild(container);
-      }
-      clearAllFields();
-    };
-
-    // Listen for print events
-    window.addEventListener('afterprint', cleanup, { once: true });
-    
-    // Fallback cleanup if events don't fire (mobile browsers)
-    setTimeout(cleanup, 1000);
-  });
+  printDesktopReceipt({ items: receiptItems, totalAmount: total, type, date, time });
+  clearAllFields();
 };
 
-// RawBT Thermal Printer Support for Android
+// ---------- RawBT (Android only) ----------
+
 export const printToRawBT = (
-  rows: TableRow[], 
-  title: string, 
-  calculateTotal: () => number,
-  addReceipt: (receipt: { type: 'purchase' | 'sales' | 'adjustment'; items: ReceiptItem[]; totalAmount: number }) => void,
-  type: 'purchase' | 'sales' | 'adjustment',
-  clearAllFields: () => void
+  rowsOrReceipt: TableRow[] | any,
+  titleOrUnused?: string,
+  calculateTotal?: () => number,
+  addReceipt?: (receipt: { type: 'purchase' | 'sales' | 'adjustment'; items: ReceiptItem[]; totalAmount: number }) => void,
+  type?: 'purchase' | 'sales' | 'adjustment',
+  clearAllFields?: () => void,
 ): boolean => {
-  // Check if Android
   const isAndroid = /Android/i.test(navigator.userAgent);
   if (!isAndroid) {
     alert('RawBT printing is only available on Android devices');
     return false;
   }
 
-  const receiptItems: ReceiptItem[] = rows
-    .filter(row => row.itemName && row.qty > 0 && row.price > 0)
-    .map(row => ({
-      id: row.id,
-      itemName: row.itemName,
-      qty: row.qty,
-      price: row.price,
-      total: row.qty * row.price
-    }));
+  // Support two call shapes: (rows, ...args) from POS DataTable, or (receipt) from reprints.
+  let receiptItems: ReceiptItem[] = [];
+  let totalAmount = 0;
+  let dateStr = '';
+  let timeStr = '';
+  let invoiceNumber = '';
 
-  if (receiptItems.length === 0) {
-    alert('Please add items before printing receipt');
-    return false;
+  const isRowsCall = Array.isArray(rowsOrReceipt);
+
+  if (isRowsCall) {
+    const rows = rowsOrReceipt as TableRow[];
+    receiptItems = rows
+      .filter(row => row.itemName && row.qty > 0 && row.price > 0)
+      .map(row => ({
+        id: row.id,
+        itemName: row.itemName,
+        qty: row.qty,
+        price: row.price,
+        total: row.qty * row.price,
+      }));
+
+    if (receiptItems.length === 0) {
+      alert('Please add items before printing receipt');
+      return false;
+    }
+
+    totalAmount = calculateTotal ? calculateTotal() : receiptItems.reduce((s, r) => s + r.total, 0);
+    const now = new Date();
+    dateStr = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Colombo' });
+    timeStr = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Colombo' });
+
+    if (addReceipt && type) {
+      addReceipt({ type, items: receiptItems, totalAmount });
+    }
+    invoiceNumber = getInvoiceNumber({ id: undefined });
+  } else {
+    const receipt = rowsOrReceipt as Receipt;
+    if (!receipt?.items?.length) {
+      alert('No items to print');
+      return false;
+    }
+    receiptItems = receipt.items;
+    totalAmount = receipt.totalAmount;
+    dateStr = receipt.date || '';
+    timeStr = receipt.time || '';
+    invoiceNumber = getInvoiceNumber(receipt);
   }
 
-  const total = calculateTotal();
-  const currentDate = new Date();
-  const formattedDate = currentDate.toLocaleDateString();
-  const formattedTime = currentDate.toLocaleTimeString();
-  const invoiceNumber = `INVM-${currentDate.getFullYear().toString().slice(-2)}-${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`;
-
-  // Add receipt to storage
-  addReceipt({
-    type,
-    items: receiptItems,
-    totalAmount: total
-  });
-
-  // Generate ESC/POS formatted text
-  const escPos = generateESCPOSText(invoiceNumber, formattedDate, formattedTime, receiptItems, total);
-  
-  // Proper RawBT Intent URL
+  const shop = getShopInfo();
+  const escPos = generateESCPOSText(shop, invoiceNumber, dateStr, timeStr, receiptItems, totalAmount);
   const rawbtUrl = `intent://print?text=${encodeURIComponent(escPos)}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end`;
-  
+
   try {
-    // Try to open the RawBT URL
     window.location.href = rawbtUrl;
-    clearAllFields();
+    if (clearAllFields) clearAllFields();
     return true;
   } catch (error) {
     console.error('RawBT print error:', error);
@@ -204,13 +307,13 @@ export const printToRawBT = (
   }
 };
 
-// Generate ESC/POS formatted text for thermal printer
 function generateESCPOSText(
+  shop: { name: string; phone: string; address: string },
   invoiceNumber: string,
   date: string,
   time: string,
   items: ReceiptItem[],
-  total: number
+  total: number,
 ): string {
   const ESC = '\x1B';
   const INIT = ESC + '@';
@@ -219,50 +322,31 @@ function generateESCPOSText(
   const BOLD_ON = ESC + 'E' + '\x01';
   const BOLD_OFF = ESC + 'E' + '\x00';
   const CUT = ESC + 'i';
-  
-  let receipt = INIT;
-  
-  // Header
-  receipt += CENTER + BOLD_ON + 'AK TRADING' + BOLD_OFF + '\n';
-  receipt += 'Mob: +974773962001\n';
-  receipt += '36, In Front of Tile Factory\n';
-  receipt += 'Mahiyangana\n';
-  receipt += '--------------------------------\n';
-  
-  // Invoice info
-  receipt += LEFT;
-  receipt += `Invoice N: ${invoiceNumber}\n`;
-  receipt += `Invoice by: ADMIN\n`;
-  receipt += `${date} ${time}\n`;
-  receipt += '--------------------------------\n';
-  
-  // Items header
-  receipt += CENTER + BOLD_ON + 'ITEM | QTY | PRICE | AMOUNT' + BOLD_OFF + '\n';
-  receipt += '--------------------------------\n';
-  
-  // Items
-  receipt += LEFT;
-  items.forEach(item => {
-    receipt += BOLD_ON + item.itemName + BOLD_OFF + '\n';
-    receipt += CENTER + `${item.qty}kg | Rs.${item.price.toFixed(2)} | Rs.${item.total.toFixed(2)}\n`;
-    receipt += '................................\n';
+
+  let r = INIT;
+  r += CENTER + BOLD_ON + (shop.name || 'MY SHOP').toUpperCase() + BOLD_OFF + '\n';
+  if (shop.phone) r += `Mob: ${shop.phone}\n`;
+  if (shop.address) r += `${shop.address}\n`;
+  r += '--------------------------------\n';
+  r += LEFT;
+  r += `Invoice: ${invoiceNumber}\n`;
+  r += `${date}  ${time}\n`;
+  r += '--------------------------------\n';
+  r += BOLD_ON + 'ITEM            QTY  PRICE   AMT' + BOLD_OFF + '\n';
+  r += '--------------------------------\n';
+  items.forEach(it => {
+    const name = it.itemName.length > 16 ? it.itemName.slice(0, 13) + '...' : it.itemName.padEnd(16);
+    const qty = String(it.qty).padStart(4);
+    const price = it.price.toFixed(2).padStart(7);
+    const amt = it.total.toFixed(2).padStart(7);
+    r += `${name}${qty} ${price} ${amt}\n`;
   });
-  
-  // Total
-  receipt += '================================\n';
-  receipt += CENTER + BOLD_ON + `TOTAL: Rs. ${total.toFixed(2)}` + BOLD_OFF + '\n';
-  receipt += '================================\n';
-  receipt += '\n';
-  receipt += `Total Items: ${items.length}\n`;
-  
-  // Footer
-  receipt += '\n';
-  receipt += 'Thank you for your business!\n';
-  receipt += 'Visit us again\n';
-  receipt += '\n\n\n';
-  
-  // Cut paper
-  receipt += CUT;
-  
-  return receipt;
+  r += '================================\n';
+  r += CENTER + BOLD_ON + `TOTAL: Rs. ${total.toFixed(2)}` + BOLD_OFF + '\n';
+  r += '================================\n';
+  r += `Items: ${items.length}\n\n`;
+  r += 'Thank you for your business!\n';
+  r += 'Visit us again\n\n\n';
+  r += CUT;
+  return r;
 }
