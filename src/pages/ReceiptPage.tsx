@@ -115,8 +115,7 @@ const ReceiptPage = () => {
       <ReceiptsTable 
         receipts={receipts}
         onEdit={handleEditReceipt}
-        onPrint={checkPrinterAndPrint}
-        onRawBTPrint={printToRawBT}
+        onPrint={printReceipt}
         onDelete={handleDeleteReceipt}
       />
 
