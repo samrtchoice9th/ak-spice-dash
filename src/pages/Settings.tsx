@@ -232,113 +232,43 @@ const Settings = () => {
 
       {/* Printer Settings Tab */}
       {activeTab === 'printer' && (
-        <div className="space-y-6">
-          {/* Connection Settings */}
-           <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Printer Connection</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button
-                onClick={() => setPrinterConnection('bluetooth')}
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-colors ${
-                  printerConnection === 'bluetooth'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-muted-foreground'
-                }`}
-              >
-                <Bluetooth size={20} />
-                <span>Bluetooth</span>
-              </button>
-              <button
-                onClick={() => setPrinterConnection('wifi')}
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-colors ${
-                  printerConnection === 'wifi'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-muted-foreground'
-                }`}
-              >
-                <Wifi size={20} />
-                <span>Wi-Fi Direct</span>
-              </button>
-              <button
-                onClick={() => setPrinterConnection('wired')}
-                className={`flex items-center space-x-3 p-4 border rounded-lg transition-colors ${
-                  printerConnection === 'wired'
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border hover:border-muted-foreground'
-                }`}
-              >
-                <Cable size={20} />
-                <span>Wired</span>
-              </button>
-            </div>
-
-            {/* Bluetooth Device Selection */}
-            {printerConnection === 'bluetooth' && (
-              <div className="mt-6 pt-6 border-t border-border">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-md font-medium text-foreground">Bluetooth Printer</h4>
-                  <Button onClick={() => setShowBluetoothDialog(true)} variant="outline" size="sm" className="flex items-center space-x-2">
-                    <Search size={16} />
-                    <span>Find Printer</span>
-                  </Button>
-                </div>
-
-                {selectedDevice ? (
-                  <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <CheckCircle className="text-green-600" size={20} />
-                      <div>
-                        <div className="font-medium text-green-900">{selectedDevice.name}</div>
-                        <div className="text-sm text-green-700">Connected</div>
-                      </div>
-                    </div>
-                    <Button onClick={disconnectDevice} variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
-                      Disconnect
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="p-4 bg-muted border border-border rounded-lg text-center">
-                    <Bluetooth className="mx-auto text-muted-foreground mb-2" size={24} />
-                    <div className="text-sm text-muted-foreground">No Bluetooth printer connected</div>
-                    <div className="text-xs text-muted-foreground mt-1">Click "Find Printer" to search for devices</div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Page Settings */}
+        <div className="space-y-6 max-w-2xl mx-auto">
           <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Page Settings</h3>
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Printer className="h-5 w-5" />
+              Printer Setup
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Printing is automatic based on your device — no pairing, no Bluetooth.
+            </p>
+
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-2">Paper Size</label>
-                <select value={paperSize} onChange={(e) => setPaperSize(e.target.value)}
-                  className="w-full px-3 py-3 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground">
-                  <option value="3inch">3 inch (76mm) - Thermal</option>
-                  <option value="2inch">2 inch (58mm) - Thermal</option>
-                  <option value="a4">A4 - Standard</option>
-                </select>
+              <div className="flex items-start gap-3 p-4 border border-border rounded-lg">
+                <Cable className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="font-medium text-foreground">Windows Desktop</div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Prints directly to your USB thermal printer (e.g. <strong>XPrinter XP-80C</strong>)
+                    through the browser print dialog. Select the XPrinter and 80mm paper when the dialog appears.
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Receipt Preview */}
-          <div className="bg-card rounded-lg shadow-lg p-4 sm:p-6 border border-border">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Receipt Preview</h3>
-              <Button onClick={() => setShowReceiptPreview(!showReceiptPreview)} variant="outline">
-                {showReceiptPreview ? 'Hide Preview' : 'Show Preview'}
-              </Button>
-            </div>
-            {showReceiptPreview && (
-              <div className="mt-4">
-                <ReceiptPreview />
+              <div className="flex items-start gap-3 p-4 border border-border rounded-lg">
+                <Smartphone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="font-medium text-foreground">Android</div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Prints through the <strong>RawBT</strong> app. Install RawBT from Google Play and pair
+                    your thermal printer once inside the RawBT app.
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
+
 
 
 
