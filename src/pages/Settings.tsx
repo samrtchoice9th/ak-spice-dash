@@ -1,53 +1,25 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useProducts } from '@/contexts/ProductsContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Edit2, Trash2, Plus, Printer, Bluetooth, Wifi, Cable, Settings as SettingsIcon, Search, CheckCircle, PackageMinus } from 'lucide-react';
+import { Edit2, Trash2, Plus, Printer, Settings as SettingsIcon, Search, PackageMinus, Smartphone, Cable } from 'lucide-react';
 import { AddItemDialog } from '@/components/AddItemDialog';
 import { DataTable } from '@/components/DataTable';
 import { toast } from 'sonner';
 
-// Extend Navigator interface for Web Bluetooth API
-declare global {
-  interface Navigator {
-    bluetooth?: {
-      requestDevice(options: any): Promise<BluetoothDevice>;
-    };
-  }
-  
-  interface BluetoothDevice {
-    id: string;
-    name?: string;
-    gatt?: BluetoothRemoteGATTServer;
-  }
-  
-  interface BluetoothRemoteGATTServer {
-    connected: boolean;
-    connect(): Promise<BluetoothRemoteGATTServer>;
-    disconnect(): void;
-  }
-}
-
 const Settings = () => {
   const { products, updateProduct, deleteProduct, loading } = useProducts();
   const isMobile = useIsMobile();
-  // Shop context removed - single shop mode
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editName, setEditName] = useState('');
   const [itemSearch, setItemSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [deleteConfirmProduct, setDeleteConfirmProduct] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('items');
-  const [printerConnection, setPrinterConnection] = useState('bluetooth');
-  const [paperSize, setPaperSize] = useState('3inch');
-  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
-  const [bluetoothDevices, setBluetoothDevices] = useState<any[]>([]);
-  const [selectedDevice, setSelectedDevice] = useState<any>(null);
-  const [isScanning, setIsScanning] = useState(false);
-  const [showBluetoothDialog, setShowBluetoothDialog] = useState(false);
+
   
 
   // Shop management functions removed - single shop mode
