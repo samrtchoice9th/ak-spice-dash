@@ -20,7 +20,7 @@ const ReceiptPage = () => {
   const { refreshProducts } = useProducts();
   const [editingReceipt, setEditingReceipt] = useState<ReceiptType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const { checkPrinterAndPrint, printToRawBT, PrintPreviewComponent } = useReceiptPrintHandler();
+  const { printReceipt, PrintPreviewComponent } = useReceiptPrintHandler();
 
   useEffect(() => {
     refreshReceipts(selectedYear, selectedMonth);
