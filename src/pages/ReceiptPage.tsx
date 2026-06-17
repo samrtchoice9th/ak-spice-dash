@@ -128,8 +128,6 @@ const ReceiptPage = () => {
         receipt={editingReceipt}
         onSave={handleSaveReceipt}
       />
-      
-      <PrintPreviewComponent />
     </div>
   );
 };
