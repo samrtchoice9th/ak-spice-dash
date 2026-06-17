@@ -112,12 +112,12 @@ const buildThermalHtml = (receipt: any): string => {
 <style>${THERMAL_CSS}</style>
 </head>
 <body>
-  <div class="center bold xl">${escapeHtml(shop.name.toUpperCase())}</div>
+  <div class="center xl">${escapeHtml(shop.name.toUpperCase())}</div>
   ${shop.phone ? `<div class="center sm">Mob: ${escapeHtml(shop.phone)}</div>` : ''}
   ${shop.address ? `<div class="center sm">${escapeHtml(shop.address)}</div>` : ''}
   <div class="divider"></div>
-  <div class="sm">Invoice: <span class="bold">${invoiceNumber}</span></div>
-  <div class="sm row"><span>Date: ${escapeHtml(date)}</span><span>Time: ${escapeHtml(time)}</span></div>
+  <div>Invoice: <span class="bold">${invoiceNumber}</span></div>
+  <div class="row"><span>Date: ${escapeHtml(date)}</span><span>Time: ${escapeHtml(time)}</span></div>
   <div class="divider"></div>
   <table>
     <thead>
@@ -131,11 +131,11 @@ const buildThermalHtml = (receipt: any): string => {
     <tbody>${itemsHtml}</tbody>
   </table>
   <div class="divider"></div>
-  <div class="center bold lg">TOTAL: Rs. ${totalAmount.toFixed(2)}</div>
-  <div class="center sm">Items: ${items.length}</div>
+  <div class="center total-box total">TOTAL: Rs. ${totalAmount.toFixed(2)}</div>
+  <div class="center">Items: ${items.length}</div>
   <div class="divider"></div>
-  <div class="center sm">Thank you for your business!</div>
-  <div class="center sm">Visit us again</div>
+  <div class="center">Thank you for your business!</div>
+  <div class="center">Visit us again</div>
 </body>
 </html>`;
 };
