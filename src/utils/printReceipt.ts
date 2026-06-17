@@ -328,7 +328,7 @@ export const printToRawBT = (
 };
 
 function generateESCPOSText(
-  shop: { name: string; phone: string; address: string },
+  shop: { name: string; phone: string; addressLines: string[] },
   invoiceNumber: string,
   date: string,
   time: string,
@@ -341,12 +341,14 @@ function generateESCPOSText(
   const LEFT = ESC + 'a' + '\x00';
   const BOLD_ON = ESC + 'E' + '\x01';
   const BOLD_OFF = ESC + 'E' + '\x00';
+  const DBL_ON = ESC + '!' + '\x30';
+  const DBL_OFF = ESC + '!' + '\x00';
   const CUT = ESC + 'i';
 
   let r = INIT;
-  r += CENTER + BOLD_ON + (shop.name || 'MY SHOP').toUpperCase() + BOLD_OFF + '\n';
-  if (shop.phone) r += `Mob: ${shop.phone}\n`;
-  if (shop.address) r += `${shop.address}\n`;
+  r += CENTER + DBL_ON + BOLD_ON + (shop.name || 'AK SPICE TRADING').toUpperCase() + BOLD_OFF + DBL_OFF + '\n';
+  shop.addressLines.forEach(line => { r += CENTER + line + '\n'; });
+  if (shop.phone) r += CENTER + `Mob: ${shop.phone}\n`;
   r += '--------------------------------\n';
   r += LEFT;
   r += `Invoice: ${invoiceNumber}\n`;
