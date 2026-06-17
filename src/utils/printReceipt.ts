@@ -12,21 +12,13 @@ export const getInvoiceNumber = (receipt: { id?: string; invoiceNumber?: string 
   return 'INVM-000000';
 };
 
-const getShopInfo = () => {
-  // Pulled from auth metadata where available; for util usage we keep defaults.
-  try {
-    const raw = localStorage.getItem('shopInfo');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        name: parsed.name || 'My Shop',
-        phone: parsed.phone || '',
-        address: parsed.address || '',
-      };
-    }
-  } catch { /* noop */ }
-  return { name: 'My Shop', phone: '', address: '' };
+const SHOP_INFO = {
+  name: 'AK SPICE TRADING',
+  addressLines: ['36, In Front of Tile Factory', 'Mahiyangana'],
+  phone: '0773962001',
 };
+
+const getShopInfo = () => SHOP_INFO;
 
 // ---------- 80mm Thermal HTML for Desktop browser printing ----------
 
@@ -113,8 +105,8 @@ const buildThermalHtml = (receipt: any): string => {
 </head>
 <body>
   <div class="center xl">${escapeHtml(shop.name.toUpperCase())}</div>
+  ${shop.addressLines.map(l => `<div class="center sm">${escapeHtml(l)}</div>`).join('')}
   ${shop.phone ? `<div class="center sm">Mob: ${escapeHtml(shop.phone)}</div>` : ''}
-  ${shop.address ? `<div class="center sm">${escapeHtml(shop.address)}</div>` : ''}
   <div class="divider"></div>
   <div>Invoice: <span class="bold">${invoiceNumber}</span></div>
   <div class="row"><span>Date: ${escapeHtml(date)}</span><span>Time: ${escapeHtml(time)}</span></div>
@@ -336,7 +328,7 @@ export const printToRawBT = (
 };
 
 function generateESCPOSText(
-  shop: { name: string; phone: string; address: string },
+  shop: { name: string; phone: string; addressLines: string[] },
   invoiceNumber: string,
   date: string,
   time: string,
@@ -349,12 +341,14 @@ function generateESCPOSText(
   const LEFT = ESC + 'a' + '\x00';
   const BOLD_ON = ESC + 'E' + '\x01';
   const BOLD_OFF = ESC + 'E' + '\x00';
+  const DBL_ON = ESC + '!' + '\x30';
+  const DBL_OFF = ESC + '!' + '\x00';
   const CUT = ESC + 'i';
 
   let r = INIT;
-  r += CENTER + BOLD_ON + (shop.name || 'MY SHOP').toUpperCase() + BOLD_OFF + '\n';
-  if (shop.phone) r += `Mob: ${shop.phone}\n`;
-  if (shop.address) r += `${shop.address}\n`;
+  r += CENTER + DBL_ON + BOLD_ON + (shop.name || 'AK SPICE TRADING').toUpperCase() + BOLD_OFF + DBL_OFF + '\n';
+  shop.addressLines.forEach(line => { r += CENTER + line + '\n'; });
+  if (shop.phone) r += CENTER + `Mob: ${shop.phone}\n`;
   r += '--------------------------------\n';
   r += LEFT;
   r += `Invoice: ${invoiceNumber}\n`;

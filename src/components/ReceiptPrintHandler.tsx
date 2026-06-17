@@ -1,19 +1,15 @@
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
-import { PrintPreviewDialog } from './PrintPreviewDialog';
 import { printDesktopReceipt, printToRawBT as printToRawBTUtil } from '@/utils/printReceipt';
 
 /**
- * Unified print handler.
+ * Unified one-click print handler.
  * - Android  → RawBT app via intent URL
  * - Desktop  → browser print dialog using 80mm thermal CSS (XPrinter XP-80C)
  *
- * Uses the receipt's stored id / date / time. Never generates random invoice numbers.
+ * No preview dialog. Uses the receipt's stored id / date / time.
  */
 export const useReceiptPrintHandler = () => {
   const { toast } = useToast();
-  const [showPreview, setShowPreview] = useState(false);
-  const [currentReceipt, setCurrentReceipt] = useState<any>(null);
 
   const isAndroid = () => /Android/i.test(navigator.userAgent);
 
@@ -44,31 +40,12 @@ export const useReceiptPrintHandler = () => {
     }
   };
 
-  const showPrintPreview = (receipt: any) => {
-    setCurrentReceipt(receipt);
-    setShowPreview(true);
-  };
-
-  const handleConfirmPrint = () => {
-    setShowPreview(false);
-    if (currentReceipt) printReceipt(currentReceipt);
-  };
-
-  const PrintPreviewComponent = () => (
-    <PrintPreviewDialog
-      open={showPreview}
-      onOpenChange={setShowPreview}
-      receipt={currentReceipt}
-      onConfirmPrint={handleConfirmPrint}
-    />
-  );
+  // Back-compat no-op preview component for any remaining callers.
+  const PrintPreviewComponent = () => null;
 
   return {
-    /** Direct print (no preview), device-aware. */
     printReceipt,
-    /** Open preview dialog, then print on confirm. */
-    checkPrinterAndPrint: showPrintPreview,
-    /** Kept for backward compatibility — routes through unified printReceipt. */
+    checkPrinterAndPrint: printReceipt,
     printToRawBT: printReceipt,
     PrintPreviewComponent,
   };

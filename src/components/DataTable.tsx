@@ -31,7 +31,7 @@ export const DataTable: React.FC<DataTableProps> = ({
 }) => {
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const { addReceipt } = useReceipts();
-  const { checkPrinterAndPrint, PrintPreviewComponent } = useReceiptPrintHandler();
+  const { printReceipt: directPrintReceipt } = useReceiptPrintHandler();
   
   const {
     rows,
@@ -50,7 +50,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   };
 
   const handlePrint = () => {
-    printReceipt(rows, title, calculateTotal, addReceipt, type, clearAllFields, true, checkPrinterAndPrint);
+    printReceipt(rows, title, calculateTotal, addReceipt, type, clearAllFields, false);
   };
 
   const handleThermalPrint = () => {
@@ -101,8 +101,6 @@ export const DataTable: React.FC<DataTableProps> = ({
         isOpen={isAddItemDialogOpen}
         onClose={() => setIsAddItemDialogOpen(false)}
       />
-      
-      <PrintPreviewComponent />
     </>
   );
 };
