@@ -101,8 +101,8 @@ export const DataTable: React.FC<DataTableProps> = ({
         isOpen={isAddItemDialogOpen}
         onClose={() => setIsAddItemDialogOpen(false)}
       />
-      
-      <PrintPreviewComponent />
     </>
+  );
+};
   );
 };
