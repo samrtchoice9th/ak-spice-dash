@@ -105,8 +105,8 @@ const buildThermalHtml = (receipt: any): string => {
 </head>
 <body>
   <div class="center xl">${escapeHtml(shop.name.toUpperCase())}</div>
+  ${shop.addressLines.map(l => `<div class="center sm">${escapeHtml(l)}</div>`).join('')}
   ${shop.phone ? `<div class="center sm">Mob: ${escapeHtml(shop.phone)}</div>` : ''}
-  ${shop.address ? `<div class="center sm">${escapeHtml(shop.address)}</div>` : ''}
   <div class="divider"></div>
   <div>Invoice: <span class="bold">${invoiceNumber}</span></div>
   <div class="row"><span>Date: ${escapeHtml(date)}</span><span>Time: ${escapeHtml(time)}</span></div>
