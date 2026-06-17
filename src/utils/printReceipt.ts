@@ -12,21 +12,13 @@ export const getInvoiceNumber = (receipt: { id?: string; invoiceNumber?: string 
   return 'INVM-000000';
 };
 
-const getShopInfo = () => {
-  // Pulled from auth metadata where available; for util usage we keep defaults.
-  try {
-    const raw = localStorage.getItem('shopInfo');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        name: parsed.name || 'My Shop',
-        phone: parsed.phone || '',
-        address: parsed.address || '',
-      };
-    }
-  } catch { /* noop */ }
-  return { name: 'My Shop', phone: '', address: '' };
+const SHOP_INFO = {
+  name: 'AK SPICE TRADING',
+  address: '36, In Front of Tile Factory, Mahiyangana',
+  phone: '0773962001',
 };
+
+const getShopInfo = () => SHOP_INFO;
 
 // ---------- 80mm Thermal HTML for Desktop browser printing ----------
 
