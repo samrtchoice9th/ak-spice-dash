@@ -32,31 +32,59 @@ const getShopInfo = () => {
 
 const THERMAL_CSS = `
   @page { size: 80mm auto; margin: 0; }
-  html, body { margin: 0; padding: 0; background: #fff; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    color: #000000;
+  }
   body {
     width: 80mm;
     margin: 0;
-    padding: 2mm;
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    line-height: 1.3;
-    color: #000;
+    padding: 3mm 2mm;
+    font-family: 'Courier New', 'Courier', monospace;
+    font-size: 13px;
+    line-height: 1.35;
+    color: #000000;
+    font-weight: 700;
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: auto;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  * {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    text-rendering: geometricPrecision;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
   .center { text-align: center; }
   .right  { text-align: right; }
-  .bold   { font-weight: bold; }
-  .lg     { font-size: 13px; }
-  .xl     { font-size: 15px; }
-  .sm     { font-size: 10px; }
+  .bold   { font-weight: 900 !important; }
+  .lg     { font-size: 15px; font-weight: 900 !important; }
+  .xl     { font-size: 17px; font-weight: 900 !important; }
+  .total  { font-size: 19px; font-weight: 900 !important; }
+  .sm     { font-size: 12px; }
   .row    { display: flex; justify-content: space-between; gap: 4px; }
-  .divider{ border-top: 1px dashed #000; margin: 2mm 0; }
+  .divider{ border-top: 2px solid #000000; margin: 2mm 0; }
   table   { width: 100%; border-collapse: collapse; }
-  th, td  { padding: 1mm 0; font-size: 10px; vertical-align: top; }
-  th      { text-align: left; border-bottom: 1px dashed #000; }
-  td.num  { text-align: right; }
-  .item-name { word-wrap: break-word; max-width: 30mm; }
+  th, td  { padding: 1.2mm 0; font-size: 12px; vertical-align: top; color: #000000; }
+  th      { text-align: left; border-bottom: 2px solid #000000; font-weight: 900 !important; }
+  td      { border-bottom: 1px solid #000000; }
+  td.num, th.num { text-align: right; }
+  .item-name { word-wrap: break-word; max-width: 30mm; font-weight: 900 !important; }
+  .total-box {
+    border: 2px solid #000000;
+    padding: 2mm;
+    margin: 2mm 0;
+    font-weight: 900 !important;
+  }
+  @media print {
+    html, body { width: 80mm; }
+    body { padding: 3mm 2mm; transform: none; zoom: 1; }
+  }
 `;
 
 const buildThermalHtml = (receipt: any): string => {
