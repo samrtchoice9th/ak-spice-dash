@@ -14,7 +14,7 @@ export const getInvoiceNumber = (receipt: { id?: string; invoiceNumber?: string 
 
 const SHOP_INFO = {
   name: 'AK SPICE TRADING',
-  addressLines: ['36, In Front of Tile Factory', 'Mahiyangana'],
+  addressLines: ['86, In Front of Tile Factory', 'Mahiyangana'],
   phone: '0773962001',
 };
 
