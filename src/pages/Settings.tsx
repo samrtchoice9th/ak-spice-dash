@@ -254,6 +254,26 @@ const Settings = () => {
                 </div>
               </div>
 
+              <div className="flex items-start gap-3 p-4 border border-border rounded-lg bg-muted/30">
+                <Printer className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <div className="font-medium text-foreground">One-click silent printing (Windows)</div>
+                  <div className="text-sm text-muted-foreground mt-1 space-y-2">
+                    <p>
+                      To skip the browser print dialog and print directly to the XPrinter, launch Chrome with
+                      the <strong>--kiosk-printing</strong> flag. Create a desktop shortcut with this target:
+                    </p>
+                    <code className="block bg-background border border-border rounded p-2 text-xs break-all">
+                      chrome.exe --kiosk-printing --app=https://your-app-url
+                    </code>
+                    <p>
+                      Then set the <strong>XPrinter XP-80C</strong> as your Windows default printer (80mm paper).
+                      Receipts will print instantly with no dialog.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-start gap-3 p-4 border border-border rounded-lg">
                 <Smartphone className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
