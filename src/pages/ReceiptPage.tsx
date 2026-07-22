@@ -119,6 +119,7 @@ const ReceiptPage = () => {
         onEdit={handleEditReceipt}
         onPrint={printReceipt}
         onDelete={handleDeleteReceipt}
+        highlightId={highlightId}
       />
 
       <EditReceiptDialog
