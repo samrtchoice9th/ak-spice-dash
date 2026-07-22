@@ -16,13 +16,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 100;
 
 interface ReceiptsTableProps {
   receipts: ReceiptType[];
   onEdit: (receipt: ReceiptType) => void;
   onPrint: (receipt: ReceiptType) => void;
   onDelete?: (id: string) => void;
+  highlightId?: string | null;
 }
 
 const getTypeBadge = (type: string) => {
@@ -37,11 +38,13 @@ const getTypeBadge = (type: string) => {
   return <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${info.bg}`}>{info.label}</span>;
 };
 
-export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, onPrint, onDelete }) => {
+export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, onPrint, onDelete, highlightId }) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const isMobile = useIsMobile();
+  const highlightRowRef = useRef<HTMLTableRowElement | null>(null);
+  const highlightCardRef = useRef<HTMLDivElement | null>(null);
 
   const filteredReceipts = useMemo(() => {
     if (!searchTerm.trim()) return receipts;
