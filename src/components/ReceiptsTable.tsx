@@ -59,6 +59,24 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
   const visibleReceipts = useMemo(() => filteredReceipts.slice(0, visibleCount), [filteredReceipts, visibleCount]);
   const hasMore = visibleCount < filteredReceipts.length;
 
+  // Ensure highlighted receipt is within visible slice
+  useEffect(() => {
+    if (!highlightId) return;
+    const idx = filteredReceipts.findIndex(r => r.id === highlightId);
+    if (idx >= 0 && idx >= visibleCount) {
+      setVisibleCount(Math.ceil((idx + 1) / PAGE_SIZE) * PAGE_SIZE);
+    }
+  }, [highlightId, filteredReceipts, visibleCount]);
+
+  // Scroll highlighted row into view
+  useEffect(() => {
+    if (!highlightId) return;
+    const el = highlightRowRef.current || highlightCardRef.current;
+    if (el) {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [highlightId, visibleReceipts]);
+
   const handleConfirmDelete = () => {
     if (deleteId && onDelete) {
       onDelete(deleteId);
