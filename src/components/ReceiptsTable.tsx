@@ -166,7 +166,11 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
           <ScrollArea className="h-[600px]">
             <div className="divide-y divide-border">
               {visibleReceipts.map((receipt) => (
-                <div key={receipt.id} className="p-4 space-y-3">
+                <div
+                  key={receipt.id}
+                  ref={highlightId === receipt.id ? highlightCardRef : null}
+                  className={`p-4 space-y-3 transition-colors duration-500 ${highlightId === receipt.id ? 'bg-green-100 dark:bg-green-900/30' : ''}`}
+                >
                   <div className="flex items-center justify-between">
                     {getTypeBadge(receipt.type)}
                     <span className="text-sm font-bold text-foreground">Rs.{receipt.totalAmount.toFixed(2)}</span>
