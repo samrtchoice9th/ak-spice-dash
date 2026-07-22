@@ -236,7 +236,11 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
               </thead>
               <tbody className="bg-card divide-y divide-border">
                 {visibleReceipts.map((receipt) => (
-                  <tr key={receipt.id} className="hover:bg-muted/30">
+                  <tr
+                    key={receipt.id}
+                    ref={highlightId === receipt.id ? highlightRowRef : null}
+                    className={`hover:bg-muted/30 transition-colors duration-500 ${highlightId === receipt.id ? 'bg-green-100 dark:bg-green-900/30' : ''}`}
+                  >
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       {getTypeBadge(receipt.type)}
                     </td>
