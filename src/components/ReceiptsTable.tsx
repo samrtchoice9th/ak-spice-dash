@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Receipt, Edit, Printer, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,13 +16,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 100;
 
 interface ReceiptsTableProps {
   receipts: ReceiptType[];
   onEdit: (receipt: ReceiptType) => void;
   onPrint: (receipt: ReceiptType) => void;
   onDelete?: (id: string) => void;
+  highlightId?: string | null;
 }
 
 const getTypeBadge = (type: string) => {
@@ -37,11 +38,13 @@ const getTypeBadge = (type: string) => {
   return <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${info.bg}`}>{info.label}</span>;
 };
 
-export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, onPrint, onDelete }) => {
+export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, onPrint, onDelete, highlightId }) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const isMobile = useIsMobile();
+  const highlightRowRef = useRef<HTMLTableRowElement | null>(null);
+  const highlightCardRef = useRef<HTMLDivElement | null>(null);
 
   const filteredReceipts = useMemo(() => {
     if (!searchTerm.trim()) return receipts;
@@ -55,6 +58,24 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
 
   const visibleReceipts = useMemo(() => filteredReceipts.slice(0, visibleCount), [filteredReceipts, visibleCount]);
   const hasMore = visibleCount < filteredReceipts.length;
+
+  // Ensure highlighted receipt is within visible slice
+  useEffect(() => {
+    if (!highlightId) return;
+    const idx = filteredReceipts.findIndex(r => r.id === highlightId);
+    if (idx >= 0 && idx >= visibleCount) {
+      setVisibleCount(Math.ceil((idx + 1) / PAGE_SIZE) * PAGE_SIZE);
+    }
+  }, [highlightId, filteredReceipts, visibleCount]);
+
+  // Scroll highlighted row into view
+  useEffect(() => {
+    if (!highlightId) return;
+    const el = highlightRowRef.current || highlightCardRef.current;
+    if (el) {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [highlightId, visibleReceipts]);
 
   const handleConfirmDelete = () => {
     if (deleteId && onDelete) {
@@ -145,7 +166,11 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
           <ScrollArea className="h-[600px]">
             <div className="divide-y divide-border">
               {visibleReceipts.map((receipt) => (
-                <div key={receipt.id} className="p-4 space-y-3">
+                <div
+                  key={receipt.id}
+                  ref={highlightId === receipt.id ? highlightCardRef : null}
+                  className={`p-4 space-y-3 transition-colors duration-500 ${highlightId === receipt.id ? 'bg-green-100 dark:bg-green-900/30' : ''}`}
+                >
                   <div className="flex items-center justify-between">
                     {getTypeBadge(receipt.type)}
                     <span className="text-sm font-bold text-foreground">Rs.{receipt.totalAmount.toFixed(2)}</span>
@@ -211,7 +236,11 @@ export const ReceiptsTable: React.FC<ReceiptsTableProps> = ({ receipts, onEdit, 
               </thead>
               <tbody className="bg-card divide-y divide-border">
                 {visibleReceipts.map((receipt) => (
-                  <tr key={receipt.id} className="hover:bg-muted/30">
+                  <tr
+                    key={receipt.id}
+                    ref={highlightId === receipt.id ? highlightRowRef : null}
+                    className={`hover:bg-muted/30 transition-colors duration-500 ${highlightId === receipt.id ? 'bg-green-100 dark:bg-green-900/30' : ''}`}
+                  >
                     <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       {getTypeBadge(receipt.type)}
                     </td>

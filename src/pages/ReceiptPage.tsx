@@ -20,6 +20,7 @@ const ReceiptPage = () => {
   const { refreshProducts } = useProducts();
   const [editingReceipt, setEditingReceipt] = useState<ReceiptType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const { printReceipt } = useReceiptPrintHandler();
 
   useEffect(() => {
@@ -63,13 +64,14 @@ const ReceiptPage = () => {
   const handleSaveReceipt = useCallback(async (id: string, receiptData: any) => {
     try {
       await updateReceipt(id, receiptData);
-      // Refresh both products (stock) and receipts (so the dialog re-reads fresh values)
       await Promise.all([
         refreshProducts(),
         refreshReceipts(selectedYear, selectedMonth),
       ]);
       setEditingReceipt(null);
       setIsEditDialogOpen(false);
+      setHighlightId(id);
+      setTimeout(() => setHighlightId(null), 3000);
     } catch (error) {
       console.error('Failed to save receipt:', error);
       throw error;
@@ -117,6 +119,7 @@ const ReceiptPage = () => {
         onEdit={handleEditReceipt}
         onPrint={printReceipt}
         onDelete={handleDeleteReceipt}
+        highlightId={highlightId}
       />
 
       <EditReceiptDialog
