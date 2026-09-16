@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarIcon, TrendingUp, TrendingDown } from 'lucide-react';
-import { useReceipts } from '@/contexts/ReceiptsContext';
+import { receiptService } from '@/services/receiptService';
 import {
   format, startOfDay, endOfDay, startOfWeek, endOfWeek,
   startOfMonth, endOfMonth, subMonths, parseISO, eachDayOfInterval,
@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 
-type DateFilter = 'today' | 'week' | 'month' | 'lastMonth' | 'all' | 'custom';
+type DateFilter = 'today' | 'week' | 'month' | 'lastMonth' | 'custom';
 
 interface DayReport {
   date: string;
@@ -27,11 +27,12 @@ const MONTH_NAMES = [
 ];
 
 const Report = () => {
-  const { receipts, loading, refreshReceipts } = useReceipts();
   const now = useMemo(() => new Date(), []);
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('month');
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [dailyTotals, setDailyTotals] = useState<Record<string, { totalSales: number; totalPurchases: number }>>({});
+  const [loading, setLoading] = useState(true);
 
   const yearOptions = useMemo(() => {
     const currentYear = now.getFullYear();
@@ -40,26 +41,31 @@ const Report = () => {
     return years.reverse();
   }, [now]);
 
-  // Load the correct month when filter or custom year/month changes
+  // Load complete daily totals for the selected month (paged, nothing truncated)
   useEffect(() => {
-    if (dateFilter === 'custom') {
-      refreshReceipts(selectedYear, selectedMonth);
-    } else if (dateFilter === 'lastMonth') {
-      const last = subMonths(now, 1);
-      refreshReceipts(last.getFullYear(), last.getMonth());
-    } else {
-      refreshReceipts(now.getFullYear(), now.getMonth());
-    }
-  }, [dateFilter, selectedYear, selectedMonth, refreshReceipts, now]);
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const totals = await receiptService.getMonthlyDailyTotals(selectedYear, selectedMonth);
+        if (!cancelled) setDailyTotals(totals);
+      } catch (error) {
+        console.error('Failed to load report totals:', error);
+        if (!cancelled) setDailyTotals({});
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedYear, selectedMonth]);
 
   const handleQuickFilterChange = (value: DateFilter) => {
     setDateFilter(value);
-    // Sync the year/month pickers to match the quick filter
     if (value === 'lastMonth') {
       const last = subMonths(now, 1);
       setSelectedYear(last.getFullYear());
       setSelectedMonth(last.getMonth());
-    } else {
+    } else if (value !== 'custom') {
       setSelectedYear(now.getFullYear());
       setSelectedMonth(now.getMonth());
     }
@@ -76,6 +82,7 @@ const Report = () => {
   };
 
   const { startDate, endDate, periodLabel } = useMemo(() => {
+    const monthDate = new Date(selectedYear, selectedMonth, 1);
     switch (dateFilter) {
       case 'today':
         return { startDate: startOfDay(now), endDate: endOfDay(now), periodLabel: `Today — ${format(now, 'MMM dd, yyyy')}` };
@@ -87,44 +94,24 @@ const Report = () => {
         const last = subMonths(now, 1);
         return { startDate: startOfMonth(last), endDate: endOfMonth(last), periodLabel: `Last Month — ${format(last, 'MMM yyyy')}` };
       }
-      case 'custom': {
-        const monthDate = new Date(selectedYear, selectedMonth, 1);
+      default:
         return {
           startDate: startOfMonth(monthDate),
           endDate: endOfMonth(monthDate),
           periodLabel: `${MONTH_NAMES[selectedMonth]} ${selectedYear}`,
         };
-      }
-      default:
-        return { startDate: new Date(0), endDate: new Date(2099, 11, 31), periodLabel: 'All Time' };
     }
   }, [dateFilter, selectedYear, selectedMonth, now]);
 
-  const filteredReports = useMemo(() => {
-    // Group receipts by day
-    const groupedByDate = receipts.reduce((acc, receipt) => {
-      const receiptDate = parseISO(receipt.date);
-      if (receiptDate >= startDate && receiptDate <= endDate) {
-        const dateKey = format(receiptDate, 'yyyy-MM-dd');
-        if (!acc[dateKey]) acc[dateKey] = { date: dateKey, totalSales: 0, totalPurchases: 0 };
-        if (receipt.type === 'sales') acc[dateKey].totalSales += receipt.totalAmount;
-        else if (receipt.type === 'purchase') acc[dateKey].totalPurchases += receipt.totalAmount;
-      }
-      return acc;
-    }, {} as Record<string, DayReport>);
-
-    // Custom month mode: list every day of the selected month (zero-filled)
-    if (dateFilter === 'custom') {
-      return eachDayOfInterval({ start: startDate, end: endDate })
-        .map(day => {
-          const dateKey = format(day, 'yyyy-MM-dd');
-          return groupedByDate[dateKey] || { date: dateKey, totalSales: 0, totalPurchases: 0 };
-        })
-        .reverse(); // newest first
-    }
-
-    return Object.values(groupedByDate).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [receipts, startDate, endDate, dateFilter]);
+  const filteredReports = useMemo<DayReport[]>(() => {
+    return eachDayOfInterval({ start: startDate, end: endDate })
+      .map(day => {
+        const dateKey = format(day, 'yyyy-MM-dd');
+        const found = dailyTotals[dateKey];
+        return { date: dateKey, totalSales: found?.totalSales || 0, totalPurchases: found?.totalPurchases || 0 };
+      })
+      .reverse(); // newest first
+  }, [dailyTotals, startDate, endDate]);
 
   const totals = useMemo(() => {
     return filteredReports.reduce(
@@ -135,14 +122,6 @@ const Report = () => {
       { totalSales: 0, totalPurchases: 0 }
     );
   }, [filteredReports]);
-
-  if (loading) {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="text-center text-muted-foreground">Loading reports...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
@@ -163,7 +142,6 @@ const Report = () => {
               <SelectItem value="week">This Week</SelectItem>
               <SelectItem value="month">This Month</SelectItem>
               <SelectItem value="lastMonth">Last Month</SelectItem>
-              <SelectItem value="all">All Time</SelectItem>
               {dateFilter === 'custom' && <SelectItem value="custom">Custom Month</SelectItem>}
             </SelectContent>
           </Select>
@@ -225,10 +203,8 @@ const Report = () => {
           <CardTitle className="text-sm sm:text-base">Daily Report</CardTitle>
         </CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
-          {filteredReports.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              No transactions found for the selected period.
-            </div>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">Loading reports...</div>
           ) : (
             <div className="overflow-x-auto">
               <Table>

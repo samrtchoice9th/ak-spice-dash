@@ -54,6 +54,49 @@ export const receiptService = {
     return this._mapReceipts(receiptsData);
   },
 
+  // Lightweight daily totals for reports: no item join, fully paged so no day is truncated.
+  async getMonthlyDailyTotals(
+    year: number,
+    month: number
+  ): Promise<Record<string, { totalSales: number; totalPurchases: number }>> {
+    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
+    const endDate = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-01`;
+
+    const totals: Record<string, { totalSales: number; totalPurchases: number }> = {};
+    const PAGE = 1000;
+    let from = 0;
+
+    for (;;) {
+      const { data, error } = await supabase
+        .from('receipts')
+        .select('date, type, total_amount')
+        .gte('date', startDate)
+        .lt('date', endDate)
+        .order('date', { ascending: true })
+        .range(from, from + PAGE - 1);
+
+      if (error) {
+        console.error('Error fetching daily totals:', error);
+        throw error;
+      }
+
+      for (const row of data || []) {
+        const key = row.date as string;
+        if (!totals[key]) totals[key] = { totalSales: 0, totalPurchases: 0 };
+        const amount = Number(row.total_amount) || 0;
+        if (row.type === 'sales') totals[key].totalSales += amount;
+        else if (row.type === 'purchase') totals[key].totalPurchases += amount;
+      }
+
+      if (!data || data.length < PAGE) break;
+      from += PAGE;
+    }
+
+    return totals;
+  },
+
   async getAllReceipts(): Promise<Receipt[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
