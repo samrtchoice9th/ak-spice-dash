@@ -4,7 +4,7 @@ import { CalendarIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { useReceipts } from '@/contexts/ReceiptsContext';
 import {
   format, startOfDay, endOfDay, startOfWeek, endOfWeek,
-  startOfMonth, endOfMonth, subMonths, parseISO,
+  startOfMonth, endOfMonth, subMonths, parseISO, eachDayOfInterval,
 } from 'date-fns';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -13,7 +13,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 
-type DateFilter = 'today' | 'week' | 'month' | 'lastMonth' | 'all';
+type DateFilter = 'today' | 'week' | 'month' | 'lastMonth' | 'all' | 'custom';
 
 interface DayReport {
   date: string;
@@ -21,23 +21,61 @@ interface DayReport {
   totalPurchases: number;
 }
 
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
 const Report = () => {
   const { receipts, loading, refreshReceipts } = useReceipts();
+  const now = useMemo(() => new Date(), []);
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
 
-  // Load the correct month when filter changes
+  const yearOptions = useMemo(() => {
+    const currentYear = now.getFullYear();
+    const years: number[] = [];
+    for (let y = 2024; y <= currentYear; y++) years.push(y);
+    return years.reverse();
+  }, [now]);
+
+  // Load the correct month when filter or custom year/month changes
   useEffect(() => {
-    const now = new Date();
-    if (dateFilter === 'lastMonth') {
+    if (dateFilter === 'custom') {
+      refreshReceipts(selectedYear, selectedMonth);
+    } else if (dateFilter === 'lastMonth') {
       const last = subMonths(now, 1);
       refreshReceipts(last.getFullYear(), last.getMonth());
     } else {
       refreshReceipts(now.getFullYear(), now.getMonth());
     }
-  }, [dateFilter, refreshReceipts]);
+  }, [dateFilter, selectedYear, selectedMonth, refreshReceipts, now]);
+
+  const handleQuickFilterChange = (value: DateFilter) => {
+    setDateFilter(value);
+    // Sync the year/month pickers to match the quick filter
+    if (value === 'lastMonth') {
+      const last = subMonths(now, 1);
+      setSelectedYear(last.getFullYear());
+      setSelectedMonth(last.getMonth());
+    } else {
+      setSelectedYear(now.getFullYear());
+      setSelectedMonth(now.getMonth());
+    }
+  };
+
+  const handleYearChange = (value: string) => {
+    setSelectedYear(Number(value));
+    setDateFilter('custom');
+  };
+
+  const handleMonthChange = (value: string) => {
+    setSelectedMonth(Number(value));
+    setDateFilter('custom');
+  };
 
   const { startDate, endDate, periodLabel } = useMemo(() => {
-    const now = new Date();
     switch (dateFilter) {
       case 'today':
         return { startDate: startOfDay(now), endDate: endOfDay(now), periodLabel: `Today — ${format(now, 'MMM dd, yyyy')}` };
@@ -49,14 +87,21 @@ const Report = () => {
         const last = subMonths(now, 1);
         return { startDate: startOfMonth(last), endDate: endOfMonth(last), periodLabel: `Last Month — ${format(last, 'MMM yyyy')}` };
       }
+      case 'custom': {
+        const monthDate = new Date(selectedYear, selectedMonth, 1);
+        return {
+          startDate: startOfMonth(monthDate),
+          endDate: endOfMonth(monthDate),
+          periodLabel: `${MONTH_NAMES[selectedMonth]} ${selectedYear}`,
+        };
+      }
       default:
         return { startDate: new Date(0), endDate: new Date(2099, 11, 31), periodLabel: 'All Time' };
     }
-  }, [dateFilter]);
+  }, [dateFilter, selectedYear, selectedMonth, now]);
 
   const filteredReports = useMemo(() => {
-    if (!receipts.length) return [];
-
+    // Group receipts by day
     const groupedByDate = receipts.reduce((acc, receipt) => {
       const receiptDate = parseISO(receipt.date);
       if (receiptDate >= startDate && receiptDate <= endDate) {
@@ -68,8 +113,18 @@ const Report = () => {
       return acc;
     }, {} as Record<string, DayReport>);
 
+    // Custom month mode: list every day of the selected month (zero-filled)
+    if (dateFilter === 'custom') {
+      return eachDayOfInterval({ start: startDate, end: endDate })
+        .map(day => {
+          const dateKey = format(day, 'yyyy-MM-dd');
+          return groupedByDate[dateKey] || { date: dateKey, totalSales: 0, totalPurchases: 0 };
+        })
+        .reverse(); // newest first
+    }
+
     return Object.values(groupedByDate).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [receipts, startDate, endDate]);
+  }, [receipts, startDate, endDate, dateFilter]);
 
   const totals = useMemo(() => {
     return filteredReports.reduce(
@@ -97,19 +152,44 @@ const Report = () => {
           <h1 className="text-lg sm:text-2xl font-bold text-foreground">Sales & Purchase Report</h1>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">{periodLabel}</p>
         </div>
-        <Select value={dateFilter} onValueChange={(value) => setDateFilter(value as DateFilter)}>
-          <SelectTrigger className="w-full sm:w-[200px] h-10">
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="week">This Week</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
-            <SelectItem value="lastMonth">Last Month</SelectItem>
-            <SelectItem value="all">All Time</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Select value={dateFilter} onValueChange={(value) => handleQuickFilterChange(value as DateFilter)}>
+            <SelectTrigger className="w-full sm:w-[160px] h-10">
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="week">This Week</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
+              <SelectItem value="lastMonth">Last Month</SelectItem>
+              <SelectItem value="all">All Time</SelectItem>
+              {dateFilter === 'custom' && <SelectItem value="custom">Custom Month</SelectItem>}
+            </SelectContent>
+          </Select>
+
+          <Select value={String(selectedYear)} onValueChange={handleYearChange}>
+            <SelectTrigger className="w-full sm:w-[110px] h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {yearOptions.map(year => (
+                <SelectItem key={year} value={String(year)}>{year}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={String(selectedMonth)} onValueChange={handleMonthChange}>
+            <SelectTrigger className="w-full sm:w-[140px] h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTH_NAMES.map((name, idx) => (
+                <SelectItem key={name} value={String(idx)}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Summary Cards */}
