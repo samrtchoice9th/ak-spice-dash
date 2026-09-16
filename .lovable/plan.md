@@ -1,32 +1,28 @@
+# Report Page — Year & Month Picker
 
-# Receipt Page — 100 Default + Preserve Position on Edit
+## Goal
+Add a Year selector and a Month selector to the Report page. Picking a year + month shows every day of that month with daily sales and purchase totals.
 
-## Changes
+## Changes (all in `src/pages/Report.tsx`)
 
-### 1. Default page size 50 → 100
-`src/components/ReceiptsTable.tsx`
-- `PAGE_SIZE = 100`
-- "Load More" already exists; increments by 100.
+1. **Year + Month dropdowns**
+   - New `selectedYear` and `selectedMonth` state (default: current year/month).
+   - Year select: range from 2024 to current year.
+   - Month select: all 12 months by name.
+   - Placed next to the existing quick-filter dropdown in the header.
 
-### 2. Preserve scroll + highlight edited receipt
-`src/pages/ReceiptPage.tsx`
-- After `handleSaveReceipt` completes successfully, set `highlightId = receipt.id` (new state). Clear it after 3s via `setTimeout`.
-- Do NOT reset scroll: the ScrollArea already keeps its scrollTop across re-renders because the list is not remounted. Currently, though, the edit dialog closes before `refreshReceipts` resolves — the flow already keeps the same table mounted, so scroll is preserved. Confirm by not remounting the ScrollArea (no key changes).
-- Pass `highlightId` prop into `<ReceiptsTable>`.
+2. **How the two controls work together**
+   - Changing year or month switches the page into "custom month" mode: it fetches that month via `refreshReceipts(year, month)` and the daily table covers that whole month.
+   - Changing the quick filter (Today / This Week / This Month / Last Month) takes over again as before; the year/month pickers sync to match (e.g. Last Month sets pickers to last month).
 
-`src/components/ReceiptsTable.tsx`
-- Accept optional `highlightId?: string | null`.
-- Ensure the highlighted row is within `visibleCount`; if its index ≥ `visibleCount`, bump `visibleCount` so it renders (useEffect on `highlightId`).
-- Apply `bg-green-100/60 dark:bg-green-900/30 transition-colors duration-500` to the matching desktop row and mobile card while `highlightId === receipt.id`.
-- Optionally scroll the highlighted row into view with `scrollIntoView({ block: 'nearest' })` — only if it wasn't already visible. Keep behavior minimal to avoid jumping.
+3. **Every-day-of-month table**
+   - When a year + month is selected, the table lists **all days** of that month (1st → last day), newest first.
+   - Days with no transactions show `Rs 0.00`, so the full month is visible at a glance.
 
-### 3. Toast confirmation
-Already handled via existing sonner toast on save. Add message "Receipt updated" if not present in `handleSaveReceipt`.
+4. **Summary cards** continue to show total sales / purchases for the selected month, matching the table.
 
-## Files Changed
-| File | Change |
-|------|--------|
-| `src/components/ReceiptsTable.tsx` | PAGE_SIZE=100; accept `highlightId`; highlight row 3s; ensure visible |
-| `src/pages/ReceiptPage.tsx` | Track `highlightId`, set on save, clear after 3s; pass to table |
-
-No backend or context changes.
+## Technical details
+- `refreshReceipts(year, month)` already exists in `ReceiptsContext` and fetches exactly one month — reused as-is; no backend changes.
+- Data is grouped by `receipt.date` (Sri Lanka time stored values) into a `yyyy-MM-dd` map, then merged onto the full list of days in the month (`eachDayOfInterval` from date-fns).
+- Quick filters "Today" and "This Week" still filter the currently loaded current month only (existing behavior, unchanged).
+- Loading spinner behavior stays the same while a new month loads.
