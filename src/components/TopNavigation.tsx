@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +13,7 @@ export const TopNavigation = () => {
   const { signOut, user } = useAuth();
   const { toast } = useToast();
   const { role } = useUserRole();
+  const location = useLocation();
 
   const menuItems = useMemo(() => {
     return getFilteredMenuItems(role);
