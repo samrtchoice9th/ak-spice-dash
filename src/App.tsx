@@ -26,6 +26,7 @@ import Settings from "./pages/Settings";
 import Customers from "./pages/Customers";
 import CustomerDetail from "./pages/CustomerDetail";
 import Suppliers from "./pages/Suppliers";
+import DayBook from "./pages/DayBook";
 import SupplierDetail from "./pages/SupplierDetail";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -62,6 +63,7 @@ const App = () => (
                                     <Route path="/customers/:id" element={<RoleProtectedRoute requiredRole="admin"><CustomerDetail /></RoleProtectedRoute>} />
                                     <Route path="/suppliers" element={<RoleProtectedRoute requiredRole="admin"><Suppliers /></RoleProtectedRoute>} />
                                     <Route path="/suppliers/:id" element={<RoleProtectedRoute requiredRole="admin"><SupplierDetail /></RoleProtectedRoute>} />
+                                    <Route path="/day-book" element={<RoleProtectedRoute requiredRole="admin"><DayBook /></RoleProtectedRoute>} />
                                     
                                     <Route path="/inventory" element={<RoleProtectedRoute requiredRole="super_admin"><Inventory /></RoleProtectedRoute>} />
                                     <Route path="/receipt" element={<RoleProtectedRoute requiredRole="admin"><ReceiptPage /></RoleProtectedRoute>} />
