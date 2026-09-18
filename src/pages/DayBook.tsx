@@ -46,11 +46,11 @@ const DayBook = () => {
   const loadDay = useCallback(async () => {
     setLoading(true);
     try {
-      const selected = new Date(`${date}T00:00:00`);
+      const [selectedYear, selectedMonth] = date.split('-').map(Number);
       const [accountList, entries, totals] = await Promise.all([
         dayBookService.getAccounts(),
         dayBookService.getEntries(date),
-        receiptService.getMonthlyDailyTotals(selected.getFullYear(), selected.getMonth()),
+        receiptService.getMonthlyDailyTotals(selectedYear, selectedMonth - 1),
       ]);
       setAccounts(accountList);
       setRows(withBlankRows(entries));
@@ -86,7 +86,8 @@ const DayBook = () => {
     const fieldIndex = order.indexOf(field);
     const nextField = fieldIndex === order.length - 1 ? 'account' : order[fieldIndex + 1];
     const nextRow = fieldIndex === order.length - 1 ? rowIndex + 1 : rowIndex;
-    window.setTimeout(() => fieldsRef.current[`${nextRow}-${nextField}`]?.focus(), 0);
+    const view = window.matchMedia('(min-width: 768px)').matches ? 'desktop' : 'mobile';
+    window.setTimeout(() => fieldsRef.current[`${view}-${nextRow}-${nextField}`]?.focus(), 0);
   };
 
   const handleAccount = (value: string, rowIndex: number) => {
@@ -96,7 +97,8 @@ const DayBook = () => {
       return;
     }
     updateRow(rowIndex, { accountId: value });
-    window.setTimeout(() => fieldsRef.current[`${rowIndex}-description`]?.focus(), 0);
+    const view = window.matchMedia('(min-width: 768px)').matches ? 'desktop' : 'mobile';
+    window.setTimeout(() => fieldsRef.current[`${view}-${rowIndex}-description`]?.focus(), 0);
   };
 
   const addAccount = async () => {
@@ -133,9 +135,9 @@ const DayBook = () => {
     }
   };
 
-  const amountInput = (row: DayBookEntry, index: number, side: 'debit' | 'credit') => (
+  const amountInput = (row: DayBookEntry, index: number, side: 'debit' | 'credit', mobile: boolean) => (
     <Input
-      ref={node => { fieldsRef.current[`${index}-${side}`] = node; }}
+      ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-${side}`] = node; }}
       aria-label={`${side} row ${index + 1}`}
       type="number" min="0" step="0.01" inputMode="decimal"
       value={row[side] ?? ''}
@@ -153,7 +155,7 @@ const DayBook = () => {
       <div>
         {mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Account</label>}
         <Select value={row.accountId} onValueChange={value => handleAccount(value, index)}>
-          <SelectTrigger ref={node => { fieldsRef.current[`${index}-account`] = node; }} onKeyDown={event => moveNext(event, index, 'account')} className="h-11">
+          <SelectTrigger ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-account`] = node; }} onKeyDown={event => moveNext(event, index, 'account')} className="h-11">
             <SelectValue placeholder="Select account" />
           </SelectTrigger>
           <SelectContent>
@@ -164,11 +166,11 @@ const DayBook = () => {
       </div>
       <div>
         {mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Description</label>}
-        <Input ref={node => { fieldsRef.current[`${index}-description`] = node; }} value={row.description} onChange={event => updateRow(index, { description: event.target.value })} onKeyDown={event => moveNext(event, index, 'description')} placeholder="Transaction description" className="h-11" />
+        <Input ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-description`] = node; }} value={row.description} onChange={event => updateRow(index, { description: event.target.value })} onKeyDown={event => moveNext(event, index, 'description')} placeholder="Transaction description" className="h-11" />
       </div>
       <div className={mobile ? 'grid grid-cols-2 gap-3' : 'contents'}>
-        <div>{mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Debit</label>}{amountInput(row, index, 'debit')}</div>
-        <div>{mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Credit</label>}{amountInput(row, index, 'credit')}</div>
+        <div>{mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Debit</label>}{amountInput(row, index, 'debit', mobile)}</div>
+        <div>{mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Credit</label>}{amountInput(row, index, 'credit', mobile)}</div>
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ menuItems }) => 
   const { pathname } = useLocation();
   const accountsActive = menuItems.some(item => item.children?.some(child => pathname.startsWith(child.path)));
   const [accountsOpen, setAccountsOpen] = useState(accountsActive);
+  const showAccounts = accountsOpen || accountsActive;
 
   return (
     <div className="hidden xl:flex xl:flex-col xl:w-64 xl:bg-sidebar xl:text-sidebar-foreground xl:h-screen xl:border-r xl:border-sidebar-border xl:p-4">
@@ -33,12 +34,12 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ menuItems }) => 
               type="button"
               variant="ghost"
               onClick={() => setAccountsOpen(open => !open)}
-              aria-expanded={accountsOpen}
+              aria-expanded={showAccounts}
               className={`h-11 w-full justify-start px-4 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${accountsActive ? 'bg-sidebar-accent' : ''}`}
             >
-              <item.icon size={20} /><span className="flex-1 text-left">{item.name}</span><ChevronDown className={`h-4 w-4 transition-transform ${accountsOpen ? 'rotate-180' : ''}`} />
+              <item.icon size={20} /><span className="flex-1 text-left">{item.name}</span><ChevronDown className={`h-4 w-4 transition-transform ${showAccounts ? 'rotate-180' : ''}`} />
             </Button>
-            {accountsOpen && <div className="ml-6 mt-1 space-y-1 border-l border-sidebar-border pl-2">
+            {showAccounts && <div className="ml-6 mt-1 space-y-1 border-l border-sidebar-border pl-2">
               {item.children.map(child => <NavLink key={child.name} to={child.path} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-md px-3 text-sm ${isActive ? 'bg-sidebar-accent font-medium' : 'hover:bg-sidebar-accent'}`}><child.icon size={18} /><span>{child.name}</span></NavLink>)}
             </div>}
           </div>

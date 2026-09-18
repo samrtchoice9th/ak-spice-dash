@@ -22,6 +22,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, m
   const { pathname } = useLocation();
   const accountsActive = menuItems.some(item => item.children?.some(child => pathname.startsWith(child.path)));
   const [accountsOpen, setAccountsOpen] = useState(accountsActive);
+  const showAccounts = accountsOpen || accountsActive;
 
   return (
     <>
@@ -51,10 +52,10 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, m
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {menuItems.map((item) => item.children ? (
             <div key={item.name}>
-              <Button type="button" variant="ghost" onClick={() => setAccountsOpen(open => !open)} aria-expanded={accountsOpen} className={`min-h-11 w-full justify-start px-4 ${accountsActive ? 'bg-accent text-accent-foreground' : ''}`}>
-                <item.icon size={20} /><span className="flex-1 text-left">{item.name}</span><ChevronDown className={`h-4 w-4 transition-transform ${accountsOpen ? 'rotate-180' : ''}`} />
+              <Button type="button" variant="ghost" onClick={() => setAccountsOpen(open => !open)} aria-expanded={showAccounts} className={`min-h-11 w-full justify-start px-4 ${accountsActive ? 'bg-accent text-accent-foreground' : ''}`}>
+                <item.icon size={20} /><span className="flex-1 text-left">{item.name}</span><ChevronDown className={`h-4 w-4 transition-transform ${showAccounts ? 'rotate-180' : ''}`} />
               </Button>
-              {accountsOpen && <div className="ml-6 border-l pl-2">{item.children.map(child => <NavLink key={child.name} to={child.path} onClick={onClose} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-md px-3 ${isActive ? 'bg-accent text-accent-foreground font-medium' : 'hover:bg-accent'}`}><child.icon size={18} /><span>{child.name}</span></NavLink>)}</div>}
+              {showAccounts && <div className="ml-6 border-l pl-2">{item.children.map(child => <NavLink key={child.name} to={child.path} onClick={onClose} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-md px-3 ${isActive ? 'bg-accent text-accent-foreground font-medium' : 'hover:bg-accent'}`}><child.icon size={18} /><span>{child.name}</span></NavLink>)}</div>}
             </div>
           ) : (
             <NavLink
