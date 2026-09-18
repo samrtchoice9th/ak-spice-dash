@@ -110,8 +110,9 @@ const DayBook = () => {
       setAccountDialogOpen(false);
       setNewAccountName('');
       toast.success('Account added');
-    } catch (error: any) {
-      toast.error(error?.code === '23505' ? 'That account already exists' : 'Could not add account');
+    } catch (error: unknown) {
+      const errorCode = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : '';
+      toast.error(errorCode === '23505' ? 'That account already exists' : 'Could not add account');
     }
   };
 
