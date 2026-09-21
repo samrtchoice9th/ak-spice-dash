@@ -16,6 +16,16 @@ export interface DayBookEntry {
   entryOrder: number;
 }
 
+export interface LedgerRow {
+  id: string;
+  entryDate: string;
+  accountId: string;
+  accountName: string;
+  description: string;
+  debit: number;
+  credit: number;
+}
+
 export const dayBookService = {
   async getAccounts(): Promise<DayBookAccount[]> {
     const { data, error } = await supabase
@@ -51,6 +61,28 @@ export const dayBookService = {
       debit: row.debit === null ? null : Number(row.debit),
       credit: row.credit === null ? null : Number(row.credit),
       entryOrder: row.entry_order,
+    }));
+  },
+
+  // Read-only ledger: all entries in a date range with their account names.
+  async getLedger(startDate: string, endDate: string): Promise<LedgerRow[]> {
+    const { data, error } = await supabase
+      .from('day_book_entries')
+      .select('id, entry_date, account_id, description, debit, credit, entry_order, accounts(name)')
+      .gte('entry_date', startDate)
+      .lte('entry_date', endDate)
+      .order('entry_date')
+      .order('entry_order')
+      .limit(5000);
+    if (error) throw error;
+    return (data || []).map((row: Record<string, unknown>) => ({
+      id: row.id as string,
+      entryDate: row.entry_date as string,
+      accountId: row.account_id as string,
+      accountName: ((row.accounts as { name?: string } | null)?.name) || 'Unknown account',
+      description: (row.description as string) || '',
+      debit: row.debit === null ? 0 : Number(row.debit),
+      credit: row.credit === null ? 0 : Number(row.credit),
     }));
   },
 

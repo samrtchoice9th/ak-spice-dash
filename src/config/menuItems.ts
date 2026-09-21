@@ -1,6 +1,6 @@
 import { 
   LayoutDashboard, ShoppingCart, Package,
-  Warehouse, Receipt, BarChart3, Settings, Users, Truck, Landmark, BookOpen,
+  Warehouse, Receipt, BarChart3, Settings, Users, Truck, Landmark, BookOpen, BookText,
   LucideIcon
 } from 'lucide-react';
 
@@ -22,6 +22,7 @@ export const allMenuItems: MenuItem[] = [
     { name: 'Customers', path: '/customers', icon: Users, minRole: 'admin' },
     { name: 'Suppliers', path: '/suppliers', icon: Truck, minRole: 'admin' },
     { name: 'Day Book', path: '/day-book', icon: BookOpen, minRole: 'admin' },
+    { name: 'Ledger', path: '/ledger', icon: BookText, minRole: 'admin' },
   ] },
   
   { name: 'Inventory', path: '/inventory', icon: Warehouse, minRole: 'super_admin' },
