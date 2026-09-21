@@ -139,9 +139,11 @@ const escapeHtml = (s: string): string =>
 
 /**
  * Desktop browser thermal printing.
- * Renders the receipt in a hidden iframe using @page size: 80mm auto
- * and opens the system print dialog. Works with USB thermal printers
- * such as XPrinter XP-80C when 80mm paper is selected in the OS print dialog.
+ * Opens a small dedicated print window with @page size: 80mm auto,
+ * triggers the system print dialog, then automatically closes the
+ * window after printing (or cancel) and returns focus to the app.
+ * Works with USB thermal printers such as XPrinter XP-80C when
+ * 80mm paper is selected in the OS print dialog.
  */
 export const printDesktopReceipt = (receipt: any): void => {
   if (!receipt || !receipt.items || receipt.items.length === 0) {
@@ -149,7 +151,61 @@ export const printDesktopReceipt = (receipt: any): void => {
     return;
   }
 
-  // Remove any pre-existing print iframe
+  const html = buildThermalHtml(receipt);
+
+  // Inject auto-print + auto-close script into the receipt document.
+  const autoPrintScript = `
+    <script>
+      (function () {
+        var done = false;
+        function closeWin() {
+          if (done) return;
+          done = true;
+          try { window.close(); } catch (e) {}
+        }
+        window.onafterprint = closeWin;
+        window.addEventListener('afterprint', closeWin);
+        function doPrint() {
+          try {
+            window.focus();
+            window.print();
+          } catch (e) { console.error('print failed', e); }
+          // Fallback: if afterprint never fires (rare), close after 60s.
+          setTimeout(closeWin, 60000);
+        }
+        if (document.readyState === 'complete') {
+          setTimeout(doPrint, 150);
+        } else {
+          window.addEventListener('load', function () { setTimeout(doPrint, 150); });
+        }
+      })();
+    </scr` + `ipt>`;
+
+  const htmlWithScript = html.replace('</body>', `${autoPrintScript}</body>`);
+
+  // Open a small popup window for printing. Triggered from a user click,
+  // so popup blockers allow it.
+  const printWindow = window.open('', '_blank', 'width=420,height=640,left=200,top=100');
+
+  if (!printWindow) {
+    // Popup blocked: fall back to hidden-iframe printing.
+    printViaHiddenIframe(html);
+    return;
+  }
+
+  try {
+    printWindow.document.open();
+    printWindow.document.write(htmlWithScript);
+    printWindow.document.close();
+  } catch (err) {
+    console.error('Print window failed:', err);
+    try { printWindow.close(); } catch { /* noop */ }
+    printViaHiddenIframe(html);
+  }
+};
+
+/** Fallback: print via a hidden iframe when popups are blocked. */
+const printViaHiddenIframe = (html: string): void => {
   const existing = document.getElementById('thermal-print-frame');
   if (existing) existing.remove();
 
@@ -163,7 +219,6 @@ export const printDesktopReceipt = (receipt: any): void => {
   iframe.style.border = '0';
   document.body.appendChild(iframe);
 
-  const html = buildThermalHtml(receipt);
   const doc = iframe.contentDocument || iframe.contentWindow?.document;
   if (!doc) {
     alert('Failed to open print frame');
@@ -181,7 +236,6 @@ export const printDesktopReceipt = (receipt: any): void => {
     } catch (err) {
       console.error('Print failed:', err);
     }
-    // Cleanup after a delay (afterprint may not fire on all browsers).
     const cleanup = () => {
       const f = document.getElementById('thermal-print-frame');
       if (f) f.remove();
@@ -190,7 +244,6 @@ export const printDesktopReceipt = (receipt: any): void => {
     setTimeout(cleanup, 2000);
   };
 
-  // Wait one frame to ensure DOM is laid out, then print.
   if (iframe.contentWindow?.document.readyState === 'complete') {
     setTimeout(triggerPrint, 50);
   } else {
