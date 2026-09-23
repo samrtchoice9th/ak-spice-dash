@@ -209,7 +209,7 @@ const DayBook = () => {
       </div>
       <div>
         {mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Description</label>}
-        <Input ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-description`] = node; }} value={row.description} onChange={event => updateRow(index, { description: event.target.value })} onKeyDown={event => moveNext(event, index, 'description')} placeholder="Transaction description" className="h-11" />
+        <Input ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-description`] = node; }} disabled={isClosed} value={row.description} onChange={event => updateRow(index, { description: event.target.value })} onKeyDown={event => moveNext(event, index, 'description')} placeholder="Transaction description" className="h-11" />
       </div>
       <div className={mobile ? 'grid grid-cols-2 gap-3' : 'contents'}>
         <div>{mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Debit</label>}{amountInput(row, index, 'debit', mobile)}</div>
