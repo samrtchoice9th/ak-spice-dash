@@ -221,7 +221,13 @@ const DayBook = () => {
   return (
     <div className="p-1 sm:p-4 space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div><h1 className="text-xl font-bold text-foreground">Day Book</h1><p className="text-sm text-muted-foreground">Daily accounts and transactions</p></div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-foreground">Day Book</h1>
+            {isClosed && <span className="flex items-center gap-1 rounded-full bg-secondary px-2 py-1 text-xs font-semibold text-secondary-foreground"><Lock className="h-3 w-3" /> Day Closed</span>}
+          </div>
+          <p className="text-sm text-muted-foreground">Daily accounts and transactions</p>
+        </div>
         <div className="w-full sm:w-56"><label htmlFor="day-book-date" className="mb-1 block text-xs font-medium text-muted-foreground">Date</label><div className="relative"><CalendarDays className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input id="day-book-date" type="date" value={date} onChange={event => setDate(event.target.value)} className="h-11 pl-9" /></div></div>
       </div>
 
