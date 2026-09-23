@@ -50,15 +50,19 @@ const DayBook = () => {
     setLoading(true);
     try {
       const [selectedYear, selectedMonth] = date.split('-').map(Number);
-      const [accountList, entries, totals] = await Promise.all([
+      const [accountList, entries, totals, dayClosure, carriedForward] = await Promise.all([
         dayBookService.getAccounts(),
         dayBookService.getEntries(date),
         receiptService.getMonthlyDailyTotals(selectedYear, selectedMonth - 1),
+        dayBookService.getClosure(date),
+        dayBookService.getOpeningBalance(date),
       ]);
       setAccounts(accountList);
       setRows(withBlankRows(entries));
       setSales(totals[date]?.totalSales || 0);
       setPurchases(totals[date]?.totalPurchases || 0);
+      setClosure(dayClosure);
+      setOpeningBalance(dayClosure ? dayClosure.openingBalance : carriedForward);
     } catch (error) {
       console.error('Failed to load Day Book:', error);
       toast.error('Could not load the Day Book');
