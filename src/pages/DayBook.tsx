@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarDays, Plus, Save } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Lock, Plus, Save, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { receiptService } from '@/services/receiptService';
-import { DayBookAccount, DayBookEntry, dayBookService } from '@/services/dayBookService';
+import { DayBookAccount, DayBookEntry, DayClosure, dayBookService } from '@/services/dayBookService';
 
 const BLANK_ROWS = 5;
 const ADD_ACCOUNT = '__add_account__';
@@ -38,6 +38,9 @@ const DayBook = () => {
   const [purchases, setPurchases] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [closure, setClosure] = useState<DayClosure | null>(null);
+  const [openingBalance, setOpeningBalance] = useState(0);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [pendingRow, setPendingRow] = useState<number | null>(null);
@@ -47,15 +50,19 @@ const DayBook = () => {
     setLoading(true);
     try {
       const [selectedYear, selectedMonth] = date.split('-').map(Number);
-      const [accountList, entries, totals] = await Promise.all([
+      const [accountList, entries, totals, dayClosure, carriedForward] = await Promise.all([
         dayBookService.getAccounts(),
         dayBookService.getEntries(date),
         receiptService.getMonthlyDailyTotals(selectedYear, selectedMonth - 1),
+        dayBookService.getClosure(date),
+        dayBookService.getOpeningBalance(date),
       ]);
       setAccounts(accountList);
       setRows(withBlankRows(entries));
       setSales(totals[date]?.totalSales || 0);
       setPurchases(totals[date]?.totalPurchases || 0);
+      setClosure(dayClosure);
+      setOpeningBalance(dayClosure ? dayClosure.openingBalance : carriedForward);
     } catch (error) {
       console.error('Failed to load Day Book:', error);
       toast.error('Could not load the Day Book');
@@ -70,6 +77,40 @@ const DayBook = () => {
     debit: sum.debit + (row.debit || 0),
     credit: sum.credit + (row.credit || 0),
   }), { debit: purchases, credit: sales }), [rows, purchases, sales]);
+
+  const isClosed = !!closure?.isClosed;
+  const closingBalance = isClosed
+    ? closure.closingBalance
+    : openingBalance + totals.credit - totals.debit;
+
+  const finishDay = async () => {
+    setClosing(true);
+    try {
+      const saved = await dayBookService.closeDay(date, openingBalance, totals.debit, totals.credit);
+      setClosure(saved);
+      toast.success(`Day finished. ${money(saved.closingBalance)} carried forward to the next day.`);
+    } catch (error) {
+      console.error('Failed to finish the day:', error);
+      toast.error('Could not finish the day');
+    } finally {
+      setClosing(false);
+    }
+  };
+
+  const reopenDay = async () => {
+    setClosing(true);
+    try {
+      await dayBookService.reopenDay(date);
+      setClosure(null);
+      toast.success('Day reopened');
+    } catch (error) {
+      console.error('Failed to reopen the day:', error);
+      toast.error('Could not reopen the day');
+    } finally {
+      setClosing(false);
+    }
+  };
+
 
   const updateRow = (index: number, patch: Partial<DayBookEntry>) => {
     setRows(current => {
@@ -141,6 +182,7 @@ const DayBook = () => {
       ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-${side}`] = node; }}
       aria-label={`${side} row ${index + 1}`}
       type="number" min="0" step="0.01" inputMode="decimal"
+      disabled={isClosed}
       value={row[side] ?? ''}
       onKeyDown={event => moveNext(event, index, side)}
       onChange={event => {
@@ -155,7 +197,7 @@ const DayBook = () => {
     <div key={`${mobile ? 'mobile' : 'desktop'}-${row.id}`} className={mobile ? 'border-b p-3 space-y-3 last:border-0' : 'grid grid-cols-[minmax(180px,1fr)_minmax(220px,2fr)_150px_150px] gap-2 border-b p-2 last:border-0'}>
       <div>
         {mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Account</label>}
-        <Select value={row.accountId} onValueChange={value => handleAccount(value, index)}>
+        <Select value={row.accountId} onValueChange={value => handleAccount(value, index)} disabled={isClosed}>
           <SelectTrigger ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-account`] = node; }} onKeyDown={event => moveNext(event, index, 'account')} className="h-11">
             <SelectValue placeholder="Select account" />
           </SelectTrigger>
@@ -167,7 +209,7 @@ const DayBook = () => {
       </div>
       <div>
         {mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Description</label>}
-        <Input ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-description`] = node; }} value={row.description} onChange={event => updateRow(index, { description: event.target.value })} onKeyDown={event => moveNext(event, index, 'description')} placeholder="Transaction description" className="h-11" />
+        <Input ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-description`] = node; }} disabled={isClosed} value={row.description} onChange={event => updateRow(index, { description: event.target.value })} onKeyDown={event => moveNext(event, index, 'description')} placeholder="Transaction description" className="h-11" />
       </div>
       <div className={mobile ? 'grid grid-cols-2 gap-3' : 'contents'}>
         <div>{mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Debit</label>}{amountInput(row, index, 'debit', mobile)}</div>
@@ -179,18 +221,37 @@ const DayBook = () => {
   return (
     <div className="p-1 sm:p-4 space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div><h1 className="text-xl font-bold text-foreground">Day Book</h1><p className="text-sm text-muted-foreground">Daily accounts and transactions</p></div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-foreground">Day Book</h1>
+            {isClosed && <span className="flex items-center gap-1 rounded-full bg-secondary px-2 py-1 text-xs font-semibold text-secondary-foreground"><Lock className="h-3 w-3" /> Day Closed</span>}
+          </div>
+          <p className="text-sm text-muted-foreground">Daily accounts and transactions</p>
+        </div>
         <div className="w-full sm:w-56"><label htmlFor="day-book-date" className="mb-1 block text-xs font-medium text-muted-foreground">Date</label><div className="relative"><CalendarDays className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input id="day-book-date" type="date" value={date} onChange={event => setDate(event.target.value)} className="h-11 pl-9" /></div></div>
       </div>
 
       <Card>
         <CardContent className="p-0">
           <div className="hidden md:grid grid-cols-[minmax(180px,1fr)_minmax(220px,2fr)_150px_150px] gap-2 border-b bg-muted/50 px-4 py-3 text-sm font-semibold"><span>Account</span><span>Description</span><span className="text-right">Debit</span><span className="text-right">Credit</span></div>
+          <div className="grid grid-cols-[minmax(180px,1fr)_minmax(220px,2fr)_150px_150px] gap-2 border-b bg-secondary/50 p-3 text-sm max-md:hidden"><span className="font-semibold">Opening Balance</span><span className="text-muted-foreground">Brought forward from the previous day</span><span className="text-right">—</span><span className="text-right font-semibold">{money(openingBalance)}</span></div>
           <div className="grid grid-cols-[minmax(180px,1fr)_minmax(220px,2fr)_150px_150px] gap-2 border-b bg-secondary/50 p-3 text-sm max-md:hidden"><span className="font-semibold">Total Sales</span><span className="text-muted-foreground">From saved sales receipts</span><span className="text-right">—</span><span className="text-right font-semibold text-primary">{money(sales)}</span></div>
           <div className="grid grid-cols-[minmax(180px,1fr)_minmax(220px,2fr)_150px_150px] gap-2 border-b bg-secondary/50 p-3 text-sm max-md:hidden"><span className="font-semibold">Total Purchase</span><span className="text-muted-foreground">From saved purchase receipts</span><span className="text-right font-semibold text-destructive">{money(purchases)}</span><span className="text-right">—</span></div>
-          <div className="md:hidden divide-y bg-secondary/50"><div className="flex justify-between p-3"><span className="font-semibold">Total Sales</span><span className="font-semibold text-primary">Credit {money(sales)}</span></div><div className="flex justify-between p-3"><span className="font-semibold">Total Purchase</span><span className="font-semibold text-destructive">Debit {money(purchases)}</span></div></div>
+          <div className="md:hidden divide-y bg-secondary/50"><div className="flex justify-between p-3"><span className="font-semibold">Opening Balance</span><span className="font-semibold">{money(openingBalance)}</span></div><div className="flex justify-between p-3"><span className="font-semibold">Total Sales</span><span className="font-semibold text-primary">Credit {money(sales)}</span></div><div className="flex justify-between p-3"><span className="font-semibold">Total Purchase</span><span className="font-semibold text-destructive">Debit {money(purchases)}</span></div></div>
           {loading ? <p className="py-12 text-center text-sm text-muted-foreground">Loading Day Book...</p> : <><div className="hidden md:block">{rows.map((row, index) => editableRow(row, index))}</div><div className="md:hidden">{rows.map((row, index) => editableRow(row, index, true))}</div></>}
-          <div className="flex flex-col gap-3 border-t bg-muted/30 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex gap-5 text-sm font-semibold"><span>Debit {money(totals.debit)}</span><span>Credit {money(totals.credit)}</span></div><Button onClick={save} disabled={loading || saving} className="min-h-11"><Save className="h-4 w-4" />{saving ? 'Saving...' : 'Save Day Book'}</Button></div>
+          <div className="flex flex-col gap-3 border-t bg-muted/30 p-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold">
+              <span>Debit {money(totals.debit)}</span>
+              <span>Credit {money(totals.credit)}</span>
+              <span className="text-primary">Closing Balance {money(closingBalance)}</span>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button onClick={save} disabled={loading || saving || isClosed} className="min-h-11"><Save className="h-4 w-4" />{saving ? 'Saving...' : 'Save Day Book'}</Button>
+              {isClosed
+                ? <Button variant="outline" onClick={reopenDay} disabled={closing} className="min-h-11"><Unlock className="h-4 w-4" />{closing ? 'Reopening...' : 'Reopen Day'}</Button>
+                : <Button variant="secondary" onClick={finishDay} disabled={loading || closing} className="min-h-11"><CheckCircle2 className="h-4 w-4" />{closing ? 'Finishing...' : 'Day Finished'}</Button>}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
