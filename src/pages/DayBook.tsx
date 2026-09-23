@@ -78,6 +78,40 @@ const DayBook = () => {
     credit: sum.credit + (row.credit || 0),
   }), { debit: purchases, credit: sales }), [rows, purchases, sales]);
 
+  const isClosed = !!closure?.isClosed;
+  const closingBalance = isClosed
+    ? closure.closingBalance
+    : openingBalance + totals.credit - totals.debit;
+
+  const finishDay = async () => {
+    setClosing(true);
+    try {
+      const saved = await dayBookService.closeDay(date, openingBalance, totals.debit, totals.credit);
+      setClosure(saved);
+      toast.success(`Day finished. ${money(saved.closingBalance)} carried forward to the next day.`);
+    } catch (error) {
+      console.error('Failed to finish the day:', error);
+      toast.error('Could not finish the day');
+    } finally {
+      setClosing(false);
+    }
+  };
+
+  const reopenDay = async () => {
+    setClosing(true);
+    try {
+      await dayBookService.reopenDay(date);
+      setClosure(null);
+      toast.success('Day reopened');
+    } catch (error) {
+      console.error('Failed to reopen the day:', error);
+      toast.error('Could not reopen the day');
+    } finally {
+      setClosing(false);
+    }
+  };
+
+
   const updateRow = (index: number, patch: Partial<DayBookEntry>) => {
     setRows(current => {
       const next = current.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row);
