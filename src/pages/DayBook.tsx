@@ -182,6 +182,7 @@ const DayBook = () => {
       ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-${side}`] = node; }}
       aria-label={`${side} row ${index + 1}`}
       type="number" min="0" step="0.01" inputMode="decimal"
+      disabled={isClosed}
       value={row[side] ?? ''}
       onKeyDown={event => moveNext(event, index, side)}
       onChange={event => {
