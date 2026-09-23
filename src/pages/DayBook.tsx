@@ -38,6 +38,9 @@ const DayBook = () => {
   const [purchases, setPurchases] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [closure, setClosure] = useState<DayClosure | null>(null);
+  const [openingBalance, setOpeningBalance] = useState(0);
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [pendingRow, setPendingRow] = useState<number | null>(null);
