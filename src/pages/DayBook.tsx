@@ -197,7 +197,7 @@ const DayBook = () => {
     <div key={`${mobile ? 'mobile' : 'desktop'}-${row.id}`} className={mobile ? 'border-b p-3 space-y-3 last:border-0' : 'grid grid-cols-[minmax(180px,1fr)_minmax(220px,2fr)_150px_150px] gap-2 border-b p-2 last:border-0'}>
       <div>
         {mobile && <label className="mb-1 block text-xs font-medium text-muted-foreground">Account</label>}
-        <Select value={row.accountId} onValueChange={value => handleAccount(value, index)}>
+        <Select value={row.accountId} onValueChange={value => handleAccount(value, index)} disabled={isClosed}>
           <SelectTrigger ref={node => { fieldsRef.current[`${mobile ? 'mobile' : 'desktop'}-${index}-account`] = node; }} onKeyDown={event => moveNext(event, index, 'account')} className="h-11">
             <SelectValue placeholder="Select account" />
           </SelectTrigger>
