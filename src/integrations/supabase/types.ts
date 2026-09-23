@@ -84,6 +84,56 @@ export type Database = {
           },
         ]
       }
+      day_book_closures: {
+        Row: {
+          closed_at: string
+          closing_balance: number
+          closure_date: string
+          created_at: string
+          id: string
+          is_closed: boolean
+          opening_balance: number
+          shop_id: string
+          total_credit: number
+          total_debit: number
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string
+          closing_balance?: number
+          closure_date: string
+          created_at?: string
+          id?: string
+          is_closed?: boolean
+          opening_balance?: number
+          shop_id: string
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string
+          closing_balance?: number
+          closure_date?: string
+          created_at?: string
+          id?: string
+          is_closed?: boolean
+          opening_balance?: number
+          shop_id?: string
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "day_book_closures_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       day_book_entries: {
         Row: {
           account_id: string
