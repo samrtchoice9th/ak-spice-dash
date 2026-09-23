@@ -26,7 +26,79 @@ export interface LedgerRow {
   credit: number;
 }
 
+export interface DayClosure {
+  id: string;
+  closureDate: string;
+  openingBalance: number;
+  totalCredit: number;
+  totalDebit: number;
+  closingBalance: number;
+  isClosed: boolean;
+}
+
+const mapClosure = (row: Record<string, unknown>): DayClosure => ({
+  id: row.id as string,
+  closureDate: row.closure_date as string,
+  openingBalance: Number(row.opening_balance || 0),
+  totalCredit: Number(row.total_credit || 0),
+  totalDebit: Number(row.total_debit || 0),
+  closingBalance: Number(row.closing_balance || 0),
+  isClosed: Boolean(row.is_closed),
+});
+
 export const dayBookService = {
+  // Closure record for a specific date (null when the day is still open).
+  async getClosure(entryDate: string): Promise<DayClosure | null> {
+    const { data, error } = await supabase
+      .from('day_book_closures')
+      .select('*')
+      .eq('closure_date', entryDate)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? mapClosure(data) : null;
+  },
+
+  // Carried-forward balance: closing balance of the most recent closed day before this date.
+  async getOpeningBalance(entryDate: string): Promise<number> {
+    const { data, error } = await supabase
+      .from('day_book_closures')
+      .select('closing_balance')
+      .lt('closure_date', entryDate)
+      .eq('is_closed', true)
+      .order('closure_date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? Number(data.closing_balance || 0) : 0;
+  },
+
+  async closeDay(entryDate: string, openingBalance: number, totalDebit: number, totalCredit: number): Promise<DayClosure> {
+    const { data, error } = await supabase
+      .from('day_book_closures')
+      .upsert({
+        shop_id: SHOP_ID,
+        closure_date: entryDate,
+        opening_balance: openingBalance,
+        total_debit: totalDebit,
+        total_credit: totalCredit,
+        closing_balance: openingBalance + totalCredit - totalDebit,
+        is_closed: true,
+        closed_at: new Date().toISOString(),
+      }, { onConflict: 'shop_id,closure_date' })
+      .select('*')
+      .single();
+    if (error) throw error;
+    return mapClosure(data);
+  },
+
+  async reopenDay(entryDate: string): Promise<void> {
+    const { error } = await supabase
+      .from('day_book_closures')
+      .delete()
+      .eq('closure_date', entryDate);
+    if (error) throw error;
+  },
+
   async getAccounts(): Promise<DayBookAccount[]> {
     const { data, error } = await supabase
       .from('accounts')
