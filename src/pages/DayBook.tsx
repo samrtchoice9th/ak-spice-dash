@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { receiptService } from '@/services/receiptService';
-import { DayBookAccount, DayBookEntry, dayBookService } from '@/services/dayBookService';
+import { DayBookAccount, DayBookEntry, DayClosure, dayBookService } from '@/services/dayBookService';
 
 const BLANK_ROWS = 5;
 const ADD_ACCOUNT = '__add_account__';
